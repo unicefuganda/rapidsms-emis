@@ -71,8 +71,18 @@ XFORM_FIELDS = {
          ],
                 }
 
+
+models_created = []
+
 def init_structures(sender, **kwargs):
-    pass
+    global models_created
+    models_created.append(sender.__name__)
+    for required in ['eav.models', 'rapidsms_xforms.models', 'poll.models', 'script.models', ]:
+        if required not in models_created:
+            return
+    init_xforms(sender)
+    init_autoreg(sender)
+    init_scripts(sender)
 
 
 def init_xforms(sender, **kwargs):
