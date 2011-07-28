@@ -1,4 +1,6 @@
 from django.contrib.auth.models import User
+from rapidsms_xforms.models import Xform, XformField, XformConstraint
+
 XFORMS = ()
 XFORM_FIELDS = {}
 
@@ -6,16 +8,13 @@ def init_structures(sender, **kwargs):
     pass
 
 def init_xforms(sender, **kwargs):
-    pass
+    init_xforms_from_tuples(XFORMS, XFORM_FIELDS)
 
 def init_autoreg(sender, **kwargs):
     pass
 
 def init_scripts(sender, **kwargs):
     pass
-
-def init_xforms():
-    init_xforms_from_tuples(XFORMS, XFORM_FIELDS)
 
 def init_xforms_from_tuples(xforms, xform_fields):
     user = User.objects.get(username='admin')
