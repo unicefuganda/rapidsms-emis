@@ -113,11 +113,23 @@ XFORM_FIELDS = {
          ],
                 }
 
+
+models_created = []
+
 def init_structures(sender, **kwargs):
-    pass
+    global models_created
+    models_created.append(sender.__name__)
+    for required in ['eav.models', 'rapidsms_xforms.models', 'poll.models', 'script.models', ]:
+        if required not in models_created:
+            return
+    init_xforms(sender)
+    init_autoreg(sender)
+    init_scripts(sender)
+
 
 def init_xforms(sender, **kwargs):
     init_xforms_from_tuples(XFORMS, XFORM_FIELDS)
+
 
 def init_autoreg(sender, **kwargs):
     script, created = Script.objects.get_or_create(
@@ -248,8 +260,37 @@ def init_autoreg(sender, **kwargs):
             site = Site.objects.get_current()
             script.sites.add(site)
 
+
 def init_scripts(sender, **kwargs):
-    pass
+    simple_scripts = [\
+        (Poll.TYPE_NUMERIC, 'emis_abuse', 'How many abuse cases were recorded in the record book this month?'), \
+        (Poll.TYPE_TEXT, 'emis_meals', 'How many children had meals at lunch today? Reply with ONE of the following - very few, less than half, more than half, very many'), \
+        (Poll.TYPE_NUMERIC, 'emis_grant', 'How much of your annual capitation grant have you received this term? Reply with ONE of the following 25%, 50%, 75%% or 100%',), \
+        #FIXME date type
+        (Poll.TYPE_NUMERIC, 'emis_inspection', 'What date was your last school inspection?',), \
+        #FIXME date type
+        (Poll.TYPE_NUMERIC, 'emis_cct', 'What date was your last CCT visit?',), \
+        # FIXME yesNo
+        (Poll.TYPE_TEXT, 'emis_absence', 'Do you know if the head teacher was present at school today? Answer YES or NO', True), \
+        (Poll.TYPE_TEXT, 'emis_smc_meals', 'How many children did you observe having a meal at lunch today, Reply with ONE of the following- very few, less than half, more than half, very many'), \
+        # FIXME yesno
+        (Poll.TYPE_TEXT, 'emis_grant_notice', 'Has UPE capitation grant been display on school notice board? Answer YES or NO', True), \
+        # FIXME yesno
+        (Poll.TYPE_TEXT, 'emis_inspection_yesno', 'Do you know if your school was inspected this term? Answer YES if there was inspection and NO if there was no inspection'),
+        (Poll.TYPE_NUMERIC, 'emis_meetings', 'How many SMC meetings have you held this term?Give number of meetings held, if none, reply 0.'),
+    ]
+    user, created = User.objects.get_or_create(username='admin')
+    for poll_info in simple_scripts:
+        poll = Poll.objects.create(
+            user=user, \
+            type=poll_info[0], \
+            name=poll_info[1],
+            question=poll_info[2], \
+            default_response='', \
+        )
+        if len(poll_info) > 3 and poll_info[3]:
+            poll.add_yesno_categories()
+
 
 def init_xforms_from_tuples(xforms, xform_fields):
     user = User.objects.get(username='admin')

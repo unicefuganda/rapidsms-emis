@@ -14,6 +14,4 @@ XFormField.register_field_type('emisboolean', 'YesNo', parse_date,
                                db_type=XFormField.TYPE_INT, xforms_type='integer')
 
 post_syncdb.connect(init_structures, weak=True)
-post_syncdb.connect(init_xforms, weak=True)
-post_syncdb.connect(init_autoreg, weak=True)
-post_syncdb.connect(init_scripts, weak=True)
+
