@@ -10,8 +10,66 @@ try:
 except ImportError:
     pass
 
-XFORMS = ()
-XFORM_FIELDS = {}
+XFORMS = (
+          ('', 'boys', ',;:*.\\s"', 'Boys Attendance', 'Weekly Attendance for Boys'),
+          ('', 'girls', ',;:*.\\s"', 'Girls Attendance', 'Weekly Attendance for Girls'),
+          ('', 'teachers', ',;:*.\\s"', 'Teachers Attendance', 'Weekly Attendance for Teachers'),
+          ('', 'classrooms', ',;:*.\\s"', 'Classrooms', 'Classrooms at School'),
+          ('', 'classroomsused', ',;:*.\\s"', 'Used Classrooms', 'Classrooms in use at School'),
+          ('', 'latrines', ',;:*.\\s"', 'Latrines', 'Latrines at School'),
+          ('', 'latrinesused', ',;:*.\\s"', 'Used Latrines', 'Latrines in use at School'),
+          ('', 'deploy', ',;:*.\\s"', 'Deployment', 'Teacher Deployment'),
+          ('', 'enrolledb', ',;:*.\\s"', 'Boys Enrolment', 'Number of Boys enrolled at School'),
+          ('', 'enrolledg', ',;:*.\\s"', 'Girls Enrolment', 'Number of Girls enrolled at School'),
+          ('', 'gemabuse', ',;:*.\\s"', 'GEM Abuse Cases', 'Number of abuses happening in Schools reported to GEM'),
+          ('', 'gemteachers', ',;:*.\\s"', 'GEM Teacher Attendance', 'Number of Head Teacher presence at School based on last Visit'),
+          )
+
+XFORM_FIELDS = {
+        'boys':[
+                ('date', 'emisdate', 'Date of Attendance Record', True),
+                ('p1', 'int', 'Number of boys in P1', True),
+                ('p2', 'int', 'Number of boys in P2', True),
+                ('p3', 'int', 'Number of boys in P3', True),
+                ('p4', 'int', 'Number of boys in P4', True),
+                ('p5', 'int', 'Number of boys in P5', True),
+                ('p6', 'int', 'Number of boys in P6', True),
+                ('p7', 'int', 'Number of boys in P7', True),
+         ],
+        'girls':[
+                ('date', 'emisdate', 'Date of Attendance Record', True),
+                ('p1', 'int', 'Number of girls in P1', True),
+                ('p2', 'int', 'Number of girls in P2', True),
+                ('p3', 'int', 'Number of girls in P3', True),
+                ('p4', 'int', 'Number of girls in P4', True),
+                ('p5', 'int', 'Number of girls in P5', True),
+                ('p6', 'int', 'Number of girls in P6', True),
+                ('p7', 'int', 'Number of girls in P7', True),
+         ],
+        'teachers':[
+                ('date', 'emisdate', 'Date of Attendance Record', True),
+                ('female', 'int', 'Number of girls in P1', True),
+                ('male', 'int', 'Number of girls in P2', True),
+         ],
+        'classrooms':[
+                ('p1', 'int', 'Number of girls in P1', True),
+                ('p2', 'int', 'Number of girls in P2', True),
+                ('p3', 'int', 'Number of girls in P3', True),
+                ('p4', 'int', 'Number of girls in P4', True),
+                ('p5', 'int', 'Number of girls in P5', True),
+                ('p6', 'int', 'Number of girls in P6', True),
+                ('p7', 'int', 'Number of girls in P7', True),
+         ],
+        'classroomsused':[
+                ('p1', 'int', 'Number of girls in P1', True),
+                ('p2', 'int', 'Number of girls in P2', True),
+                ('p3', 'int', 'Number of girls in P3', True),
+                ('p4', 'int', 'Number of girls in P4', True),
+                ('p5', 'int', 'Number of girls in P5', True),
+                ('p6', 'int', 'Number of girls in P6', True),
+                ('p7', 'int', 'Number of girls in P7', True),
+         ],
+                }
 
 def init_structures(sender, **kwargs):
     pass
