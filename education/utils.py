@@ -1,4 +1,4 @@
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group
 from rapidsms_xforms.models import Xform, XformField, XformConstraint
 from django.conf import settings
 
@@ -119,9 +119,12 @@ models_created = []
 def init_structures(sender, **kwargs):
     global models_created
     models_created.append(sender.__name__)
-    for required in ['eav.models', 'rapidsms_xforms.models', 'poll.models', 'script.models', ]:
+    for required in ['eav.models', 'rapidsms_xforms.models', 'poll.models', 'script.models', 'django.contrib.auth.models']:
         if required not in models_created:
             return
+
+    for g in ['Teachers', 'Head Teachers', 'SMC', 'GEM', 'CCT', 'DEO', 'District Officials', 'Other EMIS Reporters']:
+        Group.objects.get_or_create(name=g)
     init_xforms(sender)
     init_autoreg(sender)
     init_scripts(sender)
@@ -284,7 +287,7 @@ def init_scripts(sender, **kwargs):
     }
 
     user, created = User.objects.get_or_create(username='admin')
-    for script_name, polls in simple_scripts:
+    for script_name, polls in simple_scripts.items():
         script, created = Script.objects.get_or_create(
             slug="emis_%s" % script_name.lower().replace(' ', '_'), defaults={
             'name':"Education monitoring %s script" % script_name})

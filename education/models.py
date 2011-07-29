@@ -1,7 +1,7 @@
 from django.db.signals import post_syncdb
 from django.db import models
 from rapidsms.models import Contact
-from script.signals import script_progress_was_completed
+from script.signals import script_progress_was_completed, script_progress
 from rapidsms_xforms.models import dl_distance
 from uganda_common.utils import find_best_response, find_closest_match
 from .utils import *
@@ -84,8 +84,8 @@ def emis_autoreg(**kwargs):
 
     role = find_best_response(session, role_poll)
     default_group = None
-    if Group.objects.filter(name='Other emisReporters').count():
-        default_group = Group.objects.get(name='Other emisReporters')
+    if Group.objects.filter(name='Other EMIS Reporters').count():
+        default_group = Group.objects.get(name='Other EMIS Reporters')
     if role:
         group = find_closest_match(role, Group.objects)
         if group:
@@ -118,6 +118,33 @@ def emis_autoreg(**kwargs):
 
     EmisReporter.objects.create(contact=contact, school=reporting_school)
 
+def emis_autoreg_transition(**kwargs):
+
+    connection = kwargs['connection']
+    progress = kwargs['sender']
+    if not progress.script.slug == 'emis_autoreg':
+        return
+    script = progress.script
+    role_poll = script.steps.get(order=1).poll
+    role = find_best_response(session, role_poll)
+    if role:
+        group = find_closest_match(role, Group.objects)
+    skipsteps = {
+        'emis_subcounty':['Teachers', 'Head Teachers', 'SMC', 'GEM'],
+        'emis_one_school':['Teachers', 'Head Teachers', 'SMC'],
+        'emis_many_school':['GEM'],
+    }
+    skipped = True
+    while skipped:
+        skipped = False
+        for step_name, roles in skipsteps.items():
+            if  progress.step.poll and group and \
+                progress.step.poll.name == step_name and group.name not in roles:
+                skipped = True
+                progress.step = progress.script.steps.get(order=progress.step.order + 1)
+                progress.save()
+                break
+
 
 Poll.register_poll_type('date', 'Date Response', parse_date_value, db_type=Attribute.TYPE_OBJECT)
 
@@ -129,4 +156,4 @@ XFormField.register_field_type('emisboolean', 'YesNo', parse_date,
 
 post_syncdb.connect(init_structures, weak=True)
 script_progress_was_completed.connect(emis_autoreg, weak=False)
-
+script_progress.connect(emis_autoreg_transition, weak=False)
