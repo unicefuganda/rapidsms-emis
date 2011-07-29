@@ -65,7 +65,7 @@ def emis_autoreg(**kwargs):
 
     connection = kwargs['connection']
     progress = kwargs['sender']
-    if not progress.script.slug == 'cvs_autoreg':
+    if not progress.script.slug == 'mis_autoreg':
         return
 
     session = ScriptSession.objects.filter(script=progress.script, connection=connection).order_by('-end_time')[0]
