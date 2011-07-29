@@ -273,8 +273,8 @@ def init_scripts(sender, **kwargs):
                                  ('date', 'emis_cct', 'What date was your last CCT visit?',),
                                 ],
         'head teacher presence':[(Poll.TYPE_TEXT, 'emis_absence', 'Do you know if the head teacher was present at school today? Answer YES or NO', True), ],
-        'smc meals':[(Poll.TYPE_TEXT, 'emis_smc_meals', 'How many children did you observe having a meal at lunch today, Reply with ONE of the following- very few, less than half, more than half, very many'), ],
-        'smc administrative':[(Poll.TYPE_TEXT, 'emis_grant_notice', 'Has UPE capitation grant been display on school notice board? Answer YES or NO', True), \
+        'smc monthly':[(Poll.TYPE_TEXT, 'emis_smc_meals', 'How many children did you observe having a meal at lunch today, Reply with ONE of the following- very few, less than half, more than half, very many'),
+                              (Poll.TYPE_TEXT, 'emis_grant_notice', 'Has UPE capitation grant been display on school notice board? Answer YES or NO', True), \
                               (Poll.TYPE_TEXT, 'emis_inspection_yesno', 'Do you know if your school was inspected this term? Answer YES if there was inspection and NO if there was no inspection', True),
                               (Poll.TYPE_NUMERIC, 'emis_meetings', 'How many SMC meetings have you held this term?Give number of meetings held, if none, reply 0.'), ],
         'annual':[(Poll.TYPE_TEXT, 'emis_classroom', 'How many classrooms does your school have for each class?'),

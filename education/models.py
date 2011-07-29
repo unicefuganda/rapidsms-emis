@@ -7,6 +7,7 @@ from uganda_common.utils import find_best_response, find_closest_match
 from .utils import *
 import re
 import calendar
+from django.conf import settings
 
 class EmisReporter(models.Model):
     contact = models.ForeignKey(Contact)
@@ -65,7 +66,7 @@ def emis_autoreg(**kwargs):
 
     connection = kwargs['connection']
     progress = kwargs['sender']
-    if not progress.script.slug == 'cvs_autoreg':
+    if not progress.script.slug == 'emis_autoreg':
         return
 
     session = ScriptSession.objects.filter(script=progress.script, connection=connection).order_by('-end_time')[0]
@@ -83,17 +84,14 @@ def emis_autoreg(**kwargs):
     contact = connection.contact
 
     role = find_best_response(session, role_poll)
-    default_group = None
-    if Group.objects.filter(name='Other EMIS Reporters').count():
-        default_group = Group.objects.get(name='Other EMIS Reporters')
+
+    group = Group.objects.get(name='Other EMIS Reporters')
+    default_group = group
     if role:
         group = find_closest_match(role, Group.objects)
-        if group:
-            contact.groups.add(group)
-        elif default_group:
-            contact.groups.add(default_group)
-    elif default_group:
-        contact.groups.add(default_group)
+        if not group:
+            group = default_group
+    contact.groups.add(default_group)
 
     subcounty = find_best_response(session, subcounty_poll)
     if subcounty:
@@ -117,6 +115,95 @@ def emis_autoreg(**kwargs):
                                             location__type='sub_county')
 
     EmisReporter.objects.create(contact=contact, school=reporting_school)
+
+    _schedule_monthly_script(group, connection, 'emis_abuse', 'last', ['Teachers', 'Head Teachers'])
+    _schedule_monthly_script(group, connection, 'emis_meals', 20, ['Teachers', 'Head Teachers'])
+    _schedule_monthly_script(group, connection, 'emis_school_administrative', 15, ['Teachers', 'Head Teachers'])
+
+    start_of_term = getattr(settings, 'SCHOOL_TERM_START', datetime.datetime.now())
+    if group.name in ['Teachers', 'Head Teachers']:
+        sp = ScriptProgress.objects.create(connection=connection, script=Script.objects.get(slug='emis_annual'))
+        sp.set_time(start_of_term + datetime.timedelta(14))
+
+    _schedule_monthly_script(group, connection, 'emis_smc_monthly', 28, ['SMC'])
+
+    holidays = getattr(settings, 'SCHOOL_HOLIDAYS', [])
+    if group.name in ['SMC']:
+        d = datetime.datetime.now()
+        # get the date to a wednesday
+        d = d + datetime.timedelta((2 - d.weekday()) % 7)
+        in_holiday = True
+        while in_holiday:
+            in_holiday = False
+            for start, end in holidays:
+                if d >= start and d <= end:
+                    in_holiday = True
+                    break
+            if in_holiday:
+                d = d + datetime.timedelta(7)
+        sp = ScriptProgress.objects.create(connection=connection, script=Script.objects.get(slug='emis_head teacher presence'))
+        sp.set_time(d)
+
+
+def _schedule_monthly_script(group, connection, script_slug, day_offset, role_names):
+    holidays = getattr(settings, 'SCHOOL_HOLIDAYS', [])
+    if group.name in role_names:
+        d = datetime.datetime.now()
+        day = calendar.mdays[d.month] if day_offset == 'last' else day_offset
+        d = datetime.datetime(d.year, d.month, day)
+        in_holiday = True
+        while in_holiday:
+            in_holiday = False
+            for start, end in holidays:
+                if d >= start and d <= end:
+                    in_holiday = True
+                    break
+            if in_holiday:
+                d = d + datetime.timedelta(31)
+                day = calendar.mdays[d.month] if day_offset == 'last' else day_offset
+                d = datetime.datetime(d.year, d.month, day)
+        sp = ScriptProgress.objects.create(connection=connection, script=Script.objects.get(slug=script_slug))
+        sp.set_time(d)
+
+
+def emis_reschedule_script(**kwargs):
+    connection = kwargs['connection']
+    progress = kwargs['sender']
+    group = connection.contact.groups.all()[0]
+    slug = progress.script.slug
+    if not progress.script.slug.startswith('emis_'):
+        return
+    if slug == 'emis_abuse':
+        _schedule_monthly_script(group, connection, 'emis_abuse', 'last', ['Teachers', 'Head Teachers'])
+    elif slug == 'emis_meals':
+        _schedule_monthly_script(group, connection, 'emis_meals', 20, ['Teachers', 'Head Teachers'])
+    elif slug == 'emis_school_administrative':
+        _schedule_monthly_script(group, connection, 'emis_school_administrative', 15, ['Teachers', 'Head Teachers'])
+    elif slug == 'emis_annual':
+        start_of_term = getattr(settings, 'SCHOOL_TERM_START', datetime.datetime.now())
+        if group.name in ['Teachers', 'Head Teachers']:
+            sp = ScriptProgress.objects.create(connection=connection, script=Script.objects.get(slug='emis_annual'))
+            sp.set_time(start_of_term + datetime.timedelta(14))
+    elif slug == 'emis_smc_monthly':
+        _schedule_monthly_script(group, connection, 'emis_smc_monthly', 28, ['SMC'])
+    elif slug == 'emis_head teacher presence':
+        holidays = getattr(settings, 'SCHOOL_HOLIDAYS', [])
+        if group.name in ['SMC']:
+            d = datetime.datetime.now()
+            # get the date to a wednesday
+            d = d + datetime.timedelta((2 - d.weekday()) % 7)
+            in_holiday = True
+            while in_holiday:
+                in_holiday = False
+                for start, end in holidays:
+                    if d >= start and d <= end:
+                        in_holiday = True
+                        break
+                if in_holiday:
+                    d = d + datetime.timedelta(7)
+            sp = ScriptProgress.objects.create(connection=connection, script=Script.objects.get(slug='emis_head teacher presence'))
+            sp.set_time(d)
+
 
 def emis_autoreg_transition(**kwargs):
 
@@ -156,4 +243,5 @@ XFormField.register_field_type('emisboolean', 'YesNo', parse_date,
 
 post_syncdb.connect(init_structures, weak=True)
 script_progress_was_completed.connect(emis_autoreg, weak=False)
+script_progress_was_completed.connect(emis_reschedule_script, weak=False)
 script_progress.connect(emis_autoreg_transition, weak=False)
