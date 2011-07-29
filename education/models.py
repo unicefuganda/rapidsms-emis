@@ -2,16 +2,18 @@ from django.db.signals import post_syncdb
 from django.db import models
 from rapidsms.models import Contact
 from script.signals import script_progress_was_completed, script_progress
-from rapidsms_xforms.models import dl_distance
+from rapidsms_xforms.models import XFormField, XForm, XFormSubmission, dl_distance, xform_received
 from uganda_common.utils import find_best_response, find_closest_match
 from .utils import *
 import re
 import calendar
 from django.conf import settings
 
+
 class EmisReporter(models.Model):
     contact = models.ForeignKey(Contact)
     school = models.ForeignKey(School)
+
 
 class School(models.Model):
     name = models.CharField(max_length=60)
@@ -21,8 +23,10 @@ class School(models.Model):
     def __unicode__(self):
         return '%s' % self.name
 
+
 def parse_date(command, value):
     return parse_date_value(value)
+
 
 def parse_date_value(value):
     try:
@@ -55,12 +59,14 @@ def parse_date_value(value):
     timestamp = time.mktime(time_tuple)
     return int(timestamp)
 
+
 def parse_yesno(command, value):
     lvalue = value.lower().strip()
     if dl_distance(lvalue, 'yes') <= 1 or lvalue == 'y':
         return 1
     else:
         return 0
+
 
 def emis_autoreg(**kwargs):
 
@@ -232,6 +238,33 @@ def emis_autoreg_transition(**kwargs):
                 progress.save()
                 break
 
+def xform_received_handler(sender, **kwargs):
+    xform = kwargs['xform']
+    submission = kwargs['submission']
+
+    submission_day = getattr(settings, 'EMIS_SUBMISSION_WEEKDAY', 0)
+
+    keywords = ['classrooms', 'classroomsused', 'latrines', 'latrinesused', 'deploy', 'enrolledb', 'enrolledg']
+    if submission.has_errors:
+        return
+
+    sp = ScriptProgress.objects.filter(connection=submission.connection, script__slug='emis_annual').order_by('-time')
+    if sp.count():
+        sp = sp[0]
+        if sp.step:
+            for i in range(0, len(keywords)):
+                if xform.keyword == keywords[i] and sp.step.order == i:
+                    sp.status = 'C'
+                    sp.save()
+                    return
+
+    elif xform.keyword in keywords:
+        # error out, not the appropriate time to send this report
+        pass
+
+    else:
+        pass
+
 
 Poll.register_poll_type('date', 'Date Response', parse_date_value, db_type=Attribute.TYPE_OBJECT)
 
@@ -245,3 +278,4 @@ post_syncdb.connect(init_structures, weak=True)
 script_progress_was_completed.connect(emis_autoreg, weak=False)
 script_progress_was_completed.connect(emis_reschedule_script, weak=False)
 script_progress.connect(emis_autoreg_transition, weak=False)
+xform_received.connect(xform_received_handler, weak=True)

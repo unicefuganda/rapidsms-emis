@@ -69,13 +69,13 @@ XFORM_FIELDS = {
                 ('p6', 'int', 'Number of classrooms in use for P6', True),
                 ('p7', 'int', 'Number of classrooms in use for P7', True),
          ],
-        'latries':[
+        'latrines':[
                 ('girls', 'int', 'Number of Latrines for Girls', True),
                 ('boys', 'int', 'Number of Latrines for Boys', True),
                 ('fteachers', 'int', 'Number of Latries for Female Teachers', True),
                 ('mteachers', 'int', 'Number of Latries for Female Teachers', True),
          ],
-        'latriesused':[
+        'latrinesused':[
                 ('girls', 'int', 'Number of Latrines for Girls', True),
                 ('boys', 'int', 'Number of Latrines for Boys', True),
                 ('fteachers', 'int', 'Number of Latries for Female Teachers', True),
