@@ -21,6 +21,9 @@ class School(models.Model):
         return '%s' % self.name
 
 def parse_date(command, value):
+    return parse_date_value(value)
+
+def parse_date_value(value):
     try:
         date_expr = re.compile(r"\d{1,2} (?:%s) \d{2,4}" % '|'.join(calendar.month_abbr[1:]))
         date_expr1 = re.compile(r"\d{1,2}-\d{1,2}-\d{2,4}")
@@ -114,6 +117,9 @@ def emis_autoreg(**kwargs):
                                             location__type='sub_county')
 
     EmisReporter.objects.create(contact=contact, school=reporting_school)
+
+
+Poll.register_poll_type('date', 'Date Response', parse_date_value, db_type=Attribute.TYPE_OBJECT)
 
 XFormField.register_field_type('emisdate', 'Date', parse_date,
                                db_type=XFormField.TYPE_INT, xforms_type='integer')
