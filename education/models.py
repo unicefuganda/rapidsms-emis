@@ -1,8 +1,24 @@
 from django.db.signals import post_syncdb
+from django.db import models
+from rapidsms.models import Contact
+from script.signals import script_progress_was_completed
 from rapidsms_xforms.models import dl_distance
+from uganda_common.utils import find_best_response, find_closest_match
 from .utils import *
 import re
 import calendar
+
+class EmisReporter(models.Model):
+    contact = models.ForeignKey(Contact)
+    school = models.ForeignKey(School)
+
+class School(models.Model):
+    name = models.CharField(max_length=60)
+    emis_id = models.CharField(max_length=10)
+    location = models.ForeignKey(Location)
+
+    def __unicode__(self):
+        return '%s' % self.name
 
 def parse_date(command, value):
     try:
@@ -42,6 +58,63 @@ def parse_yesno(command, value):
     else:
         return 0
 
+def emis_autoreg(**kwargs):
+
+    connection = kwargs['connection']
+    progress = kwargs['sender']
+    if not progress.script.slug == 'cvs_autoreg':
+        return
+
+    session = ScriptSession.objects.filter(script=progress.script, connection=connection).order_by('-end_time')[0]
+    script = progress.script
+    role_poll = script.steps.get(order=1).poll
+    district_poll = script.steps.get(order=2).poll
+    subcounty_poll = script.steps.get(order=3).poll
+    school_poll = script.steps.get(order=4).poll
+    schools_poll = script.steps.get(order=5).poll
+    name_poll = script.steps.get(order=6).poll
+
+    if not connection.contact:
+            connection.contact = Contact.objects.create()
+            connection.save
+    contact = connection.contact
+
+    role = find_best_response(session, role_poll)
+    default_group = None
+    if Group.objects.filter(name='Other emisReporters').count():
+        default_group = Group.objects.get(name='Other emisReporters')
+    if role:
+        group = find_closest_match(role, Group.objects)
+        if group:
+            contact.groups.add(group)
+        elif default_group:
+            contact.groups.add(default_group)
+    elif default_group:
+        contact.groups.add(default_group)
+
+    subcounty = find_best_response(session, subcounty_poll)
+    if subcounty:
+        contact.reporting_location = subcounty
+    else:
+        contact.reporting_location = find_best_response(session, district_poll)
+
+    name = find_best_response(session, namepoll)
+    if name:
+        contact.name = name[:100]
+
+    if not contact.name:
+        contact.name = 'Anonymous User'
+    contact.save()
+
+    school = find_best_response(session, school_poll)
+    if school:
+        school_name = ' '.join([t.capitalize() for t in school.lower().split()])
+        reporting_school = School.objects.get(name=school_name, \
+                                            location__name=find_best_response(session, subounty_poll), \
+                                            location__type='sub_county')
+
+    EmisReporter.objects.create(contact=contact, school=reporting_school)
+
 XFormField.register_field_type('emisdate', 'Date', parse_date,
                                db_type=XFormField.TYPE_INT, xforms_type='integer')
 
@@ -49,4 +122,5 @@ XFormField.register_field_type('emisboolean', 'YesNo', parse_date,
                                db_type=XFormField.TYPE_INT, xforms_type='integer')
 
 post_syncdb.connect(init_structures, weak=True)
+script_progress_was_completed.connect(emis_autoreg, weak=False)
 
