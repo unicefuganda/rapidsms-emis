@@ -262,34 +262,55 @@ def init_autoreg(sender, **kwargs):
 
 
 def init_scripts(sender, **kwargs):
-    simple_scripts = [\
-        (Poll.TYPE_NUMERIC, 'emis_abuse', 'How many abuse cases were recorded in the record book this month?'), \
-        (Poll.TYPE_TEXT, 'emis_meals', 'How many children had meals at lunch today? Reply with ONE of the following - very few, less than half, more than half, very many'), \
-        (Poll.TYPE_NUMERIC, 'emis_grant', 'How much of your annual capitation grant have you received this term? Reply with ONE of the following 25%, 50%, 75%% or 100%',), \
-        #FIXME date type
-        (Poll.TYPE_NUMERIC, 'emis_inspection', 'What date was your last school inspection?',), \
-        #FIXME date type
-        (Poll.TYPE_NUMERIC, 'emis_cct', 'What date was your last CCT visit?',), \
-        # FIXME yesNo
-        (Poll.TYPE_TEXT, 'emis_absence', 'Do you know if the head teacher was present at school today? Answer YES or NO', True), \
-        (Poll.TYPE_TEXT, 'emis_smc_meals', 'How many children did you observe having a meal at lunch today, Reply with ONE of the following- very few, less than half, more than half, very many'), \
-        # FIXME yesno
-        (Poll.TYPE_TEXT, 'emis_grant_notice', 'Has UPE capitation grant been display on school notice board? Answer YES or NO', True), \
-        # FIXME yesno
-        (Poll.TYPE_TEXT, 'emis_inspection_yesno', 'Do you know if your school was inspected this term? Answer YES if there was inspection and NO if there was no inspection'),
-        (Poll.TYPE_NUMERIC, 'emis_meetings', 'How many SMC meetings have you held this term?Give number of meetings held, if none, reply 0.'),
-    ]
+    simple_scripts = {
+        'abuse':[(Poll.TYPE_NUMERIC, 'emis_abuse', 'How many abuse cases were recorded in the record book this month?')],
+        'meals':[(Poll.TYPE_TEXT, 'emis_meals', 'How many children had meals at lunch today? Reply with ONE of the following - very few, less than half, more than half, very many')],
+        'school administrative':[(Poll.TYPE_NUMERIC, 'emis_grant', 'How much of your annual capitation grant have you received this term? Reply with ONE of the following 25%, 50%, 75%% or 100%',),
+                                 ('date', 'emis_inspection', 'What date was your last school inspection?',),
+                                 ('date', 'emis_cct', 'What date was your last CCT visit?',),
+                                ],
+        'head teacher presence':[(Poll.TYPE_TEXT, 'emis_absence', 'Do you know if the head teacher was present at school today? Answer YES or NO', True), ],
+        'smc meals':[(Poll.TYPE_TEXT, 'emis_smc_meals', 'How many children did you observe having a meal at lunch today, Reply with ONE of the following- very few, less than half, more than half, very many'), ],
+        'smc administrative':[(Poll.TYPE_TEXT, 'emis_grant_notice', 'Has UPE capitation grant been display on school notice board? Answer YES or NO', True), \
+                              (Poll.TYPE_TEXT, 'emis_inspection_yesno', 'Do you know if your school was inspected this term? Answer YES if there was inspection and NO if there was no inspection', True),
+                              (Poll.TYPE_NUMERIC, 'emis_meetings', 'How many SMC meetings have you held this term?Give number of meetings held, if none, reply 0.'), ],
+        'annual':[(Poll.TYPE_TEXT, 'emis_classroom', 'How many classrooms does your school have for each class?'),
+                  (Poll.TYPE_TEXT, 'emis_classroom_use', 'How many classrooms are in usen at your school for each class?'),
+                  (Poll.TYPE_TEXT, 'emis_latrines', 'How many latrine stances does your school have for boys, girls and teachers?'),
+                  (Poll.TYPE_TEXT, 'emis_latrines_use', 'How many latrine stances are used by boys, girls and teachers?'),
+                  (Poll.TYPE_TEXT, 'emis_teachers', 'How many male and female teachers are deployed at your school?'),
+                  (Poll.TYPE_TEXT, 'emis_boys_enrolled', 'How many boys are enrolled in classes p1-p7 at your school?'),
+                  (Poll.TYPE_TEXT, 'emis_girls_enrolled', 'How many girls are enrolled in classes p1-p7 at your school?'), ]
+    }
+
     user, created = User.objects.get_or_create(username='admin')
-    for poll_info in simple_scripts:
-        poll = Poll.objects.create(
-            user=user, \
-            type=poll_info[0], \
-            name=poll_info[1],
-            question=poll_info[2], \
-            default_response='', \
-        )
-        if len(poll_info) > 3 and poll_info[3]:
-            poll.add_yesno_categories()
+    for script_name, polls in simple_scripts:
+        script, created = Script.objects.get_or_create(
+            slug="emis_%s" % script_name.lower().replace(' ', '_'), defaults={
+            'name':"Education monitoring %s script" % script_name})
+        if created:
+            step = 0
+            for poll_info in polls:
+                poll = Poll.objects.create(
+                    user=user, \
+                    type=poll_info[0], \
+                    name=poll_info[1],
+                    question=poll_info[2], \
+                    default_response='', \
+                )
+                if len(poll_info) > 3 and poll_info[3]:
+                    poll.add_yesno_categories()
+                script.steps.add(ScriptStep.objects.create(
+                    script=script,
+                    poll=poll,
+                    order=step,
+                    rule=ScriptStep.RESEND_MOVEON,
+                    num_tries=1,
+                    start_offset=60,
+                    retry_offset=86400,
+                    giveup_offset=86400,
+                ))
+            step = step + 1
 
 
 def init_xforms_from_tuples(xforms, xform_fields):
