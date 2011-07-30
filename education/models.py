@@ -105,7 +105,7 @@ def emis_autoreg(**kwargs):
     else:
         contact.reporting_location = find_best_response(session, district_poll)
 
-    name = find_best_response(session, namepoll)
+    name = find_best_response(session, name_poll)
     if name:
         contact.name = name[:100]
 
@@ -113,7 +113,7 @@ def emis_autoreg(**kwargs):
         contact.name = 'Anonymous User'
     contact.save()
 
-    school = find_best_response(session, school_poll)
+    school = find_best_response(session, schools_poll)
     if school:
         school_name = ' '.join([t.capitalize() for t in school.lower().split()])
         reporting_school = School.objects.get(name=school_name, \
@@ -256,10 +256,14 @@ def xform_received_handler(sender, **kwargs):
                 if xform.keyword == keywords[i] and sp.step.order == i:
                     sp.status = 'C'
                     sp.save()
+                    submission.response = "Thank you.  Your data on %s has been received" % xform.keyword
+                    submission.save()
                     return
 
     elif xform.keyword in keywords:
-        # error out, not the appropriate time to send this report
+        submission.response = "Please wait to send your data on %s until the appropriate time." % xform.keyword
+        submission.has_errors = True
+        submission.save()
         pass
 
     else:
