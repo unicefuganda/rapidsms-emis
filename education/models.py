@@ -1,18 +1,16 @@
-from django.db.signals import post_syncdb
+from django.db.models.signals import post_syncdb
 from django.db import models
 from rapidsms.models import Contact
+from eav.models import Attribute
 from script.signals import script_progress_was_completed, script_progress
+from script.models import *
+from rapidsms.contrib.locations.models import Location
 from rapidsms_xforms.models import XFormField, XForm, XFormSubmission, dl_distance, xform_received
 from uganda_common.utils import find_best_response, find_closest_match
 from .utils import *
 import re
 import calendar
 from django.conf import settings
-
-
-class EmisReporter(models.Model):
-    contact = models.ForeignKey(Contact)
-    school = models.ForeignKey(School)
 
 
 class School(models.Model):
@@ -22,6 +20,11 @@ class School(models.Model):
 
     def __unicode__(self):
         return '%s' % self.name
+
+
+class EmisReporter(models.Model):
+    contact = models.ForeignKey(Contact)
+    school = models.ForeignKey(School, null=True)
 
 
 def parse_date(command, value):
@@ -99,20 +102,23 @@ def emis_autoreg(**kwargs):
             group = default_group
     contact.groups.add(default_group)
 
+
     subcounty = find_best_response(session, subcounty_poll)
     if subcounty:
-        contact.reporting_location = subcounty
-    else:
-        contact.reporting_location = find_best_response(session, district_poll)
+        subcounty = find_closest_match(subcounty, Location.objects.filter(type__name='sub_county'))
+        if subcounty:
+            contact.reporting_location = subcounty
 
     name = find_best_response(session, name_poll)
     if name:
+        name = ' '.join([n.capitalize() for n in name.lower().split(' ')])
         contact.name = name[:100]
 
     if not contact.name:
         contact.name = 'Anonymous User'
     contact.save()
 
+    reporting_school = None
     school = find_best_response(session, schools_poll)
     if school:
         school_name = ' '.join([t.capitalize() for t in school.lower().split()])
@@ -122,6 +128,7 @@ def emis_autoreg(**kwargs):
 
     EmisReporter.objects.create(contact=contact, school=reporting_school)
 
+    # Now that you have their roll, they should be signed up for the periodic polling
     _schedule_monthly_script(group, connection, 'emis_abuse', 'last', ['Teachers', 'Head Teachers'])
     _schedule_monthly_script(group, connection, 'emis_meals', 20, ['Teachers', 'Head Teachers'])
     _schedule_monthly_script(group, connection, 'emis_school_administrative', 15, ['Teachers', 'Head Teachers'])
@@ -218,6 +225,7 @@ def emis_autoreg_transition(**kwargs):
     if not progress.script.slug == 'emis_autoreg':
         return
     script = progress.script
+    session = ScriptSession.objects.filter(script=progress.script, connection=connection).order_by('-end_time')[0]
     role_poll = script.steps.get(order=1).poll
     role = find_best_response(session, role_poll)
     if role:
@@ -232,7 +240,7 @@ def emis_autoreg_transition(**kwargs):
         skipped = False
         for step_name, roles in skipsteps.items():
             if  progress.step.poll and group and \
-                progress.step.poll.name == step_name and group.name not in roles:
+                progress.step.poll.name == step_name and role.name not in roles:
                 skipped = True
                 progress.step = progress.script.steps.get(order=progress.step.order + 1)
                 progress.save()
@@ -275,7 +283,7 @@ Poll.register_poll_type('date', 'Date Response', parse_date_value, db_type=Attri
 XFormField.register_field_type('emisdate', 'Date', parse_date,
                                db_type=XFormField.TYPE_INT, xforms_type='integer')
 
-XFormField.register_field_type('emisboolean', 'YesNo', parse_date,
+XFormField.register_field_type('emisbool', 'YesNo', parse_date,
                                db_type=XFormField.TYPE_INT, xforms_type='integer')
 
 post_syncdb.connect(init_structures, weak=True)

@@ -1,9 +1,10 @@
 from django.contrib.auth.models import User, Group
-from rapidsms_xforms.models import Xform, XformField, XformConstraint
+from rapidsms_xforms.models import XForm, XFormField, XFormFieldConstraint
 from django.conf import settings
-
+from django.contrib.sites.models import Site
 from poll.models import Poll
 from script.models import Script, ScriptStep
+import traceback
 
 try:
     from django.contrib.sites import Site
@@ -11,127 +12,188 @@ except ImportError:
     pass
 
 XFORMS = (
-          ('', 'boys', ',;:*.\\s"', 'Boys Attendance', 'Weekly Attendance for Boys'),
-          ('', 'girls', ',;:*.\\s"', 'Girls Attendance', 'Weekly Attendance for Girls'),
-          ('', 'teachers', ',;:*.\\s"', 'Teachers Attendance', 'Weekly Attendance for Teachers'),
-          ('', 'classrooms', ',;:*.\\s"', 'Classrooms', 'Classrooms at School'),
-          ('', 'classroomsused', ',;:*.\\s"', 'Used Classrooms', 'Classrooms in use at School'),
-          ('', 'latrines', ',;:*.\\s"', 'Latrines', 'Latrines at School'),
-          ('', 'latrinesused', ',;:*.\\s"', 'Used Latrines', 'Latrines in use at School'),
-          ('', 'deploy', ',;:*.\\s"', 'Deployment', 'Teacher Deployment'),
-          ('', 'enrolledb', ',;:*.\\s"', 'Boys Enrolment', 'Number of Boys enrolled at School'),
-          ('', 'enrolledg', ',;:*.\\s"', 'Girls Enrolment', 'Number of Girls enrolled at School'),
-          ('', 'gemabuse', ',;:*.\\s"', 'GEM Abuse Cases', 'Number of abuses happening in Schools reported to GEM'),
-          ('', 'gemteachers', ',;:*.\\s"', 'GEM Teacher Attendance', 'Number of Head Teacher presence at School based on last Visit'),
-          )
+    ('', 'boys', ',;:*.\\s"', 'Boys Attendance', 'Weekly Attendance for Boys'),
+    ('', 'girls', ',;:*.\\s"', 'Girls Attendance', 'Weekly Attendance for Girls'),
+    ('', 'teachers', ',;:*.\\s"', 'Teachers Attendance', 'Weekly Attendance for Teachers'),
+    ('', 'classrooms', ',;:*.\\s"', 'Classrooms', 'Classrooms at School'),
+    ('', 'classroomsused', ',;:*.\\s"', 'Used Classrooms', 'Classrooms in use at School'),
+    ('', 'latrines', ',;:*.\\s"', 'Latrines', 'Latrines at School'),
+    ('', 'latrinesused', ',;:*.\\s"', 'Used Latrines', 'Latrines in use at School'),
+    ('', 'deploy', ',;:*.\\s"', 'Deployment', 'Teacher Deployment'),
+    ('', 'enrolledb', ',;:*.\\s"', 'Boys Enrolment', 'Number of Boys enrolled at School'),
+    ('', 'enrolledg', ',;:*.\\s"', 'Girls Enrolment', 'Number of Girls enrolled at School'),
+    ('', 'gemabuse', ',;:*.\\s"', 'GEM Abuse Cases', 'Number of abuses happening in Schools reported to GEM'),
+    ('', 'gemteachers', ',;:*.\\s"', 'GEM Teacher Attendance', 'Number of Head Teacher presence at School based on last Visit'),
+)
 
 XFORM_FIELDS = {
-        'boys':[
-                ('date', 'emisdate', 'Date of Attendance Record', True),
-                ('p1', 'int', 'Number of boys in P1', True),
-                ('p2', 'int', 'Number of boys in P2', True),
-                ('p3', 'int', 'Number of boys in P3', True),
-                ('p4', 'int', 'Number of boys in P4', True),
-                ('p5', 'int', 'Number of boys in P5', True),
-                ('p6', 'int', 'Number of boys in P6', True),
-                ('p7', 'int', 'Number of boys in P7', True),
-         ],
-        'girls':[
-                ('date', 'emisdate', 'Date of Attendance Record', True),
-                ('p1', 'int', 'Number of girls in P1', True),
-                ('p2', 'int', 'Number of girls in P2', True),
-                ('p3', 'int', 'Number of girls in P3', True),
-                ('p4', 'int', 'Number of girls in P4', True),
-                ('p5', 'int', 'Number of girls in P5', True),
-                ('p6', 'int', 'Number of girls in P6', True),
-                ('p7', 'int', 'Number of girls in P7', True),
-         ],
-        'teachers':[
-                ('date', 'emisdate', 'Date of Attendance Record', True),
-                ('female', 'int', 'Number of girls in P1', True),
-                ('male', 'int', 'Number of girls in P2', True),
-         ],
-        'classrooms':[
-                ('p1', 'int', 'Number of classrooms for P1', True),
-                ('p2', 'int', 'Number of classrooms for P2', True),
-                ('p3', 'int', 'Number of classrooms for P3', True),
-                ('p4', 'int', 'Number of classrooms for P4', True),
-                ('p5', 'int', 'Number of classrooms for P5', True),
-                ('p6', 'int', 'Number of classrooms for P6', True),
-                ('p7', 'int', 'Number of classrooms for P7', True),
-         ],
-        'classroomsused':[
-                ('p1', 'int', 'Number of classrooms in use for P1', True),
-                ('p2', 'int', 'Number of classrooms in use for P2', True),
-                ('p3', 'int', 'Number of classrooms in use for P3', True),
-                ('p4', 'int', 'Number of classrooms in use for P4', True),
-                ('p5', 'int', 'Number of classrooms in use for P5', True),
-                ('p6', 'int', 'Number of classrooms in use for P6', True),
-                ('p7', 'int', 'Number of classrooms in use for P7', True),
-         ],
-        'latrines':[
-                ('girls', 'int', 'Number of Latrines for Girls', True),
-                ('boys', 'int', 'Number of Latrines for Boys', True),
-                ('fteachers', 'int', 'Number of Latries for Female Teachers', True),
-                ('mteachers', 'int', 'Number of Latries for Female Teachers', True),
-         ],
-        'latrinesused':[
-                ('girls', 'int', 'Number of Latrines for Girls', True),
-                ('boys', 'int', 'Number of Latrines for Boys', True),
-                ('fteachers', 'int', 'Number of Latries for Female Teachers', True),
-                ('mteachers', 'int', 'Number of Latries for Female Teachers', True),
-         ],
-        'deploy':[
-                ('female', 'int', 'Number of Female Teachers Deployed', True),
-                ('male', 'int', 'Number of Male Teachers Deployed', True),
-         ],
-        'enrolledb':[
-                ('p1', 'int', 'Number of boys enrolled in P1', True),
-                ('p2', 'int', 'Number of boys enrolled in P2', True),
-                ('p3', 'int', 'Number of boys enrolled in P3', True),
-                ('p4', 'int', 'Number of boys enrolled in P4', True),
-                ('p5', 'int', 'Number of boys enrolled in P5', True),
-                ('p6', 'int', 'Number of boys enrolled in P6', True),
-                ('p7', 'int', 'Number of boys enrolled in P7', True),
-         ],
-        'enrolledg':[
-                ('p1', 'int', 'Number of girls enrolled in P1', True),
-                ('p2', 'int', 'Number of girls enrolled in P2', True),
-                ('p3', 'int', 'Number of girls enrolled in P3', True),
-                ('p4', 'int', 'Number of girls enrolled in P4', True),
-                ('p5', 'int', 'Number of girls enrolled in P5', True),
-                ('p6', 'int', 'Number of girls enrolled in P6', True),
-                ('p7', 'int', 'Number of girls enrolled in P7', True),
-         ],
-        'gemabuse':[
-                ('schoolcode', 'text', 'School Code', True),
-                ('cases', 'int', 'Number of Abuse Cases Reported', True),
-         ],
-        'gemteachers':[
-                ('schoolcode', 'text', 'School Code', True),
-                ('htpresent', 'emisboolean', 'Head Teacher presense at School at Last Visit', True),
-         ],
-                }
+    'boys':[
+#                ('date', 'emisdate', 'Date of Attendance Record', True),
+            ('p1', 'int', 'Number of boys in P1', True),
+            ('p2', 'int', 'Number of boys in P2', True),
+            ('p3', 'int', 'Number of boys in P3', True),
+            ('p4', 'int', 'Number of boys in P4', True),
+            ('p5', 'int', 'Number of boys in P5', True),
+            ('p6', 'int', 'Number of boys in P6', True),
+            ('p7', 'int', 'Number of boys in P7', True),
+     ],
+    'girls':[
+#                ('date', 'emisdate', 'Date of Attendance Record', True),
+            ('p1', 'int', 'Number of girls in P1', True),
+            ('p2', 'int', 'Number of girls in P2', True),
+            ('p3', 'int', 'Number of girls in P3', True),
+            ('p4', 'int', 'Number of girls in P4', True),
+            ('p5', 'int', 'Number of girls in P5', True),
+            ('p6', 'int', 'Number of girls in P6', True),
+            ('p7', 'int', 'Number of girls in P7', True),
+     ],
+    'teachers':[
+#                ('date', 'emisdate', 'Date of Attendance Record', True),
+            ('female', 'int', 'Number of female teachers present', True),
+            ('male', 'int', 'Number of male teachers present', True),
+     ],
+    'classrooms':[
+            ('p1', 'int', 'Number of classrooms for P1', True),
+            ('p2', 'int', 'Number of classrooms for P2', True),
+            ('p3', 'int', 'Number of classrooms for P3', True),
+            ('p4', 'int', 'Number of classrooms for P4', True),
+            ('p5', 'int', 'Number of classrooms for P5', True),
+            ('p6', 'int', 'Number of classrooms for P6', True),
+            ('p7', 'int', 'Number of classrooms for P7', True),
+     ],
+    'classroomsused':[
+            ('p1', 'int', 'Number of classrooms in use for P1', True),
+            ('p2', 'int', 'Number of classrooms in use for P2', True),
+            ('p3', 'int', 'Number of classrooms in use for P3', True),
+            ('p4', 'int', 'Number of classrooms in use for P4', True),
+            ('p5', 'int', 'Number of classrooms in use for P5', True),
+            ('p6', 'int', 'Number of classrooms in use for P6', True),
+            ('p7', 'int', 'Number of classrooms in use for P7', True),
+     ],
+    'latrines':[
+            ('girls', 'int', 'Number of Latrines for Girls', True),
+            ('boys', 'int', 'Number of Latrines for Boys', True),
+            ('fteachers', 'int', 'Number of Latries for Female Teachers', True),
+            ('mteachers', 'int', 'Number of Latries for Female Teachers', True),
+     ],
+    'latrinesused':[
+            ('girls', 'int', 'Number of Latrines for Girls', True),
+            ('boys', 'int', 'Number of Latrines for Boys', True),
+            ('fteachers', 'int', 'Number of Latries for Female Teachers', True),
+            ('mteachers', 'int', 'Number of Latries for Male Teachers', True),
+     ],
+    'deploy':[
+            ('female', 'int', 'Number of Female Teachers Deployed', True),
+            ('male', 'int', 'Number of Male Teachers Deployed', True),
+     ],
+    'enrolledb':[
+            ('p1', 'int', 'Number of boys enrolled in P1', True),
+            ('p2', 'int', 'Number of boys enrolled in P2', True),
+            ('p3', 'int', 'Number of boys enrolled in P3', True),
+            ('p4', 'int', 'Number of boys enrolled in P4', True),
+            ('p5', 'int', 'Number of boys enrolled in P5', True),
+            ('p6', 'int', 'Number of boys enrolled in P6', True),
+            ('p7', 'int', 'Number of boys enrolled in P7', True),
+     ],
+    'enrolledg':[
+            ('p1', 'int', 'Number of girls enrolled in P1', True),
+            ('p2', 'int', 'Number of girls enrolled in P2', True),
+            ('p3', 'int', 'Number of girls enrolled in P3', True),
+            ('p4', 'int', 'Number of girls enrolled in P4', True),
+            ('p5', 'int', 'Number of girls enrolled in P5', True),
+            ('p6', 'int', 'Number of girls enrolled in P6', True),
+            ('p7', 'int', 'Number of girls enrolled in P7', True),
+     ],
+    'gemabuse':[
+            ('schoolcode', 'text', 'School Code', True),
+            ('cases', 'int', 'Number of Abuse Cases Reported', True),
+     ],
+    'gemteachers':[
+            ('schoolcode', 'text', 'School Code', True),
+            ('htpresent', 'emisbool', 'Head Teacher presense at School at Last Visit', True),
+     ],
+}
 
 
 models_created = []
+structures_initialized = False
 
 def init_structures(sender, **kwargs):
     global models_created
+    global structures_initialized
     models_created.append(sender.__name__)
-    for required in ['eav.models', 'rapidsms_xforms.models', 'poll.models', 'script.models', 'django.contrib.auth.models']:
+    required_models = ['eav.models', 'rapidsms_xforms.models', 'poll.models', 'script.models', 'django.contrib.auth.models']
+    if 'django.contrib.sites' in settings.INSTALLED_APPS:
+        required_models.append('django.contrib.sites.models')
+    if 'authsites' in settings.INSTALLED_APPS:
+        required_models.append('authsites.models')
+    for required in required_models:
         if required not in models_created:
             return
+    if not structures_initialized:
+        if 'django.contrib.sites' in settings.INSTALLED_APPS:
+            site_id = getattr(settings, 'SITE_ID', 1)
+            Site.objects.get_or_create(pk=site_id, defaults={'domain':'rapidemis.com'})
+        init_groups()
+        init_xforms(sender)
+        init_autoreg(sender)
+        init_scripts(sender)
+        structures_initialized = True
 
+
+def init_groups():
     for g in ['Teachers', 'Head Teachers', 'SMC', 'GEM', 'CCT', 'DEO', 'District Officials', 'Other EMIS Reporters']:
         Group.objects.get_or_create(name=g)
-    init_xforms(sender)
-    init_autoreg(sender)
-    init_scripts(sender)
-
 
 def init_xforms(sender, **kwargs):
     init_xforms_from_tuples(XFORMS, XFORM_FIELDS)
+
+
+def init_xforms_from_tuples(xforms, xform_fields):
+    user, created = User.objects.get_or_create(username='admin')
+    xform_dict = {}
+    for keyword_prefix, keyword, separator, name, description in xforms:
+        form, created = XForm.objects.get_or_create(
+            keyword=keyword,
+            keyword_prefix=keyword_prefix,
+            defaults={
+                'name':name,
+                'description':description,
+                'response':'',
+                'active':True,
+                'owner':user,
+                'site':Site.objects.get_current(),
+                'separator':separator,
+                'command_prefix':'',
+            }
+        )
+        if created:
+            order = 0
+            form_key = "%s%s" % (keyword_prefix, keyword)
+            attributes = xform_fields[form_key]
+            for command, field_type, description, required in attributes:
+                xformfield, created = XFormField.objects.get_or_create(
+                    command=command,
+                    xform=form,
+                    defaults={
+                        'order':order,
+                        'field_type':field_type,
+                        'type':field_type,
+                        'name':description,
+                        'description':description,
+                    }
+                )
+                if required:
+                    xformfieldconstraint, created = XFormFieldConstraint.objects.get_or_create(
+                        field=xformfield,
+                        defaults={
+                            'type':'req_val',
+                             'message':("Expected %s, none provided." % description)
+                        }
+                )
+                order = order + 1
+        xform_dict[form_key] = form
+    return xform_dict
 
 
 def init_autoreg(sender, **kwargs):
@@ -139,6 +201,8 @@ def init_autoreg(sender, **kwargs):
             slug="emis_autoreg", defaults={
             'name':"Education monitoring autoregistration script"})
     if created:
+        if 'django.contrib.sites' in settings.INSTALLED_APPS:
+            script.sites.add(Site.objects.get_current())
         user, created = User.objects.get_or_create(username="admin")
 
         script.steps.add(ScriptStep.objects.create(
@@ -157,7 +221,7 @@ def init_autoreg(sender, **kwargs):
         )
         script.steps.add(ScriptStep.objects.create(
             script=script,
-            poll=roll_poll,
+            poll=role_poll,
             order=1,
             rule=ScriptStep.RESEND_MOVEON,
             num_tries=1,
@@ -259,10 +323,6 @@ def init_autoreg(sender, **kwargs):
             giveup_offset=0,
         ))
 
-        if 'django.contrib.sites' in settings.INSTALLED_APPS:
-            site = Site.objects.get_current()
-            script.sites.add(site)
-
 
 def init_scripts(sender, **kwargs):
     simple_scripts = {
@@ -292,6 +352,8 @@ def init_scripts(sender, **kwargs):
             slug="emis_%s" % script_name.lower().replace(' ', '_'), defaults={
             'name':"Education monitoring %s script" % script_name})
         if created:
+            if 'django.contrib.sites' in settings.INSTALLED_APPS:
+                script.sites.add(Site.objects.get_current())
             step = 0
             for poll_info in polls:
                 poll = Poll.objects.create(
@@ -313,51 +375,6 @@ def init_scripts(sender, **kwargs):
                     retry_offset=86400,
                     giveup_offset=86400,
                 ))
-            step = step + 1
+                step = step + 1
 
 
-def init_xforms_from_tuples(xforms, xform_fields):
-    user = User.objects.get(username='admin')
-    xform_dict = {}
-    for keyword_prefix, keyword, separator, name, description in xforms:
-        xform, created = XForm.objects.get_or_create(
-            keyword=keyword,
-            keyword_prefix=keyword_prefix,
-            defaults={
-                'name':name,
-                'description':description,
-                'response':'',
-                'active':True,
-                'owner':user,
-                'site':Site.objects.get_current(),
-                'separator':separator,
-                'command_prefix':'',
-            }
-        )
-        xform_dict["%s%s" % (keyword_prefix, keyword)] = xform
-
-    for form_key, attributes in xform_fields.items():
-        order = 0
-        form = xform_dict[form_key]
-        for command, field_type, description, required in attributes:
-            xformfield, created = XFormField.objects.get_or_create(
-                command=command,
-                xform=form,
-                defaults={
-                    'order':order,
-                    'field_type':field_type,
-                    'type':field_type,
-                    'name':description,
-                    'description':description,
-                }
-            )
-            if required:
-                xformfieldconstraint, created = XFormFieldConstraint.objects.get_or_create(
-                    field=xformfield,
-                    defaults={
-                        'type':'req_val',
-                         'message':("Expected %s, none provided." % description)
-                    }
-            )
-            order = order + 1
-    return xform_dict
