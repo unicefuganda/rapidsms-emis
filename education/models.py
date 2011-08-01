@@ -87,7 +87,7 @@ def emis_autoreg(**kwargs):
     name_poll = script.steps.get(order=6).poll
 
     if not connection.contact:
-            connection.contact = Contact.objects.create()
+            connection.contact = EmisReporter.objects.create()
             connection.save
     contact = connection.contact
 
@@ -124,8 +124,8 @@ def emis_autoreg(**kwargs):
         reporting_school = School.objects.get(name=school_name, \
                                             location__name=find_best_response(session, subounty_poll), \
                                             location__type='sub_county')
-
-    EmisReporter.objects.create(pk=contact.pk, school=reporting_school)
+        contact.school = reporting_school
+        contact.save()
 
     # Now that you have their roll, they should be signed up for the periodic polling
     _schedule_monthly_script(group, connection, 'emis_abuse', 'last', ['Teachers', 'Head Teachers'])

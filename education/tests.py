@@ -21,14 +21,14 @@ from education.utils import *
 from rapidsms_httprouter.router import get_router
 from script.signals import script_progress_was_completed, script_progress
 from poll.utils import create_attributes
+from .models import EmisReporter, School
 
 
 class ModelTest(TestCase): #pragma: no cover
 
     def fake_incoming(self, message, connection=None):
         if connection is None:
-            connection = Connection.objects.all()[0]
-
+            connection = self.connection
         router = get_router()
         router.handle_incoming(connection.backend.name, connection.identity, message)
 
@@ -89,14 +89,14 @@ class ModelTest(TestCase): #pragma: no cover
         create_attributes()
         User.objects.get_or_create(username='admin')
         b = Backend.objects.create(name='test')
-        c = Connection.objects.create(identity='8675309', backend=b)
+        self.connection = Connection.objects.create(identity='8675309', backend=b)
         district = LocationType.objects.create(name='district', slug='district')
         subcounty = LocationType.objects.create(name='sub_county', slug='sub_county')
         Location.objects.create(type=district, name='Kampala')
         self.kampala_subcounty = Location.objects.create(type=subcounty, name='Kampala')
         self.gulu_subcounty = Location.objects.create(type=subcounty, name='Gulu')
-        self.gulu_school = School.objects.create(name="St. Mary's", location=gulu)
-        self.kampala_school = School.objects.create(name="St. Mary's", location=kla)
+        self.gulu_school = School.objects.create(name="St. Mary's", location=self.gulu_subcounty)
+        self.kampala_school = School.objects.create(name="St. Mary's", location=self.kampala_subcounty)
 
 
     def fake_script_dialog(self, script_prog, connection, responses):
@@ -107,7 +107,7 @@ class ModelTest(TestCase): #pragma: no cover
             poll.process_response(self.spoof_incoming_obj(resp))
             resp = poll.responses.all()[0]
             ScriptResponse.objects.create(session=ss, response=resp)
-        script_progress_was_completed.send(connection=conn, sender=script_prog)
+        script_progress_was_completed.send(connection=connection, sender=script_prog)
         return ss
 
     def testBasicAutoReg(self):
@@ -116,7 +116,7 @@ class ModelTest(TestCase): #pragma: no cover
         script_prog = ScriptProgress.objects.all()[0]
         self.assertEquals(script_prog.script.slug, 'emis_autoreg')
 
-        self.fake_script_dialog(script, conn, [\
+        self.fake_script_dialog(script_prog, self.connection, [\
             ('emis_role', 'teacher'), \
             ('emis_district', 'kampala'), \
             ('emis_subcounty', 'kampala'), \
@@ -126,7 +126,7 @@ class ModelTest(TestCase): #pragma: no cover
         self.assertEquals(EmisReporter.objects.count(), 1)
         contact = EmisReporter.objects.all()[0]
         self.assertEquals(contact.name, 'Testy Mctesterton')
-        self.assertEquals(contact.reporting_location, kampala_subcounty)
+        self.assertEquals(contact.reporting_location, self.kampala_subcounty)
         self.assertEquals(contact.school, self.kampala_school)
         self.assertEquals(contact.groups.all()[0].name, 'Teachers')
 
