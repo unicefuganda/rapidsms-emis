@@ -235,11 +235,11 @@ def emis_autoreg_transition(**kwargs):
         'emis_many_school':['GEM'],
     }
     skipped = True
-    while skipped:
+    while group and skipped:
         skipped = False
         for step_name, roles in skipsteps.items():
-            if  progress.step.poll and group and \
-                progress.step.poll.name == step_name and role.name not in roles:
+            if  progress.step.poll and \
+                progress.step.poll.name == step_name and group.name not in roles:
                 skipped = True
                 progress.step = progress.script.steps.get(order=progress.step.order + 1)
                 progress.save()
@@ -273,8 +273,6 @@ def xform_received_handler(sender, **kwargs):
         submission.save()
         pass
 
-    else:
-        pass
 
 
 Poll.register_poll_type('date', 'Date Response', parse_date_value, db_type=Attribute.TYPE_OBJECT)
@@ -285,8 +283,8 @@ XFormField.register_field_type('emisdate', 'Date', parse_date,
 XFormField.register_field_type('emisbool', 'YesNo', parse_date,
                                db_type=XFormField.TYPE_INT, xforms_type='integer')
 
-post_syncdb.connect(init_structures, weak=True)
+post_syncdb.connect(init_structures, weak=False)
 script_progress_was_completed.connect(emis_autoreg, weak=False)
 script_progress_was_completed.connect(emis_reschedule_script, weak=False)
 script_progress.connect(emis_autoreg_transition, weak=False)
-xform_received.connect(xform_received_handler, weak=True)
+xform_received.connect(xform_received_handler, weak=False)
