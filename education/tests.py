@@ -88,8 +88,8 @@ class ModelTest(TestCase): #pragma: no cover
         init_scripts(None)
         create_attributes()
         User.objects.get_or_create(username='admin')
-        b = Backend.objects.create(name='test')
-        self.connection = Connection.objects.create(identity='8675309', backend=b)
+        self.backend = Backend.objects.create(name='test')
+        self.connection = Connection.objects.create(identity='8675309', backend=self.backend)
         district = LocationType.objects.create(name='district', slug='district')
         subcounty = LocationType.objects.create(name='sub_county', slug='sub_county')
         Location.objects.create(type=district, name='Kampala')
@@ -99,7 +99,7 @@ class ModelTest(TestCase): #pragma: no cover
         self.kampala_school = School.objects.create(name="St. Mary's", location=self.kampala_subcounty)
 
 
-    def fake_script_dialog(self, script_prog, connection, responses):
+    def fake_script_dialog(self, script_prog, connection, responses, emit_signal=True):
         script = script_prog.script
         ss = ScriptSession.objects.create(script=script, connection=connection, start_time=datetime.datetime.now())
         for poll_name, resp in responses:
@@ -107,7 +107,8 @@ class ModelTest(TestCase): #pragma: no cover
             poll.process_response(self.spoof_incoming_obj(resp))
             resp = poll.responses.all()[0]
             ScriptResponse.objects.create(session=ss, response=resp)
-        script_progress_was_completed.send(connection=connection, sender=script_prog)
+        if emit_signal:
+            script_progress_was_completed.send(connection=connection, sender=script_prog)
         return ss
 
     def testBasicAutoReg(self):
@@ -143,9 +144,61 @@ class ModelTest(TestCase): #pragma: no cover
         pass
 
 
+    def assertScriptSkips(self, connection, role, initial_question, final_question):
+        connection = Connection.objects.create(identity=connection, backend=self.backend)
+        script = Script.objects.get(slug='emis_autoreg')
+        script_prog = ScriptProgress.objects.create(script=script, connection=connection, step=script.steps.get(poll__name=initial_question), status='C', num_tries=1)
+        script_prog.set_time(datetime.datetime.now() - datetime.timedelta(1))
+        self.fake_script_dialog(script_prog, connection, [\
+            ('emis_role', role)
+        ], emit_signal=False)
+        check_progress(connection)
+        script_prog = ScriptProgress.objects.get(connection=connection)
+        self.assertEquals(script_prog.step.poll.name, final_question)
+
+
     def testAutoRegTransitions(self):
-        pass
+        self.assertScriptSkips('8675310', 'deo', 'emis_district', 'emis_name')
+        self.assertScriptSkips('8675311', 'cct', 'emis_district', 'emis_name')
+        self.assertScriptSkips('8675312', 'district officials', 'emis_district', 'emis_name')
+
+        self.assertScriptSkips('8675313', 'gem', 'emis_district', 'emis_subcounty')
+        self.assertScriptSkips('8675314', 'smc', 'emis_district', 'emis_subcounty')
+        self.assertScriptSkips('8675315', 'head teachers', 'emis_district', 'emis_subcounty')
+        self.assertScriptSkips('8675316', 'teachers', 'emis_district', 'emis_subcounty')
+
+        self.assertScriptSkips('8675317', 'gem', 'emis_subcounty', 'emis_many_school')
+
+        self.assertScriptSkips('8675318', 'teachers', 'emis_subcounty', 'emis_one_school')
+        self.assertScriptSkips('8675319', 'head teachers', 'emis_subcounty', 'emis_one_school')
+        self.assertScriptSkips('8675320', 'smc', 'emis_subcounty', 'emis_one_school')
+
+
+    def assertXFormAdvancedScript(self, message, completed_step, advance=True):
+        self.fake_incoming(message)
+        script_prog = ScriptProgress.objects.all()[0]
+        self.assertEquals(script_prog.step.order, completed_step)
+        self.assertEquals(script_prog.status, 'C')
+        # advance to next step
+        if advance:
+            script_prog.step = script_prog.script.steps.get(order=completed_step + 1)
+            script_prog.status = 'P'
+            script_prog.save()
 
     def testOtherScriptHandlers(self):
-        pass
+        # fake that this connection has already gone through autoreg
+        contact = Contact.objects.create(name='Testy McTesterton')
+        self.connection.contact = contact
+        self.connection.save()
+
+        script = Script.objects.get(slug='emis_annual')
+        script_prog = ScriptProgress.objects.create(script=script, connection=self.connection, step=script.steps.get(order=0), status='P')
+
+        self.assertXFormAdvancedScript('classrooms 2 2 3 3 4 4 5', 0)
+        self.assertXFormAdvancedScript('classroomsused 2 2 3 3 4 4 5', 1)
+        self.assertXFormAdvancedScript('latrines g 20 b 26 f 7 m 9', 2)
+        self.assertXFormAdvancedScript('latrinesused g 20 b 26 f 7 m 9', 3)
+        self.assertXFormAdvancedScript('deploy f 2 m 4', 4)
+        self.assertXFormAdvancedScript('enrolledb 200 200 30 45 89 90 23', 5)
+        self.assertXFormAdvancedScript('enrolledg 300 120 80 67 43 12 5', 6, False)
 
