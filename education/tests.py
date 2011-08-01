@@ -92,7 +92,7 @@ class ModelTest(TestCase): #pragma: no cover
         self.connection = Connection.objects.create(identity='8675309', backend=b)
         district = LocationType.objects.create(name='district', slug='district')
         subcounty = LocationType.objects.create(name='sub_county', slug='sub_county')
-        Location.objects.create(type=district, name='Kampala')
+        self.kampala_district = Location.objects.create(type=district, name='Kampala')
         self.kampala_subcounty = Location.objects.create(type=subcounty, name='Kampala')
         self.gulu_subcounty = Location.objects.create(type=subcounty, name='Gulu')
         self.gulu_school = School.objects.create(name="St. Mary's", location=self.gulu_subcounty)
@@ -134,13 +134,38 @@ class ModelTest(TestCase): #pragma: no cover
         """
         Crummy answers
         """
-        pass
+        self.fake_incoming('join')
+        script_prog = ScriptProgress.objects.all()[0]
+        self.fake_script_dialog(script_prog, self.connection, [\
+            ('emis_role', 'bodaboda'), \
+            ('emis_district', 'kampala'), \
+            ('emis_subcounty', 'amudat'), \
+            ('emis_one_school', 'st. mary\'s'), \
+            ('emis_name', 'bad tester'), \
+        ])
+        self.assertEquals(EmisReporter.objects.count(), 1)
+        contact = EmisReporter.objects.all()[0]
+        self.assertEquals(contact.groups.all()[0].name, 'Other EMIS Reporters')
+        self.assertEquals(contact.reporting_location, self.kampala_district)
+        self.assertEquals(contact.school, self.kampala_school)
 
     def testAutoReg2(self):
         pass
 
     def testAutoRegNoSubcounty(self):
-        pass
+
+        self.fake_incoming('join')
+        script_prog = ScriptProgress.objects.all()[0]
+        self.fake_script_dialog(script_prog, self.connection, [\
+            ('emis_role', 'teacher'), \
+            ('emis_district', 'kampala'), \
+            ('emis_one_school', 'st. mary\'s'), \
+            ('emis_name', 'no subcounty tester'), \
+        ])
+        self.assertEquals(EmisReporter.objects.count(), 1)
+        contact = EmisReporter.objects.all()[0]
+        self.assertEquals(contact.reporting_location, self.kampala_district)
+        self.assertEquals(contact.school, self.kampala_school)
 
 
     def testAutoRegTransitions(self):
