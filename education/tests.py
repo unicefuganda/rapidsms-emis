@@ -91,28 +91,30 @@ class ModelTest(TestCase): #pragma: no cover
         b = Backend.objects.create(name='test')
         c = Connection.objects.create(identity='8675309', backend=b)
         district = LocationType.objects.create(name='district', slug='district')
-        subcounty = LocationType.objects.create(name='subcounty', slug='sub_county')
+        subcounty = LocationType.objects.create(name='sub_county', slug='sub_county')
         Location.objects.create(type=district, name='Kampala')
-        Location.objects.create(type=subcounty, name='Kampala')
+        self.kampala_subcounty = Location.objects.create(type=subcounty, name='Kampala')
+        self.gulu_subcounty = Location.objects.create(type=subcounty, name='Gulu')
+        self.gulu_school = School.objects.create(name="St. Mary's", location=gulu)
+        self.kampala_school = School.objects.create(name="St. Mary's", location=kla)
 
 
-    def fake_script_dialog(self, script, connection, responses):
+    def fake_script_dialog(self, script_prog, connection, responses):
+        script = script_prog.script
         ss = ScriptSession.objects.create(script=script, connection=connection, start_time=datetime.datetime.now())
         for poll_name, resp in responses:
             poll = script.steps.get(poll__name=poll_name).poll
             poll.process_response(self.spoof_incoming_obj(resp))
             resp = poll.responses.all()[0]
             ScriptResponse.objects.create(session=ss, response=resp)
+        script_progress_was_completed.send(connection=conn, sender=script_prog)
         return ss
 
-    def testAutoReg(self):
-        conn = Connection.objects.get(identity='8675309')
-        script = Script.objects.get(slug='emis_autoreg')
-
-        self.fake_incoming('join', conn)
+    def testBasicAutoReg(self):
+        self.fake_incoming('join')
         self.assertEquals(ScriptProgress.objects.count(), 1)
         script_prog = ScriptProgress.objects.all()[0]
-        self.assertEquals(script_prog.script, script)
+        self.assertEquals(script_prog.script.slug, 'emis_autoreg')
 
         self.fake_script_dialog(script, conn, [\
             ('emis_role', 'teacher'), \
@@ -121,25 +123,29 @@ class ModelTest(TestCase): #pragma: no cover
             ('emis_one_school', 'st. marys'), \
             ('emis_name', 'testy mctesterton'), \
         ])
-        script_progress_was_completed.send(connection=conn, sender=script_prog)
-        self.assertEquals(Contact.objects.count(), 1)
-        contact = Contact.objects.all()[0]
+        self.assertEquals(EmisReporter.objects.count(), 1)
+        contact = EmisReporter.objects.all()[0]
         self.assertEquals(contact.name, 'Testy Mctesterton')
-        kla = Location.objects.get(type__name='sub_county', name='Kampala')
-        self.assertEquals(contact.reporting_location, kla)
+        self.assertEquals(contact.reporting_location, kampala_subcounty)
+        self.assertEquals(contact.school, self.kampala_school)
+        self.assertEquals(contact.groups.all()[0].name, 'Teachers')
 
-
-    def testACT(self):
+    def testBadAutoReg(self):
+        """
+        Crummy answers
+        """
         pass
-#        s = self.fake_incoming('act 1, 2, 3, 4, 5, 6, 7, 8, 9, 10')
-#        self.assertEquals(s.eav.act_yellow_disp, 1)
 
-
-    def testResponses(self):
+    def testAutoReg2(self):
         pass
-#        self.fake_incoming('+reg David McCann')
 
-
-    def testErrors(self):
+    def testAutoRegNoSubcounty(self):
         pass
-#        self.fakeErrorMessage('+home WA -5')
+
+
+    def testAutoRegTransitions(self):
+        pass
+
+    def testOtherScriptHandlers(self):
+        pass
+

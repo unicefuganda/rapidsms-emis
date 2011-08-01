@@ -14,7 +14,7 @@ from django.conf import settings
 
 
 class School(models.Model):
-    name = models.CharField(max_length=60)
+    name = models.CharField(max_length=160)
     emis_id = models.CharField(max_length=10)
     location = models.ForeignKey(Location)
 
@@ -22,8 +22,7 @@ class School(models.Model):
         return '%s' % self.name
 
 
-class EmisReporter(models.Model):
-    contact = models.ForeignKey(Contact)
+class EmisReporter(Contact):
     school = models.ForeignKey(School, null=True)
 
 
@@ -126,7 +125,7 @@ def emis_autoreg(**kwargs):
                                             location__name=find_best_response(session, subounty_poll), \
                                             location__type='sub_county')
 
-    EmisReporter.objects.create(contact=contact, school=reporting_school)
+    EmisReporter.objects.create(pk=contact.pk, school=reporting_school)
 
     # Now that you have their roll, they should be signed up for the periodic polling
     _schedule_monthly_script(group, connection, 'emis_abuse', 'last', ['Teachers', 'Head Teachers'])
