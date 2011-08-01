@@ -1,0 +1,23 @@
+{% for key, value in report.items %}
+<tr>
+<td>
+    {% if value.diff <= 1%}
+        {{ key }}
+        {% else %}
+        <a href="{% if location_id %}../{% endif %}{{ value.location_id }}/">{{ key }}</a>
+    {% endif %}
+</td>
+<td>{% if value.boys_p1 %} {{ value.boys_p1 }} {% else %} 0 {% endif %}</td>
+<td>{% if value.girls_p1 %} {{ value.girls_p1 }} {% else %} 0 {% endif %}</td>
+<td>{% if value.boys_p2 %} {{ value.boys_p2 }} {% else %} 0 {% endif %}</td>
+<td>{% if value.girls_p2 %} {{ value.girls_p2 }} {% else %} 0 {% endif %}</td>
+<td>{% if value.boys_p4 %} {{ value.boys_p4 }} {% else %} 0 {% endif %}</td>
+<td>{% if value.girls_p4 %} {{ value.girls_p4 }} {% else %} 0 {% endif %}</td>
+<td>{% if value.boys_p7 %} {{ value.boys_p7 }} {% else %} 0 {% endif %}</td>
+<td>{% if value.girls_p7 %} {{ value.girls_p7 }} {% else %} 0 {% endif %}</td>
+<td>{% if value.deploy_m %} {{ value.deploy_m }} {% else %} 0 {% endif %}</td>
+<td>{% if value.deploy_f %} {{ value.deploy_f }} {% else %} 0 {% endif %}</td>
+<td>{% if value.gemabuse_cases %} {{ value.gemabuse_cases }} {% else %} 0 {% endif %}</td>
+<td>{% if value.classrooms_p4 %} {{ value.classrooms_p4 }} {% else %} 0 {% endif %}</td>
+</tr>
+{% endfor %}
