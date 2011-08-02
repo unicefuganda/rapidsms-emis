@@ -79,6 +79,7 @@ def emis_autoreg(**kwargs):
 
     session = ScriptSession.objects.filter(script=progress.script, connection=connection).order_by('-end_time')[0]
     script = progress.script
+
     role_poll = script.steps.get(order=1).poll
     district_poll = script.steps.get(order=2).poll
     subcounty_poll = script.steps.get(order=3).poll
@@ -87,7 +88,8 @@ def emis_autoreg(**kwargs):
     name_poll = script.steps.get(order=6).poll
 
     if not connection.contact:
-            connection.contact = Contact.objects.create()
+#            connection.contact = Contact.objects.create()
+            connection.contact = EmisReporter.objects.create()
             connection.save
     contact = connection.contact
 
@@ -107,8 +109,6 @@ def emis_autoreg(**kwargs):
 
     if subcounty:
         subcounty = find_closest_match(subcounty, Location.objects.filter(type__name='sub_county'))
-    if district:
-        district = find_closest_match(district, Location.objects.filter(type__name='district'))
 
     if subcounty:
         contact.reporting_location = subcounty
@@ -133,14 +133,15 @@ def emis_autoreg(**kwargs):
             reporting_school = find_closest_match(school, School.objects.filter(location__name__in=[subcounty], \
                                                                                 location__type__name='sub_county'), True)
         elif district:
-            reporting_school = find_closest_match(school, School.objects.filter(location__name__in=[district], \
-                                                                            location__type__name='district'))
+            reporting_school = find_closest_match(school, School.objects.filter(location__name__in=[district.name], \
+                                                                            location__type__name='district'), True)
         else:
             reporting_school = find_closest_match(school, School.objects.filter(location__name=Location.tree.root_nodes()[0].name))
-        e = EmisReporter(pk=contact.pk)
-        e.school = reporting_school
-        e.save()
-
+#        e = EmisReporter(pk=contact.pk)
+#        e.school = reporting_school
+#        e.save()
+        contact.school = reporting_school
+        contact.save()
     # Now that you have their roll, they should be signed up for the periodic polling
     _schedule_monthly_script(group, connection, 'emis_abuse', 'last', ['Teachers', 'Head Teachers'])
     _schedule_monthly_script(group, connection, 'emis_meals', 20, ['Teachers', 'Head Teachers'])
