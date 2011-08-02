@@ -194,7 +194,7 @@ def init_xforms_from_tuples(xforms, xform_fields):
                         }
                 )
                 order = order + 1
-        xform_dict[form_key] = form
+            xform_dict[form_key] = form
     return xform_dict
 
 

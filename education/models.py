@@ -227,6 +227,7 @@ def emis_autoreg_transition(**kwargs):
     session = ScriptSession.objects.filter(script=progress.script, connection=connection).order_by('-end_time')[0]
     role_poll = script.steps.get(order=1).poll
     role = find_best_response(session, role_poll)
+    group = None
     if role:
         group = find_closest_match(role, Group.objects)
     skipsteps = {
