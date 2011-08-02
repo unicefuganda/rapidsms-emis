@@ -26,16 +26,9 @@ class DateRangeForm(forms.Form): # pragma: no cover
 AREAS = Location.tree.all().select_related('type')
 
 class SchoolFilterForm(FilterForm):
-    """ filter form for cvs facilities """
-    school = forms.ChoiceField(choices=())
+    """ filter form for emis schools """
+    school = forms.ChoiceField(choices=(('', '-----'), (-1, 'Has No School'),) + tuple(School.objects.values_list('pk', 'name').order_by('name')))
 
-    def __init__(self, data=None, **kwargs):
-        response = kwargs.pop('request')
-        if data:
-            forms.Form.__init__(self, data, **kwargs)
-        else:
-            forms.Form.__init__(self, **kwargs)
-        self.fields['school'].widget.choices = (('', '-----'), (-1, 'Has No School'),) + tuple(School.objects.values_list('pk', 'name').order_by('name'))
 
     def filter(self, request, queryset):
         school_pk = self.cleaned_data['school']
