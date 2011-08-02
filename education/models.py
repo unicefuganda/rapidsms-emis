@@ -99,14 +99,23 @@ def emis_autoreg(**kwargs):
         group = find_closest_match(role, Group.objects)
         if not group:
             group = default_group
-    contact.groups.add(default_group)
+    contact.groups.add(group)
 
 
     subcounty = find_best_response(session, subcounty_poll)
+    district = find_best_response(session, district_poll)
+
     if subcounty:
         subcounty = find_closest_match(subcounty, Location.objects.filter(type__name='sub_county'))
-        if subcounty:
-            contact.reporting_location = subcounty
+    if district:
+        district = find_closest_match(district, Location.objects.filter(type__name='district'))
+
+    if subcounty:
+        contact.reporting_location = subcounty
+    elif district:
+        contact.reporting_location = district
+    else:
+        contact.reporting_location = Location.tree.root_nodes()[0]
 
     name = find_best_response(session, name_poll)
     if name:
@@ -118,12 +127,17 @@ def emis_autoreg(**kwargs):
     contact.save()
 
     reporting_school = None
-    school = find_best_response(session, schools_poll)
+    school = find_best_response(session, school_poll)
     if school:
-        school_name = ' '.join([t.capitalize() for t in school.lower().split()])
-        reporting_school = School.objects.get(name=school_name, \
-                                            location__name=find_best_response(session, subounty_poll), \
-                                            location__type='sub_county')
+        if subcounty:
+            reporting_school = find_closest_match(school, School.objects.filter(location__name__in=[subcounty], \
+                                                                                location__type__name='sub_county'), True)
+        elif district:
+            reporting_school = find_closest_match(school, School.objects.filter(location__name__in=[district], \
+                                                                            location__type__name='district'))
+        else:
+            reporting_school = find_closest_match(school, School.objects.filter(location__name=Location.tree.root_nodes()[0].name))
+
         contact.school = reporting_school
         contact.save()
 

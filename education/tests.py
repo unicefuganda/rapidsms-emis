@@ -90,8 +90,10 @@ class ModelTest(TestCase): #pragma: no cover
         User.objects.get_or_create(username='admin')
         self.backend = Backend.objects.create(name='test')
         self.connection = Connection.objects.create(identity='8675309', backend=self.backend)
+        country = LocationType.objects.create(name='country', slug='country')
         district = LocationType.objects.create(name='district', slug='district')
         subcounty = LocationType.objects.create(name='sub_county', slug='sub_county')
+        self.root_node = Location.objects.create(type=country, name='Uganda')
         self.kampala_district = Location.objects.create(type=district, name='Kampala')
         self.kampala_subcounty = Location.objects.create(type=subcounty, name='Kampala')
         self.gulu_subcounty = Location.objects.create(type=subcounty, name='Gulu')
@@ -141,7 +143,6 @@ class ModelTest(TestCase): #pragma: no cover
             ('emis_role', 'bodaboda'), \
             ('emis_district', 'kampala'), \
             ('emis_subcounty', 'amudat'), \
-            ('emis_one_school', 'st. mary\'s'), \
             ('emis_name', 'bad tester'), \
         ])
         self.assertEquals(EmisReporter.objects.count(), 1)
@@ -150,23 +151,30 @@ class ModelTest(TestCase): #pragma: no cover
         self.assertEquals(contact.reporting_location, self.kampala_district)
         self.assertEquals(contact.school, self.kampala_school)
 
-    def testAutoReg2(self):
-        pass
-
-    def testAutoRegNoSubcounty(self):
+    def testAutoRegNoLocationData(self):
 
         self.fake_incoming('join')
         script_prog = ScriptProgress.objects.all()[0]
         self.fake_script_dialog(script_prog, self.connection, [\
             ('emis_role', 'teacher'), \
-            ('emis_district', 'kampala'), \
-            ('emis_one_school', 'st. mary\'s'), \
-            ('emis_name', 'no subcounty tester'), \
+            ('emis_name', 'no location data tester'), \
         ])
         self.assertEquals(EmisReporter.objects.count(), 1)
         contact = EmisReporter.objects.all()[0]
-        self.assertEquals(contact.reporting_location, self.kampala_district)
-        self.assertEquals(contact.school, self.kampala_school)
+        self.assertEquals(contact.reporting_location, self.root_node)
+
+    def testAutoRegNoRoleNoName(self):
+        self.fake_incoming('join')
+        script_prog = ScriptProgress.objects.all()[0]
+        self.fake_script_dialog(script_prog, self.connection, [\
+            ('emis_district', 'kampala'), \
+            ('emis_subcounty', 'Gul'), \
+            ('emis_one_school', 'St Marys'), \
+        ])
+        contact = EmisReporter.objects.all()[0]
+        self.assertEquals(contact.groups.all()[0].name, 'Other EMIS Reporters')
+        self.assertEquals(contact.reporting_location, self.gulu_subcounty)
+        self.assertEquals(contact.name, 'Anonymous User')
 
 
     def assertScriptSkips(self, connection, role, initial_question, final_question):
