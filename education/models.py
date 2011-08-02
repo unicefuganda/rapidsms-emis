@@ -87,7 +87,7 @@ def emis_autoreg(**kwargs):
     name_poll = script.steps.get(order=6).poll
 
     if not connection.contact:
-            connection.contact = EmisReporter.objects.create()
+            connection.contact = Contact.objects.create()
             connection.save
     contact = connection.contact
 
@@ -137,9 +137,9 @@ def emis_autoreg(**kwargs):
                                                                             location__type__name='district'))
         else:
             reporting_school = find_closest_match(school, School.objects.filter(location__name=Location.tree.root_nodes()[0].name))
-
-        contact.school = reporting_school
-        contact.save()
+        e = EmisReporter(pk=contact.pk)
+        e.school = reporting_school
+        e.save()
 
     # Now that you have their roll, they should be signed up for the periodic polling
     _schedule_monthly_script(group, connection, 'emis_abuse', 'last', ['Teachers', 'Head Teachers'])
