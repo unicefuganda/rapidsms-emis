@@ -1,14 +1,13 @@
 {% extends "generic/partials/partial_header.html" %}
 {% block tablehead %}
 <tr>
-    <td></td>
-    <td colspan="2">P1</td>
-    <td colspan="2">P2</td>
-    <td colspan="2">P4</td>
-    <td colspan="2">P7</td>
-    <td colspan="2">Teachers</td>
-    <td>Abuse</td>
-    <td>Classrooms</td>
+    {% for name, colspan, href in top_columns %}
+        <td colspan="{{ colspan }}">
+            {% if href %}<a href="{{ href }}">{{ name }}</a>{% else %}
+            {{ name }}
+            {% endif %}
+        </td>
+    {% endfor %}
 </tr>
 {{ block.super }}
 {% endblock %}
