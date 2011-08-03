@@ -149,7 +149,6 @@ class ModelTest(TestCase): #pragma: no cover
         contact = EmisReporter.objects.all()[0]
         self.assertEquals(contact.groups.all()[0].name, 'Other EMIS Reporters')
         self.assertEquals(contact.reporting_location, self.kampala_district)
-        self.assertEquals(contact.school, self.kampala_school)
 
     def testAutoRegNoLocationData(self):
 
