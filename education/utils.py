@@ -324,6 +324,9 @@ def init_autoreg(sender, **kwargs):
             start_offset=60,
             giveup_offset=0,
         ))
+        if 'django.contrib.sites' in settings.INSTALLED_APPS:
+            for poll in [role_poll, district_poll, county_poll, school1_poll, schoolmany_poll, name_poll]:
+                poll.sites.add(Site.objects.get_current())
 
 
 def init_scripts(sender, **kwargs):
@@ -365,6 +368,9 @@ def init_scripts(sender, **kwargs):
                     question=poll_info[2], \
                     default_response='', \
                 )
+                if 'django.contrib.sites' in settings.INSTALLED_APPS:
+                    poll.sites.add(Site.objects.get_current())
+
                 if len(poll_info) > 3 and poll_info[3]:
                     poll.add_yesno_categories()
                 script.steps.add(ScriptStep.objects.create(
@@ -495,6 +501,14 @@ def reorganize_location(key, report, report_dict):
         location = dict['location_name']
         report_dict.setdefault(location, {'location_id':dict['location_id'], 'diff':(dict['rght'] - dict['lft'])})
         report_dict[location][key] = dict['value']
+
+
+def flatten_location_list(report_dict):
+    toret = []
+    for location_name, value_dict in report_dict.items():
+        value_dict['location_name'] = location_name
+        toret.append(value_dict)
+    return toret
 
 
 def reorganize_timespan(timespan, report, report_dict, location_list, request=None):

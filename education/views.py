@@ -4,7 +4,7 @@ from django.shortcuts import get_object_or_404
 from rapidsms.contrib.locations.models import Location
 from django.views.decorators.cache import cache_control
 from django.http import HttpResponseRedirect, HttpResponse
-from .utils import total_submissions, total_attribute_value, reorganize_location, reorganize_timespan, GROUP_BY_WEEK, GROUP_BY_MONTH, GROUP_BY_DAY, GROUP_BY_QUARTER, get_group_by
+from .utils import total_submissions, total_attribute_value, reorganize_location, reorganize_timespan, GROUP_BY_WEEK, GROUP_BY_MONTH, GROUP_BY_DAY, GROUP_BY_QUARTER, get_group_by, flatten_location_list
 from education.forms import DateRangeForm
 import datetime
 import time
@@ -29,8 +29,8 @@ def get_dates(request):
             cursor = connection.cursor()
             cursor.execute("select min(created) from rapidsms_xforms_xformsubmission")
             min_date = cursor.fetchone()[0]
-            start_date = form.cleaned_data['start_ts']
-            end_date = form.cleaned_data['end_ts']
+            start_date = form.cleaned_data['start']
+            end_date = form.cleaned_data['end']
             request.session['start_date'] = start_date
             request.session['end_date'] = end_date
     elif request.GET.get('start_date', None) and request.GET.get('end_date', None):
@@ -53,6 +53,41 @@ def get_dates(request):
             end_date = request.session['end_date']
 
     return {'start':start_date, 'end':end_date, 'min':min_date, 'form':form}
+
+
+def report(request):
+    dates = get_dates(request)
+    max_date = datetime.datetime.now()
+
+    location = Location.tree.root_nodes()[0]
+
+    if not location.get_children():
+        return HttpResponse(status=400)
+
+    start_date = dates['start']
+    end_date = dates['end']
+
+    report_dict = SortedDict()
+
+    print str(total_attribute_value('boys_p1', start_date, end_date, location).query)
+
+    for i in [1, 2, 4, 7]:
+        rprt = total_attribute_value('boys_p%d' % i, start_date, end_date, location)
+        reorganize_location('boys_p%d' % i, rprt, report_dict)
+        rprt = total_attribute_value('girls_p%d' % i, start_date, end_date, location)
+        reorganize_location('girls_p%d' % i, rprt, report_dict)
+
+    rprt = total_attribute_value('deploy_m', start_date, end_date, location)
+    reorganize_location('deploy_m', rprt, report_dict)
+    rprt = total_attribute_value('deploy_f', start_date, end_date, location)
+    reorganize_location('deploy_f', rprt, report_dict)
+
+    rprt = total_attribute_value('gemabuse_cases', start_date, end_date, location)
+    reorganize_location('gemabuse_cases', rprt, report_dict)
+
+    rprt = total_attribute_value('classrooms_p4', start_date, end_date, location)
+    reorganize_location('classrooms_p4', rprt, report_dict)
+    return flatten_location_list(report_dict)
 
 
 def index(request, location_id=None):
@@ -136,7 +171,6 @@ def index(request, location_id=None):
         ('reported incidents', '', 1, ''),
         ('total for p4', '', 1, ''),
     )
-
     return render_to_response("education/stats.html",
                               {'report':report_dict,
                                'top_columns':topColumns,
@@ -154,3 +188,4 @@ def index(request, location_id=None):
                                'date_range_form':dates['form'],
                                'page':'stats',
                                 }, context_instance=RequestContext(request))
+

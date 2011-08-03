@@ -1,0 +1,21 @@
+<tr>
+<td>
+    {% if object.diff <= 1%}
+        {{ key }}
+        {% else %}
+        <a href="{% if location_id %}../{% endif %}{{ object.location_id }}/">{{ object.location_name }}</a>
+    {% endif %}
+</td>
+<td>{% if object.boys_p1 %} {{ object.boys_p1 }} {% else %} 0 {% endif %}</td>
+<td>{% if .girls_p1 %} {{ object.girls_p1 }} {% else %} 0 {% endif %}</td>
+<td>{% if object.boys_p2 %} {{ object.boys_p2 }} {% else %} 0 {% endif %}</td>
+<td>{% if object.girls_p2 %} {{ object.girls_p2 }} {% else %} 0 {% endif %}</td>
+<td>{% if object.boys_p4 %} {{ object.boys_p4 }} {% else %} 0 {% endif %}</td>
+<td>{% if object.girls_p4 %} {{ object.girls_p4 }} {% else %} 0 {% endif %}</td>
+<td>{% if object.boys_p7 %} {{ object.boys_p7 }} {% else %} 0 {% endif %}</td>
+<td>{% if object.girls_p7 %} {{ object.girls_p7 }} {% else %} 0 {% endif %}</td>
+<td>{% if object.deploy_m %} {{ object.deploy_m }} {% else %} 0 {% endif %}</td>
+<td>{% if object.deploy_f %} {{ object.deploy_f }} {% else %} 0 {% endif %}</td>
+<td>{% if object.gemabuse_cases %} {{ object.gemabuse_cases }} {% else %} 0 {% endif %}</td>
+<td>{% if object.classrooms_p4 %} {{ object.classrooms_p4 }} {% else %} 0 {% endif %}</td>
+</tr>
