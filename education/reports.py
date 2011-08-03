@@ -31,7 +31,7 @@ class PollResultsColumn(Column):
         self.poll = Poll.objects.get(name=poll_name)
 
     def add_to_report(self, report, key, dictionary):
-        val = self.poll.
+        pass
 
 
 class Report(object):
