@@ -1,12 +1,13 @@
 from django.db.models.signals import post_syncdb
 from django.db import models
+from django.conf import settings
 from rapidsms.models import Contact
 from eav.models import Attribute
 from script.signals import script_progress_was_completed, script_progress
 from script.models import *
 from rapidsms.contrib.locations.models import Location
 from rapidsms_xforms.models import XFormField, XForm, XFormSubmission, dl_distance, xform_received
-from uganda_common.utils import find_best_response, find_closest_match
+from script.utils.handling import find_best_response, find_closest_match
 from .utils import *
 import re
 import calendar
@@ -142,34 +143,35 @@ def emis_autoreg(**kwargs):
 #        e.save()
         contact.school = reporting_school
         contact.save()
-    # Now that you have their roll, they should be signed up for the periodic polling
-    _schedule_monthly_script(group, connection, 'emis_abuse', 'last', ['Teachers', 'Head Teachers'])
-    _schedule_monthly_script(group, connection, 'emis_meals', 20, ['Teachers', 'Head Teachers'])
-    _schedule_monthly_script(group, connection, 'emis_school_administrative', 15, ['Teachers', 'Head Teachers'])
+    if getattr(settings, 'TRAINING_MODE', False):
+        # Now that you have their roll, they should be signed up for the periodic polling
+        _schedule_monthly_script(group, connection, 'emis_abuse', 'last', ['Teachers', 'Head Teachers'])
+        _schedule_monthly_script(group, connection, 'emis_meals', 20, ['Teachers', 'Head Teachers'])
+        _schedule_monthly_script(group, connection, 'emis_school_administrative', 15, ['Teachers', 'Head Teachers'])
 
-    start_of_term = getattr(settings, 'SCHOOL_TERM_START', datetime.datetime.now())
-    if group.name in ['Teachers', 'Head Teachers']:
-        sp = ScriptProgress.objects.create(connection=connection, script=Script.objects.get(slug='emis_annual'))
-        sp.set_time(start_of_term + datetime.timedelta(14))
+        start_of_term = getattr(settings, 'SCHOOL_TERM_START', datetime.datetime.now())
+        if group.name in ['Teachers', 'Head Teachers']:
+            sp = ScriptProgress.objects.create(connection=connection, script=Script.objects.get(slug='emis_annual'))
+            sp.set_time(start_of_term + datetime.timedelta(14))
 
-    _schedule_monthly_script(group, connection, 'emis_smc_monthly', 28, ['SMC'])
+        _schedule_monthly_script(group, connection, 'emis_smc_monthly', 28, ['SMC'])
 
-    holidays = getattr(settings, 'SCHOOL_HOLIDAYS', [])
-    if group.name in ['SMC']:
-        d = datetime.datetime.now()
-        # get the date to a wednesday
-        d = d + datetime.timedelta((2 - d.weekday()) % 7)
-        in_holiday = True
-        while in_holiday:
-            in_holiday = False
-            for start, end in holidays:
-                if d >= start and d <= end:
-                    in_holiday = True
-                    break
-            if in_holiday:
-                d = d + datetime.timedelta(7)
-        sp = ScriptProgress.objects.create(connection=connection, script=Script.objects.get(slug='emis_head teacher presence'))
-        sp.set_time(d)
+        holidays = getattr(settings, 'SCHOOL_HOLIDAYS', [])
+        if group.name in ['SMC']:
+            d = datetime.datetime.now()
+            # get the date to a wednesday
+            d = d + datetime.timedelta((2 - d.weekday()) % 7)
+            in_holiday = True
+            while in_holiday:
+                in_holiday = False
+                for start, end in holidays:
+                    if d >= start and d <= end:
+                        in_holiday = True
+                        break
+                if in_holiday:
+                    d = d + datetime.timedelta(7)
+            sp = ScriptProgress.objects.create(connection=connection, script=Script.objects.get(slug='emis_head teacher presence'))
+            sp.set_time(d)
 
 
 def _schedule_monthly_script(group, connection, script_slug, day_offset, role_names):
@@ -271,23 +273,27 @@ def xform_received_handler(sender, **kwargs):
     if submission.has_errors:
         return
 
-    sp = ScriptProgress.objects.filter(connection=submission.connection, script__slug='emis_annual').order_by('-time')
-    if sp.count():
-        sp = sp[0]
-        if sp.step:
-            for i in range(0, len(keywords)):
-                if xform.keyword == keywords[i] and sp.step.order == i:
-                    sp.status = 'C'
-                    sp.save()
-                    submission.response = "Thank you.  Your data on %s has been received" % xform.keyword
-                    submission.save()
-                    return
-
-    elif xform.keyword in keywords:
-        submission.response = "Please wait to send your data on %s until the appropriate time." % xform.keyword
-        submission.has_errors = True
+    # If not in training mode, make sure the info comes in at the proper time
+    if not getattr(settings, 'TRAINING_MODE', True):
+        sp = ScriptProgress.objects.filter(connection=submission.connection, script__slug='emis_annual').order_by('-time')
+        if sp.count():
+            sp = sp[0]
+            if sp.step:
+                for i in range(0, len(keywords)):
+                    if xform.keyword == keywords[i] and sp.step.order == i:
+                        sp.status = 'C'
+                        sp.save()
+                        submission.response = "Thank you.  Your data on %s has been received" % xform.keyword
+                        submission.save()
+                        return
+        elif xform.keyword in keywords:
+            submission.response = "Please wait to send your data on %s until the appropriate time." % xform.keyword
+            submission.has_errors = True
+            submission.save()
+            pass
+    else:
+        submission.response = "Thank you.  Your data on %s has been received" % xform.keyword
         submission.save()
-        pass
 
 
 

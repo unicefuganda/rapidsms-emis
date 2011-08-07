@@ -51,8 +51,8 @@ XFORM_FIELDS = {
      ],
     'teachers':[
 #                ('date', 'emisdate', 'Date of Attendance Record', True),
-            ('female', 'int', 'Number of female teachers present', True),
-            ('male', 'int', 'Number of male teachers present', True),
+            ('f', 'int', 'Number of female teachers present', True),
+            ('m', 'int', 'Number of male teachers present', True),
      ],
     'classrooms':[
             ('p1', 'int', 'Number of classrooms for P1', True),

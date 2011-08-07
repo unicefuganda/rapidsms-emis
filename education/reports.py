@@ -113,8 +113,8 @@ class Report(object):
 
 
 class MainEmisReport(Report):
-    boys_p1 = XFormAttributeColumn('boys_p3')
-    girls_p3 = XFormAttributeColumn('girls_p1')
+    boys_p3 = XFormAttributeColumn('boys_p3')
+    girls_p3 = XFormAttributeColumn('girls_p3')
 
     boys_p5 = XFormAttributeColumn('boys_p5')
     girls_p5 = XFormAttributeColumn('girls_p5')

@@ -1,0 +1,13 @@
+{% load dict %}
+<tr>
+<td>
+    {% if object.diff <= 1%}
+        {{ object.location_name }}
+    {% else %}
+        <a href="{% if location_id %}../{% endif %}{{ object.location_id }}/">{{ object.location_name }}</a>
+    {% endif %}
+</td>
+{% for colattr in object_list.columns %}
+<td>{% if object|dict:colattr %}{{ object|dict:colattr }}{% else %}0{% endif %}</td>
+{% endfor %}
+</tr>
