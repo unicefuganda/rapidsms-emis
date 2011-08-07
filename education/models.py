@@ -12,6 +12,7 @@ from .utils import *
 import re
 import calendar
 from django.conf import settings
+import datetime
 
 
 class School(models.Model):
@@ -302,7 +303,7 @@ Poll.register_poll_type('date', 'Date Response', parse_date_value, db_type=Attri
 XFormField.register_field_type('emisdate', 'Date', parse_date,
                                db_type=XFormField.TYPE_INT, xforms_type='integer')
 
-XFormField.register_field_type('emisbool', 'YesNo', parse_date,
+XFormField.register_field_type('emisbool', 'YesNo', parse_yesno,
                                db_type=XFormField.TYPE_INT, xforms_type='integer')
 
 post_syncdb.connect(init_structures, weak=False)
