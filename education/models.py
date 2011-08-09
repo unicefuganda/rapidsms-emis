@@ -144,7 +144,7 @@ def emis_autoreg(**kwargs):
 #        e.save()
         contact.school = reporting_school
         contact.save()
-    if getattr(settings, 'TRAINING_MODE', False):
+    if not getattr(settings, 'TRAINING_MODE', False):
         # Now that you have their roll, they should be signed up for the periodic polling
         _schedule_monthly_script(group, connection, 'emis_abuse', 'last', ['Teachers', 'Head Teachers'])
         _schedule_monthly_script(group, connection, 'emis_meals', 20, ['Teachers', 'Head Teachers'])
@@ -171,7 +171,7 @@ def emis_autoreg(**kwargs):
                         break
                 if in_holiday:
                     d = d + datetime.timedelta(7)
-            sp = ScriptProgress.objects.create(connection=connection, script=Script.objects.get(slug='emis_head teacher presence'))
+            sp = ScriptProgress.objects.create(connection=connection, script=Script.objects.get(slug='emis_head_teacher_presence'))
             sp.set_time(d)
 
 
