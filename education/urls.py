@@ -9,6 +9,7 @@ from .sorters import LatestSubmissionSorter
 from rapidsms_xforms.models import XForm, XFormSubmission
 from rapidsms_httprouter.models import Message
 from .models import EmisReporter
+from rapidsms.contrib.locations.models import Location
 from contact.forms import FreeSearchTextForm, DistictFilterMessageForm, HandledByForm, ReplyTextForm
 from .reports import MainEmisReport, ClassRoomReport
 
@@ -80,7 +81,6 @@ urlpatterns = patterns('',
         'needs_date':True,
         'dates':get_dates,
     }, name='stats'),
-
 
     url(r'^emis/stats/classroom/$', generic, {
         'model':XFormSubmission,

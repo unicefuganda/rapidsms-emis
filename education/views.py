@@ -1,20 +1,9 @@
-from django.shortcuts import render_to_response
+from django.db import connection
 from django.template import RequestContext
-from django.shortcuts import get_object_or_404
-from rapidsms.contrib.locations.models import Location
-from django.views.decorators.cache import cache_control
-from django.http import HttpResponseRedirect, HttpResponse
-from .utils import total_submissions, total_attribute_value, reorganize_location, reorganize_timespan, GROUP_BY_WEEK, GROUP_BY_MONTH, GROUP_BY_DAY, GROUP_BY_QUARTER, get_group_by, flatten_location_list
 from education.forms import DateRangeForm
 import datetime
-import time
-from django.utils.datastructures import SortedDict
-from rapidsms_xforms.models import XFormSubmission, XFormSubmissionValue
-from rapidsms.models import Contact
 import re
-from django.utils.safestring import mark_safe
-from django.db.models import Count, Sum
-from django.db import connection
+import time
 
 Num_REG = re.compile('\d+')
 
