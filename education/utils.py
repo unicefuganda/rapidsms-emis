@@ -107,12 +107,12 @@ XFORM_FIELDS = {
             ('p7', 'int', 'Number of girls enrolled in P7', True),
      ],
     'gemabuse':[
-            ('schoolcode', 'text', 'School Code', True),
             ('cases', 'int', 'Number of Abuse Cases Reported', True),
+            ('school', 'text', 'School Code', True),
      ],
     'gemteachers':[
-            ('schoolcode', 'text', 'School Code', True),
             ('htpresent', 'emisbool', 'Head Teacher presense at School at Last Visit', True),
+            ('school', 'text', 'School Code', True),
      ],
 }
 
