@@ -13,7 +13,7 @@ from rapidsms.contrib.locations.models import Location, LocationType
 import datetime
 from rapidsms.models import Connection, Backend, Contact
 from rapidsms.messages.incoming import IncomingMessage
-from rapidsms_xforms.models import XForm
+from rapidsms_xforms.models import XForm, XFormSubmission
 from django.conf import settings
 from script.utils.outgoing import check_progress
 from script.models import Script, ScriptProgress, ScriptSession, ScriptResponse
@@ -46,7 +46,7 @@ class ModelTest(TestCase): #pragma: no cover
         self.assertEquals(s.response, expected_response)
 
 
-    def fake_submission(message, connection=None):
+    def fake_submission(self, message, connection=None):
         form = XForm.find_form(message)
         if connection is None:
             try:
@@ -233,4 +233,14 @@ class ModelTest(TestCase): #pragma: no cover
         self.assertXFormAdvancedScript('deploy f 2 m 4', 4)
         self.assertXFormAdvancedScript('enrolledb 200 200 30 45 89 90 23', 5)
         self.assertXFormAdvancedScript('enrolledg 300 120 80 67 43 12 5', 6, False)
+
+    def testBasicSubmission(self):
+        self.fake_incoming('gemabuse 20 school St Mary')
+        self.assertEquals(XFormSubmission.objects.count(), 1)
+
+    def testGemAbuse(self):
+        s = self.fake_incoming('gemabuse 20 +school St Mary')
+        # test submission parsing
+        self.assertEquals(s.eav.cases, 20)
+        self.assertEquals(s.eav.school, 'St Mary')
 
