@@ -296,7 +296,6 @@ def xform_received_handler(sender, **kwargs):
             submission.save()
             pass
         elif xform.keyword in attendance_keywords:
-#            if xform.keyword in ['boys', 'girls']:
             try:
                 prev_submission = XFormSubmission.objects.filter(xform=xform, connection=submission.connection).order_by('-created')[1]
                 prev_sum = prev_submission.eav_values.aggregate(Sum('value_int'))['value_int__sum']
