@@ -20,6 +20,7 @@ from rapidsms_httprouter.router import get_router
 from script.signals import script_progress_was_completed, script_progress
 from poll.utils import create_attributes
 from .models import EmisReporter, School
+from django.db import connection
 
 
 class ModelTest(TestCase): #pragma: no cover
@@ -77,6 +78,12 @@ class ModelTest(TestCase): #pragma: no cover
             submission = form.process_sms_submission(incomingmessage)
             self.failUnless(submission.has_errors)
         return
+
+    def elapseTime(self, submission, seconds):
+        newtime = submission.created - datetime.timedelta(seconds=seconds)
+        cursor = connection.cursor()
+        cursor.execute("update rapidsms_xforms_xformsubmission set created = '%s' where id = %d" %
+                       (newtime.strftime('%Y-%m-%d %H:%M:%S.%f'), submission.pk))
 
 
     def setUp(self):
@@ -243,4 +250,25 @@ class ModelTest(TestCase): #pragma: no cover
         s = self.fake_incoming('gemabuse 20 school St Mary')
         self.assertEquals(s.eav.gemabuse_cases, 20)
         self.assertEquals(s.eav.gemabuse_school, 'St Mary')
+        self.assertEquals(Message.objects.all().order_by('-date')[0].text, "Thank you. Your data on gemabuse has been received")
+
+    def testAttendanceFeedback(self):
+        s = self.fake_incoming('boys 20, 30, 24, 11, 39, 61, 34')
+        self.assertEquals(s.eav.boys_p2, 30)
+        self.assertEquals(Message.objects.all().order_by('-date')[0].text, "Thank you. Your data on boys has been received")
+        week = 7 * 86400
+        self.elapseTime(XFormSubmission.objects.all().order_by('-created')[0], week)
+        s = self.fake_incoming('boys 25, 29, 27, 30, 15, 61, 34')
+        self.assertEquals(s.eav.boys_p2, 29)
+        perc = (float(sum([20, 30, 24, 11, 39, 61, 34])) / float(sum([25, 29, 27, 30, 15, 61, 34]))) * 100
+        self.assertEquals(Message.objects.all().order_by('-date')[0].text, "Thank you. Attendance for boys is %.1f percent higher than it was last week" % (100.0 - perc))
+
+    def testTeacherAttendance(self):
+        s = self.fake_incoming('teachers f 20, m 11')
+        self.assertEquals(Message.objects.all().order_by('-date')[0].text, "Thank you. Your data on teachers has been received")
+        week = 7 * 86400
+        self.elapseTime(XFormSubmission.objects.all().order_by('-created')[0], week)
+        s = self.fake_incoming('teachers f 5, m 10')
+        perc = (float(sum([5, 10])) / float(sum([20, 11]))) * 100
+        self.assertEquals(Message.objects.all().order_by('-date')[0].text, "Thank you. Attendance for teachers is %.1f percent lower than it was last week" % (100.0 - perc))
 

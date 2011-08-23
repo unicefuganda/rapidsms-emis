@@ -13,6 +13,7 @@ import re
 import calendar
 from django.conf import settings
 import datetime
+from django.db.models import Sum
 
 
 class School(models.Model):
@@ -271,6 +272,8 @@ def xform_received_handler(sender, **kwargs):
     submission_day = getattr(settings, 'EMIS_SUBMISSION_WEEKDAY', 0)
 
     keywords = ['classrooms', 'classroomsused', 'latrines', 'latrinesused', 'deploy', 'enrolledb', 'enrolledg']
+    attendance_keywords = ['boys', 'girls', 'teachers']
+    other_keywords = ['gemabuse', 'gemteachers']
     if submission.has_errors:
         return
 
@@ -292,6 +295,25 @@ def xform_received_handler(sender, **kwargs):
             submission.has_errors = True
             submission.save()
             pass
+        elif xform.keyword in attendance_keywords:
+#            if xform.keyword in ['boys', 'girls']:
+            try:
+                prev_submission = XFormSubmission.objects.filter(xform=xform, connection=submission.connection).order_by('-created')[1]
+                prev_sum = prev_submission.eav_values.aggregate(Sum('value_int'))['value_int__sum']
+                cur_sum = submission.eav_values.aggregate(Sum('value_int'))['value_int__sum']
+                if cur_sum > prev_sum:
+                    perc = float(prev_sum) / float(cur_sum) * 100
+                    submission.response = "Thank you. Attendance for %s is %.1f percent higher than it was last week" % (xform.keyword, (100.0 - perc))
+                elif cur_sum < prev_sum:
+                    perc = float(cur_sum) / float(prev_sum) * 100
+                    submission.response = "Thank you. Attendance for %s is %.1f percent lower than it was last week" % (xform.keyword, (100.0 - perc))
+                else:
+                    submission.response = "Thank you. Your data on %s has been received" % xform.keyword
+            except IndexError:
+                submission.response = "Thank you. Your data on %s has been received" % xform.keyword
+        elif xform.keyword in other_keywords:
+            submission.response = "Thank you. Your data on %s has been received" % xform.keyword
+            submission.save()
     else:
         submission.response = "Thank you.  Your data on %s has been received" % xform.keyword
         submission.save()
