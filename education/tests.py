@@ -6,8 +6,6 @@ from django.test import TestCase
 from django.contrib.auth.models import User, Group
 from rapidsms.messages.incoming import IncomingMessage
 from rapidsms_xforms.models import *
-from cvs.utils import init_xforms
-from healthmodels.models import *
 from rapidsms_httprouter.models import Message
 from rapidsms.contrib.locations.models import Location, LocationType
 import datetime
@@ -31,6 +29,9 @@ class ModelTest(TestCase): #pragma: no cover
             connection = self.connection
         router = get_router()
         router.handle_incoming(connection.backend.name, connection.identity, message)
+        form = XForm.find_form(message)
+        if form:
+            return XFormSubmission.objects.all().order_by('-created')[0]
 
 
     def spoof_incoming_obj(self, message, connection=None):
@@ -239,8 +240,7 @@ class ModelTest(TestCase): #pragma: no cover
         self.assertEquals(XFormSubmission.objects.count(), 1)
 
     def testGemAbuse(self):
-        s = self.fake_incoming('gemabuse 20 +school St Mary')
-        # test submission parsing
-        self.assertEquals(s.eav.cases, 20)
-        self.assertEquals(s.eav.school, 'St Mary')
+        s = self.fake_incoming('gemabuse 20 school St Mary')
+        self.assertEquals(s.eav.gemabuse_cases, 20)
+        self.assertEquals(s.eav.gemabuse_school, 'St Mary')
 
