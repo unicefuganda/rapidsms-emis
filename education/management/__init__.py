@@ -1,17 +1,9 @@
-from django.contrib.auth.models import User, Group
-from rapidsms_xforms.models import XForm, XFormField, XFormFieldConstraint
+from django.db.models.signals import post_syncdb
 from django.conf import settings
 from django.contrib.sites.models import Site
-from poll.models import Poll
-from script.models import Script, ScriptStep
-import traceback
-from rapidsms_xforms.models import XFormSubmission, XFormSubmissionValue
-from django.db.models import Count, Sum
-
-try:
-    from django.contrib.sites import Site
-except ImportError:
-    pass
+from django.contrib.auth.models import User, Group
+from rapidsms_xforms.models import XFormField, XForm, XFormSubmission, dl_distance, xform_received
+from script.models import *
 
 XFORMS = (
     ('', 'boys', ',;:*.\\s"', 'Boys Attendance', 'Weekly Attendance for Boys'),
@@ -116,6 +108,108 @@ XFORM_FIELDS = {
      ],
 }
 
+XFORMS = (
+    ('', 'boys', ',;:*.\\s"', 'Boys Attendance', 'Weekly Attendance for Boys'),
+    ('', 'girls', ',;:*.\\s"', 'Girls Attendance', 'Weekly Attendance for Girls'),
+    ('', 'teachers', ',;:*.\\s"', 'Teachers Attendance', 'Weekly Attendance for Teachers'),
+    ('', 'classrooms', ',;:*.\\s"', 'Classrooms', 'Classrooms at School'),
+    ('', 'classroomsused', ',;:*.\\s"', 'Used Classrooms', 'Classrooms in use at School'),
+    ('', 'latrines', ',;:*.\\s"', 'Latrines', 'Latrines at School'),
+    ('', 'latrinesused', ',;:*.\\s"', 'Used Latrines', 'Latrines in use at School'),
+    ('', 'deploy', ',;:*.\\s"', 'Deployment', 'Teacher Deployment'),
+    ('', 'enrolledb', ',;:*.\\s"', 'Boys Enrolment', 'Number of Boys enrolled at School'),
+    ('', 'enrolledg', ',;:*.\\s"', 'Girls Enrolment', 'Number of Girls enrolled at School'),
+    ('', 'gemabuse', ',;:*.\\s"', 'GEM Abuse Cases', 'Number of abuses happening in Schools reported to GEM'),
+    ('', 'gemteachers', ',;:*.\\s"', 'GEM Teacher Attendance', 'Number of Head Teacher presence at School based on last Visit'),
+)
+
+XFORM_FIELDS = {
+    'boys':[
+#                ('date', 'emisdate', 'Date of Attendance Record', True),
+            ('p1', 'int', 'Number of boys in P1', True),
+            ('p2', 'int', 'Number of boys in P2', True),
+            ('p3', 'int', 'Number of boys in P3', True),
+            ('p4', 'int', 'Number of boys in P4', True),
+            ('p5', 'int', 'Number of boys in P5', True),
+            ('p6', 'int', 'Number of boys in P6', True),
+            ('p7', 'int', 'Number of boys in P7', True),
+     ],
+    'girls':[
+#                ('date', 'emisdate', 'Date of Attendance Record', True),
+            ('p1', 'int', 'Number of girls in P1', True),
+            ('p2', 'int', 'Number of girls in P2', True),
+            ('p3', 'int', 'Number of girls in P3', True),
+            ('p4', 'int', 'Number of girls in P4', True),
+            ('p5', 'int', 'Number of girls in P5', True),
+            ('p6', 'int', 'Number of girls in P6', True),
+            ('p7', 'int', 'Number of girls in P7', True),
+     ],
+    'teachers':[
+#                ('date', 'emisdate', 'Date of Attendance Record', True),
+            ('f', 'int', 'Number of female teachers present', True),
+            ('m', 'int', 'Number of male teachers present', True),
+     ],
+    'classrooms':[
+            ('p1', 'int', 'Number of classrooms for P1', True),
+            ('p2', 'int', 'Number of classrooms for P2', True),
+            ('p3', 'int', 'Number of classrooms for P3', True),
+            ('p4', 'int', 'Number of classrooms for P4', True),
+            ('p5', 'int', 'Number of classrooms for P5', True),
+            ('p6', 'int', 'Number of classrooms for P6', True),
+            ('p7', 'int', 'Number of classrooms for P7', True),
+     ],
+    'classroomsused':[
+            ('p1', 'int', 'Number of classrooms in use for P1', True),
+            ('p2', 'int', 'Number of classrooms in use for P2', True),
+            ('p3', 'int', 'Number of classrooms in use for P3', True),
+            ('p4', 'int', 'Number of classrooms in use for P4', True),
+            ('p5', 'int', 'Number of classrooms in use for P5', True),
+            ('p6', 'int', 'Number of classrooms in use for P6', True),
+            ('p7', 'int', 'Number of classrooms in use for P7', True),
+     ],
+    'latrines':[
+            ('g', 'int', 'Number of Latrines for Girls', True),
+            ('b', 'int', 'Number of Latrines for Boys', True),
+            ('f', 'int', 'Number of Latries for Female Teachers', True),
+            ('m', 'int', 'Number of Latries for Female Teachers', True),
+     ],
+    'latrinesused':[
+            ('g', 'int', 'Number of Latrines for Girls', True),
+            ('b', 'int', 'Number of Latrines for Boys', True),
+            ('f', 'int', 'Number of Latries for Female Teachers', True),
+            ('m', 'int', 'Number of Latries for Male Teachers', True),
+     ],
+    'deploy':[
+            ('f', 'int', 'Number of Female Teachers Deployed', True),
+            ('m', 'int', 'Number of Male Teachers Deployed', True),
+     ],
+    'enrolledb':[
+            ('p1', 'int', 'Number of boys enrolled in P1', True),
+            ('p2', 'int', 'Number of boys enrolled in P2', True),
+            ('p3', 'int', 'Number of boys enrolled in P3', True),
+            ('p4', 'int', 'Number of boys enrolled in P4', True),
+            ('p5', 'int', 'Number of boys enrolled in P5', True),
+            ('p6', 'int', 'Number of boys enrolled in P6', True),
+            ('p7', 'int', 'Number of boys enrolled in P7', True),
+     ],
+    'enrolledg':[
+            ('p1', 'int', 'Number of girls enrolled in P1', True),
+            ('p2', 'int', 'Number of girls enrolled in P2', True),
+            ('p3', 'int', 'Number of girls enrolled in P3', True),
+            ('p4', 'int', 'Number of girls enrolled in P4', True),
+            ('p5', 'int', 'Number of girls enrolled in P5', True),
+            ('p6', 'int', 'Number of girls enrolled in P6', True),
+            ('p7', 'int', 'Number of girls enrolled in P7', True),
+     ],
+    'gemabuse':[
+            ('cases', 'int', 'Number of Abuse Cases Reported', True),
+            ('school', 'text', 'School Code', True),
+     ],
+    'gemteachers':[
+            ('htpresent', 'emisbool', 'Head Teacher presense at School at Last Visit', True),
+            ('school', 'text', 'School Code', True),
+     ],
+}
 
 models_created = []
 structures_initialized = False
@@ -142,14 +236,12 @@ def init_structures(sender, **kwargs):
         init_scripts(sender)
         structures_initialized = True
 
-
 def init_groups():
     for g in ['Teachers', 'Head Teachers', 'SMC', 'GEM', 'CCT', 'DEO', 'District Officials', 'Other EMIS Reporters']:
         Group.objects.get_or_create(name=g)
 
 def init_xforms(sender, **kwargs):
     init_xforms_from_tuples(XFORMS, XFORM_FIELDS)
-
 
 def init_xforms_from_tuples(xforms, xform_fields):
     user, created = User.objects.get_or_create(username='admin')
@@ -196,7 +288,6 @@ def init_xforms_from_tuples(xforms, xform_fields):
                 order = order + 1
             xform_dict[form_key] = form
     return xform_dict
-
 
 def init_autoreg(sender, **kwargs):
     script, created = Script.objects.get_or_create(
@@ -328,7 +419,6 @@ def init_autoreg(sender, **kwargs):
             for poll in [role_poll, district_poll, county_poll, school1_poll, schoolmany_poll, name_poll]:
                 poll.sites.add(Site.objects.get_current())
 
-
 def init_scripts(sender, **kwargs):
     simple_scripts = {
         'abuse':[(Poll.TYPE_NUMERIC, 'emis_abuse', 'How many abuse cases were recorded in the record book this month?')],
@@ -385,4 +475,4 @@ def init_scripts(sender, **kwargs):
                 ))
                 step = step + 1
 
-
+post_syncdb.connect(init_structures, weak=False)

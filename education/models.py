@@ -1,4 +1,3 @@
-from django.db.models.signals import post_syncdb
 from django.db import models
 from django.conf import settings
 from rapidsms.models import Contact
@@ -14,6 +13,7 @@ import calendar
 from django.conf import settings
 import datetime
 from django.db.models import Sum
+
 
 
 class School(models.Model):
@@ -327,7 +327,6 @@ XFormField.register_field_type('emisdate', 'Date', parse_date,
 XFormField.register_field_type('emisbool', 'YesNo', parse_yesno,
                                db_type=XFormField.TYPE_INT, xforms_type='integer')
 
-post_syncdb.connect(init_structures, weak=False)
 script_progress_was_completed.connect(emis_autoreg, weak=False)
 script_progress_was_completed.connect(emis_reschedule_script, weak=False)
 script_progress.connect(emis_autoreg_transition, weak=False)
