@@ -126,3 +126,11 @@ div.module {
 .filter_form_help {
     display:none;
 }
+
+#div_add_contact {
+    background-color:#efefef;
+    border:0px;
+    border-collapse:collapse;
+    font-weight:bold;
+    padding: 15px;
+}

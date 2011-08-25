@@ -1,5 +1,6 @@
 from django.conf.urls.defaults import *
-from .views import get_dates
+from uganda_common.utils import get_dates
+from .views import *
 from django.conf.urls.defaults import *
 from generic.views import generic, generic_row, generic_dashboard, generic_map
 from generic.sorters import SimpleSorter, TupleSorter
@@ -37,6 +38,7 @@ urlpatterns = patterns('',
       'action_forms':[MassTextForm],
       'objects_per_page':25,
       'partial_row':'education/partials/reporter_row.html',
+      'partial_header':'education/partials/partial_header.html',
       'base_template':'education/contacts_base.html',
       'results_title':'Reporters',
       'columns':[('Name', True, 'name', SimpleSorter()),
@@ -120,5 +122,8 @@ urlpatterns = patterns('',
         'base_template':'generic/timeslider_base.html',
         'needs_date':True,
         'dates':get_dates,
-    })
+    }),
+    url(r'^emis/whitelist/', whitelist),
+    url(r'^connections/add/', add_connection),
+    url(r'^connections/(\d+)/delete/', delete_connection),
 )

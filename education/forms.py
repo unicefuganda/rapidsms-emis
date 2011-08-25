@@ -38,3 +38,7 @@ class SchoolFilterForm(FilterForm):
             return queryset.filter(school=None)
         else:
             return queryset.filter(school=school_pk)
+
+class NewConnectionForm(forms.Form):
+    identity = forms.CharField(max_length=15, required=True, label="Primary contact information")
+
