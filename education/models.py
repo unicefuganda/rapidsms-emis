@@ -7,12 +7,15 @@ from script.models import *
 from rapidsms.contrib.locations.models import Location
 from rapidsms_xforms.models import XFormField, XForm, XFormSubmission, dl_distance, xform_received
 from script.utils.handling import find_best_response, find_closest_match
-from .utils import *
+#from .utils import *
 import re
 import calendar
 from django.conf import settings
 import datetime
+import time
 from django.db.models import Sum
+from django.forms import ValidationError
+from django.contrib.auth.models import Group
 
 
 
@@ -43,17 +46,17 @@ def parse_date_value(value):
         date_expr5 = re.compile(r"\d{2,4}-\d{1,2}-\d{1,2}")
 
         if date_expr.match(value):
-            dt_obj = datetime.strptime(date_str, "%d %b %Y")
+            dt_obj = datetime.datetime.strptime(value, "%d %b %Y")
         elif date_expr1.match(value):
-            dt_obj = datetime.strptime(value, "%d-%m-%Y")
+            dt_obj = datetime.datetime.strptime(value, "%d-%m-%Y")
         elif date_expr2.match(value):
-            dt_obj = datetime.strptime(value, "%d/%m/%Y")
+            dt_obj = datetime.datetime.strptime(value, "%d/%m/%Y")
         elif date_expr3.match(value):
-            dt_obj = datetime.strptime(value, "%d.%m.%Y")
+            dt_obj = datetime.datetime.strptime(value, "%d.%m.%Y")
         elif date_expr4.match(value):
-            dt_obj = datetime.strptime(value, "%Y.%m.%d")
+            dt_obj = datetime.datetime.strptime(value, "%Y.%m.%d")
         else:
-            dt_obj = datetime.strptime(value, "%Y-%m-%d")
+            dt_obj = datetime.datetime.strptime(value, "%Y-%m-%d")
 
     except ValueError:
         raise ValidationError("Expected date format "
