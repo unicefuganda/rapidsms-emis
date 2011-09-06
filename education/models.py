@@ -200,10 +200,10 @@ def _schedule_monthly_script(group, connection, script_slug, day_offset, role_na
 def emis_reschedule_script(**kwargs):
     connection = kwargs['connection']
     progress = kwargs['sender']
-    group = connection.contact.groups.all()[0]
     slug = progress.script.slug
-    if not progress.script.slug.startswith('emis_'):
+    if not progress.script.slug.startswith('emis_') or progress.script.slug == 'emis_autoreg':
         return
+    group = connection.contact.groups.all()[0]
     if slug == 'emis_abuse':
         _schedule_monthly_script(group, connection, 'emis_abuse', 'last', ['Teachers', 'Head Teachers'])
     elif slug == 'emis_meals':
