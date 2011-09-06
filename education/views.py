@@ -31,7 +31,7 @@ def index(request):
 def whitelist(request):
     return render_to_response(
     "education/whitelist.txt",
-    {'connections': Connection.objects.filter(contact__in=Contact.objects.all()).distinct()},
+    {'connections': Connection.objects.all()},
     mimetype="text/plain",
     context_instance=RequestContext(request))
 
