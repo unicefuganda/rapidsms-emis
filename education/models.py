@@ -246,7 +246,10 @@ def emis_autoreg_transition(**kwargs):
     if not progress.script.slug == 'emis_autoreg':
         return
     script = progress.script
-    session = ScriptSession.objects.filter(script=progress.script, connection=connection).order_by('-end_time')[0]
+    try:
+        session = ScriptSession.objects.filter(script=progress.script, connection=connection, end_time=None).latest('start_time')
+    except ScriptSession.DoesNotExist:
+        return
     role_poll = script.steps.get(order=1).poll
     role = find_best_response(session, role_poll)
     group = None
