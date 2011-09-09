@@ -221,8 +221,6 @@ def init_structures(sender, **kwargs):
     required_models = ['eav.models', 'rapidsms_xforms.models', 'poll.models', 'script.models', 'django.contrib.auth.models']
     if 'django.contrib.sites' in settings.INSTALLED_APPS:
         required_models.append('django.contrib.sites.models')
-    if 'authsites' in settings.INSTALLED_APPS:
-        required_models.append('authsites.models')
     for required in required_models:
         if required not in models_created:
             return
@@ -447,8 +445,7 @@ def init_scripts(sender, **kwargs):
             slug="emis_%s" % script_name.lower().replace(' ', '_'), defaults={
             'name':"Education monitoring %s script" % script_name})
         if created:
-            if 'django.contrib.sites' in settings.INSTALLED_APPS:
-                script.sites.add(Site.objects.get_current())
+            script.sites.add(Site.objects.get_current())
             step = 0
             for poll_info in polls:
                 poll = Poll.objects.create(
@@ -458,8 +455,7 @@ def init_scripts(sender, **kwargs):
                     question=poll_info[2], \
                     default_response='', \
                 )
-                if 'django.contrib.sites' in settings.INSTALLED_APPS:
-                    poll.sites.add(Site.objects.get_current())
+                poll.sites.add(Site.objects.get_current())
 
                 if len(poll_info) > 3 and poll_info[3]:
                     poll.add_yesno_categories()
