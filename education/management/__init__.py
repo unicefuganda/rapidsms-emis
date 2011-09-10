@@ -2,7 +2,7 @@ from django.db.models.signals import post_syncdb
 from django.conf import settings
 from django.contrib.sites.models import Site
 from django.contrib.auth.models import User, Group
-from rapidsms_xforms.models import XFormField, XForm, XFormSubmission, dl_distance, xform_received
+from rapidsms_xforms.models import XFormField, XForm, XFormSubmission, dl_distance, xform_received, XFormFieldConstraint
 from script.models import *
 
 XFORMS = (
