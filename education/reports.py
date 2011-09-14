@@ -1,8 +1,11 @@
+from django.conf import settings
 from django.db.models import Count
 from generic.reports import Column, Report
+from generic.utils import flatten_list
 from rapidsms.contrib.locations.models import Location
+from rapidsms_xforms.models import XFormSubmissionValue
 from uganda_common.reports import XFormSubmissionColumn, XFormAttributeColumn, PollNumericResultsColumn, PollCategoryResultsColumn, LocationReport
-from uganda_common.utils import total_submissions, reorganize_location, total_attribute_value
+from uganda_common.utils import total_submissions, reorganize_location, total_attribute_value, get_location_for_user
 
 GRADES = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7']
 
@@ -28,6 +31,77 @@ class AverageAttributeBySchoolColumn(Column):
         for rdict in val:
             rdict['value'] = rdict['value'] / Location.objects.get(pk=rdict['location_id']).get_descendants(include_self=True).aggregate(Count('schools'))['schools__count']
         reorganize_location(key, val, dictionary)
+
+
+class AverageWeeklyTotalRatioColumn(Column):
+
+
+
+    def __init__(self, weekly_attrib, total_attrib):
+        self.weekly_attrib = weekly_attrib
+        self.total_attrib = total_attrib
+
+    def add_to_report(self, report, key, dictionary):
+        top_val = XFormSubmissionValue.objects.exclude(submission__has_errors=True)\
+            .exclude(submission__connection__contact=None)\
+            .filter(created__range=(report.start_date, report.end_date))\
+            .filter(attribute__slug__in=self.weekly_attrib)\
+            .values('submission__connection__contact__emisreporter__school__name')\
+            .annotate(Sum('value_int'))
+
+
+        bottom_val = XFormSubmissionValue.objects.exclude(submission__has_errors=True)\
+            .exclude(submission__connection__contact=None)\
+            .filter(created__range=(report.start_date, report.end_date))\
+            .filter(attribute__slug__in=self.total_attrib)\
+            .values('submission__connection__contact__emisreporter__school__name')\
+            .annotate(Sum('value_int'))
+
+        td = report.start_date - report.end_date
+        holidays = getattr(settings, 'SCHOOL_HOLIDAYS', [])
+        for start, end in holidays:
+            if start > report.start_date and end < report.end_date:
+                td -= (end - start)
+
+        num_weeks = td.days / 7
+        val = []
+        for rdict in top_val:
+            rdict['value'] = (rdict['value'] / (bottom_val * num_weeks))
+            val.append(rdict)
+
+        reorganize_location(key, val, dictionary)
+
+
+class SchoolReport(Report):
+    def __init__(self, request, dates):
+        try:
+            self.location = get_location_for_user(request.user)
+        except:
+            pass
+        if self.location is None:
+            self.location = Location.tree.root_nodes()[0]
+        Report.__init__(self, request, dates)
+
+
+class DatelessSchoolReport(Report):
+    def __init__(self, request=None, dates=None):
+        try:
+            self.location = get_location_for_user(request.user)
+        except:
+            pass
+        if self.location is None:
+            self.location = Location.tree.root_nodes()[0]
+
+        self.report = {} #SortedDict()
+        self.columns = []
+        column_classes = Column.__subclasses__()
+        for attrname in dir(self):
+            val = getattr(self, attrname)
+            if type(val) in column_classes:
+                self.columns.append(attrname)
+                val.add_to_report(self, attrname, self.report)
+
+        self.report = flatten_list(self.report)
 
 
 class MainEmisReport(LocationReport):
