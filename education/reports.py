@@ -71,6 +71,8 @@ class AverageWeeklyTotalRatioColumn(Column):
             if start > report.start_date and end < report.end_date:
                 td -= (end - start)
 
+        #FIXME : line 78 has a bug, both vals need to return school id and bottom_val needs
+        # to be looked up properly
         num_weeks = td.days / 7
         val = []
         for rdict in top_val:
