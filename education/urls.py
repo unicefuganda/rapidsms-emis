@@ -1,6 +1,5 @@
 from django.conf.urls.defaults import *
-from uganda_common.utils import get_dates
-from .views import *
+from .views import get_dates, index, whitelist, add_connection, delete_connection
 from django.conf.urls.defaults import *
 from generic.views import generic, generic_row, generic_dashboard, generic_map
 from generic.sorters import SimpleSorter, TupleSorter
@@ -12,7 +11,7 @@ from rapidsms_httprouter.models import Message
 from .models import EmisReporter
 from rapidsms.contrib.locations.models import Location
 from contact.forms import FreeSearchTextForm, DistictFilterMessageForm, HandledByForm, ReplyTextForm
-from .reports import MainEmisReport, ClassRoomReport
+from .reports import MainEmisReport, ClassRoomReport, DashBoardReport
 
 urlpatterns = patterns('',
    url(r'^emis/messagelog/$', generic, {
@@ -123,6 +122,26 @@ urlpatterns = patterns('',
         'needs_date':True,
         'dates':get_dates,
     }),
+    url(r'^$', generic, {
+        'model':XFormSubmission,
+        'queryset':DashBoardReport,
+        'selectable':False,
+        'paginated':False,
+        'results_title':None,
+        'columns':[
+            ('', False, '', None),
+            ('pupil attendance', False, '', None),
+            ('teacher attendance', False, '', None),
+            ('total enrollment', False, '', None),
+            ('teacher deployment', False, '', None),
+            ('abuse cases', False, '', None),
+        ],
+        'partial_row':'education/partials/report_row.html',
+        'partial_header':'education/partials/partial_header.html',
+        'base_template':'generic/timeslider_base.html',
+        'needs_date':True,
+        'dates':get_dates,
+    }, name='rapidsms-dashboard'),
     url(r'^emis/whitelist/', whitelist),
     url(r'^connections/add/', add_connection),
     url(r'^connections/(\d+)/delete/', delete_connection),

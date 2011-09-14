@@ -1,5 +1,6 @@
 from uganda_common.reports import XFormSubmissionColumn, XFormAttributeColumn, PollNumericResultsColumn, PollCategoryResultsColumn, LocationReport
 
+GRADES = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7']
 
 class MainEmisReport(LocationReport):
     boys_p3 = XFormAttributeColumn('boys_p3')
@@ -35,3 +36,10 @@ class ClassRoomReport(LocationReport):
 
     classrooms_p7 = XFormAttributeColumn('classrooms_p7')
     classroomsused_p7 = XFormAttributeColumn('classroomsused_p7')
+
+class DashBoardReport(LocationReport):
+    pupil_attendance = XFormAttributeColumn((["boys_%s" % g for g in GRADES] + ["girls_%s" % g for g in GRADES]))
+    teacher_attendance = XFormAttributeColumn("gemteachers_htpresent")
+    total_enrollment = XFormAttributeColumn((["enrolledb_%s" % g for g in GRADES] + ["enrolledg_%s" % g for g in GRADES]))
+    teacher_deployment = XFormAttributeColumn(["deploy_m", "deploy_g"])
+    abuse = XFormAttributeColumn("gemabuse_cases")

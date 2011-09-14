@@ -1,5 +1,5 @@
 #from django.db import connection
-from .forms import NewConnectionForm
+from .forms import NewConnectionForm, DateRangeForm
 from .models import *
 from django.conf import settings, settings, settings
 from django.contrib.auth.decorators import login_required, login_required
@@ -80,6 +80,23 @@ def delete_connection(request, connection_id):
     connection.delete()
     _reload_whitelists()
     return render_to_response("education/partials/connection_view.html", {'object':connection.contact }, context_instance=RequestContext(request))
+
+
+def get_dates(request):
+    """
+    Process date variables from POST
+    """
+    if request.POST:
+
+        form = DateRangeForm(request.POST)
+        if form.is_valid():
+            min_date = datetime.datetime.now() - datetime.timedelta(365)
+            start_date = form.cleaned_data['start']
+            end_date = form.cleaned_data['end']
+            request.session['start_date'] = start_date
+            request.session['end_date'] = end_date
+            return {'start':start_date, 'end':end_date, 'min':min_date, 'form':form}
+    return {}
 
 
 
