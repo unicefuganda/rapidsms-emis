@@ -1,6 +1,36 @@
+from django.db.models import Count
+from generic.reports import Column, Report
+from rapidsms.contrib.locations.models import Location
 from uganda_common.reports import XFormSubmissionColumn, XFormAttributeColumn, PollNumericResultsColumn, PollCategoryResultsColumn, LocationReport
+from uganda_common.utils import total_submissions, reorganize_location, total_attribute_value
+
 
 GRADES = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7']
+
+
+class AverageSubmissionBySchoolColumn(Column):
+    def __init__(self, keyword, extra_filters=None):
+        self.keyword = keyword
+        self.extra_filters = extra_filters
+
+    def add_to_report(self, report, key, dictionary):
+        val = total_submissions(self.keyword, report.start_date, report.end_date, report.location, self.extra_filters)
+        for rdict in val:
+            rdict['value'] = rdict['value'] / Location.objects.get(pk=rdict['location_id']).get_descendants(include_self=True).aggregate(Count('schools'))['schools__count']
+        reorganize_location(key, val, dictionary)
+
+
+class AverageAttributeBySchoolColumn(Column):
+    def __init__(self, keyword, extra_filters=None):
+        self.keyword = keyword
+        self.extra_filters = extra_filters
+
+    def add_to_report(self, report, key, dictionary):
+        val = total_attribute_value(self.keyword, report.start_date, report.end_date, report.location, self.extra_filters)
+        for rdict in val:
+            rdict['value'] = rdict['value'] / Location.objects.get(pk=rdict['location_id']).get_descendants(include_self=True).aggregate(Count('schools'))['schools__count']
+        reorganize_location(key, val, dictionary)
+
 
 class MainEmisReport(LocationReport):
     boys_p3 = XFormAttributeColumn('boys_p3')
