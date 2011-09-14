@@ -1,17 +1,16 @@
-from django.conf.urls.defaults import *
-from .views import get_dates, index, whitelist, add_connection, delete_connection
-from django.conf.urls.defaults import *
-from generic.views import generic, generic_row, generic_dashboard, generic_map
-from generic.sorters import SimpleSorter, TupleSorter
-from contact.forms import FreeSearchForm, DistictFilterForm, MassTextForm
 from .forms import SchoolFilterForm
-from .sorters import LatestSubmissionSorter
-from rapidsms_xforms.models import XForm, XFormSubmission
-from rapidsms_httprouter.models import Message
 from .models import EmisReporter
-from rapidsms.contrib.locations.models import Location
-from contact.forms import FreeSearchTextForm, DistictFilterMessageForm, HandledByForm, ReplyTextForm
 from .reports import MainEmisReport, ClassRoomReport, DashBoardReport
+from .sorters import LatestSubmissionSorter
+from .views import whitelist, add_connection, delete_connection
+from contact.forms import FreeSearchForm, DistictFilterForm, MassTextForm, \
+    FreeSearchTextForm, DistictFilterMessageForm, HandledByForm, ReplyTextForm
+from django.conf.urls.defaults import patterns, url
+from generic.sorters import SimpleSorter
+from generic.views import generic
+from rapidsms_httprouter.models import Message
+from rapidsms_xforms.models import XFormSubmission
+from uganda_common.utils import get_xform_dates
 
 urlpatterns = patterns('',
    url(r'^emis/messagelog/$', generic, {
@@ -80,7 +79,7 @@ urlpatterns = patterns('',
         'partial_header':'education/partials/partial_header.html',
         'base_template':'generic/timeslider_base.html',
         'needs_date':True,
-        'dates':get_dates,
+        'dates':get_xform_dates,
     }, name='stats'),
 
     url(r'^emis/stats/classroom/$', generic, {
@@ -120,7 +119,7 @@ urlpatterns = patterns('',
         'partial_header':'education/partials/partial_header.html',
         'base_template':'generic/timeslider_base.html',
         'needs_date':True,
-        'dates':get_dates,
+        'dates':get_xform_dates,
     }),
     url(r'^$', generic, {
         'model':XFormSubmission,
@@ -140,7 +139,7 @@ urlpatterns = patterns('',
         'partial_header':'education/partials/partial_header.html',
         'base_template':'generic/timeslider_base.html',
         'needs_date':True,
-        'dates':get_dates,
+        'dates':get_xform_dates,
     }, name='rapidsms-dashboard'),
     url(r'^emis/whitelist/', whitelist),
     url(r'^connections/add/', add_connection),

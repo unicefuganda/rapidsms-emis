@@ -16,7 +16,7 @@ from django.views.decorators.http import require_GET, require_POST, require_GET,
 from poll.models import Poll, ResponseCategory, Response
 from rapidsms.models import Connection, Contact, Contact, Connection
 from rapidsms_httprouter.models import Message
-from uganda_common.utils import get_dates, assign_backend
+from uganda_common.utils import get_xform_dates, assign_backend
 from urllib2 import urlopen, urlopen
 import datetime
 import datetime
@@ -80,23 +80,5 @@ def delete_connection(request, connection_id):
     connection.delete()
     _reload_whitelists()
     return render_to_response("education/partials/connection_view.html", {'object':connection.contact }, context_instance=RequestContext(request))
-
-
-def get_dates(request):
-    """
-    Process date variables from POST
-    """
-    if request.POST:
-
-        form = DateRangeForm(request.POST)
-        if form.is_valid():
-            min_date = datetime.datetime.now() - datetime.timedelta(365)
-            start_date = form.cleaned_data['start']
-            end_date = form.cleaned_data['end']
-            request.session['start_date'] = start_date
-            request.session['end_date'] = end_date
-            return {'start':start_date, 'end':end_date, 'min':min_date, 'form':form}
-    return {}
-
 
 
