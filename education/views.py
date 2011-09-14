@@ -1,5 +1,5 @@
 #from django.db import connection
-from .forms import NewConnectionForm
+from .forms import NewConnectionForm, DateRangeForm
 from .models import *
 from django.conf import settings, settings, settings
 from django.contrib.auth.decorators import login_required, login_required
@@ -16,7 +16,7 @@ from django.views.decorators.http import require_GET, require_POST, require_GET,
 from poll.models import Poll, ResponseCategory, Response
 from rapidsms.models import Connection, Contact, Contact, Connection
 from rapidsms_httprouter.models import Message
-from uganda_common.utils import get_dates, assign_backend
+from uganda_common.utils import get_xform_dates, assign_backend
 from urllib2 import urlopen, urlopen
 import datetime
 import datetime
@@ -80,6 +80,5 @@ def delete_connection(request, connection_id):
     connection.delete()
     _reload_whitelists()
     return render_to_response("education/partials/connection_view.html", {'object':connection.contact }, context_instance=RequestContext(request))
-
 
 

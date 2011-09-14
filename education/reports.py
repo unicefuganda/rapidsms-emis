@@ -71,6 +71,7 @@ class DashBoardReport(LocationReport):
     total_enrollment = XFormAttributeColumn((["enrolledb_%s" % g for g in GRADES] + ["enrolledg_%s" % g for g in GRADES]))
     teacher_deployment = XFormAttributeColumn(["deploy_m", "deploy_g"])
     abuse = XFormAttributeColumn("gemabuse_cases")
+<<<<<<< HEAD
 
 class AttendanceReport(LocationReport):
     boys = XFormAttributeColumn(["boys_%s" % g for g in GRADES])
@@ -96,3 +97,5 @@ class EnrollmentReport(LocationReport):
 class AbuseReport(LocationReport):
     gem_abuse = XFormAttributeColumn("gemabuse_cases")
 #    ht_abuse = XFormAttributeColumn("htabuse_cases")
+== == == =
+>>>>>>> e8742947f0aa3d2eaa098fbda94b934fba45190a

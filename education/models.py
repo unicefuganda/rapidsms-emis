@@ -22,7 +22,7 @@ from django.contrib.auth.models import Group
 class School(models.Model):
     name = models.CharField(max_length=160)
     emis_id = models.CharField(max_length=10)
-    location = models.ForeignKey(Location)
+    location = models.ForeignKey(Location, related_name='schools')
 
     def __unicode__(self):
         return '%s' % self.name
