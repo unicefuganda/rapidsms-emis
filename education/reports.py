@@ -22,6 +22,14 @@ class AverageSubmissionBySchoolColumn(Column):
 
 
 class AverageAttributeBySchoolColumn(Column):
+    """
+    This divides the total number of an indicator (such as, boys weekly attendance) by:
+    [the number of non-holiday weeks in the date range * the total of another indicator
+    (for instance, boys yearly enrollment)].
+    
+    This gives you the % expected for two indicators, one that is reported on weekly
+    and the other which is a fixed total number.
+    """
     def __init__(self, keyword, extra_filters=None):
         self.keyword = keyword
         self.extra_filters = extra_filters
