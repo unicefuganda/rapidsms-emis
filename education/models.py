@@ -94,9 +94,9 @@ def emis_autoreg(**kwargs):
     name_poll = script.steps.get(order=6).poll
 
     if not connection.contact:
-#            connection.contact = Contact.objects.create()
-            connection.contact = EmisReporter.objects.create()
-            connection.save
+#        connection.contact = Contact.objects.create()
+        connection.contact = EmisReporter.objects.create()
+        connection.save()
     contact = connection.contact
 
     role = find_best_response(session, role_poll)
