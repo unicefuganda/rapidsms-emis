@@ -1,15 +1,50 @@
 from django.conf import settings
-from django.db.models import Count
+from django.db.models import Count, Sum
 from generic.reports import Column, Report
 from generic.utils import flatten_list
 from rapidsms.contrib.locations.models import Location
 from rapidsms_xforms.models import XFormSubmissionValue
 from uganda_common.reports import XFormSubmissionColumn, XFormAttributeColumn, PollNumericResultsColumn, PollCategoryResultsColumn, LocationReport
 from uganda_common.utils import total_submissions, reorganize_location, total_attribute_value, get_location_for_user
+from uganda_common.utils import reorganize_dictionary
 
 GRADES = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7']
 
-class AverageSubmissionBySchoolColumn(Column):
+class SchoolMixin(object):
+    SCHOOL_ID = 'submission__connection__contact__emisreporter__school__pk'
+    SCHOOL_NAME = 'submission__connection__contact__emisreporter__school__name'
+
+    def total_attribute_by_school(self, report, keyword):
+        return XFormSubmissionValue.objects.exclude(submission__has_errors=True)\
+            .exclude(submission__connection__contact=None)\
+            .filter(created__range=(report.start_date, report.end_date))\
+            .filter(attribute__slug__in=keyword)\
+            .filter(submission__connection__contact__emisreporter__school__location__in=report.location.get_descendants(include_self=True).all())\
+            .values(self.SCHOOL_NAME,
+                    self.SCHOOL_ID)\
+            .annotate(Sum('value_int'))
+
+    def total_dateless_attribute_by_school(self, report, keyword):
+        return XFormSubmissionValue.objects.exclude(submission__has_errors=True)\
+            .exclude(submission__connection__contact=None)\
+            .filter(attribute__slug__in=keyword)\
+            .filter(submission__connection__contact__emisreporter__school__location__in=report.location.get_descendants(include_self=True).all())\
+            .values(self.SCHOOL_NAME,
+                    self.SCHOOL_ID)\
+            .annotate(Sum('value_int'))
+
+
+    def num_weeks(self, report):
+        td = report.end_date - report.start_date
+        holidays = getattr(settings, 'SCHOOL_HOLIDAYS', [])
+        for start, end in holidays:
+            if start > report.start_date and end < report.end_date:
+                td -= (end - start)
+
+        return td.days / 7
+
+
+class AverageSubmissionBySchoolColumn(Column, SchoolMixin):
     def __init__(self, keyword, extra_filters=None):
         self.keyword = keyword
         self.extra_filters = extra_filters
@@ -21,7 +56,36 @@ class AverageSubmissionBySchoolColumn(Column):
         reorganize_location(key, val, dictionary)
 
 
-class AverageAttributeBySchoolColumn(Column):
+class TotalAttributeBySchoolColumn(Column, SchoolMixin):
+
+    def __init__(self, keyword, extra_filters=None):
+        if type(keyword) != list:
+            keyword = [keyword]
+        self.keyword = keyword
+        self.extra_filters = extra_filters
+
+    def add_to_report(self, report, key, dictionary):
+        val = self.total_attribute_by_school(report, self.keyword)
+        reorganize_dictionary(key, val, dictionary, self.SCHOOL_ID, self.SCHOOL_NAME, 'value_int__sum')
+
+
+class WeeklyAttributeBySchoolColumn(Column, SchoolMixin):
+
+    def __init__(self, keyword, extra_filters=None):
+        if type(keyword) != list:
+            keyword = [keyword]
+        self.keyword = keyword
+        self.extra_filters = extra_filters
+
+    def add_to_report(self, report, key, dictionary):
+        val = self.total_attribute_by_school(report, self.keyword)
+        num_weeks = self.num_weeks(report)
+        for rdict in val:
+            rdict['value_int__sum'] /= num_weeks
+        reorganize_dictionary(key, val, dictionary, self.SCHOOL_ID, self.SCHOOL_NAME, 'value_int__sum')
+
+
+class AverageWeeklyTotalRatioColumn(Column, SchoolMixin):
     """
     This divides the total number of an indicator (such as, boys weekly attendance) by:
     [the number of non-holiday weeks in the date range * the total of another indicator
@@ -30,59 +94,32 @@ class AverageAttributeBySchoolColumn(Column):
     This gives you the % expected for two indicators, one that is reported on weekly
     and the other which is a fixed total number.
     """
-    def __init__(self, keyword, extra_filters=None):
-        self.keyword = keyword
-        self.extra_filters = extra_filters
-
-    def add_to_report(self, report, key, dictionary):
-        val = total_attribute_value(self.keyword, report.start_date, report.end_date, report.location, self.extra_filters)
-        for rdict in val:
-            rdict['value'] = rdict['value'] / Location.objects.get(pk=rdict['location_id']).get_descendants(include_self=True).aggregate(Count('schools'))['schools__count']
-        reorganize_location(key, val, dictionary)
-
-
-class AverageWeeklyTotalRatioColumn(Column):
-
-
-
     def __init__(self, weekly_attrib, total_attrib):
+        if type(weekly_attrib) != list:
+            weekly_attrib = [weekly_attrib]
+        if type(total_attrib) != list:
+            total_attrib = [total_attrib]
         self.weekly_attrib = weekly_attrib
         self.total_attrib = total_attrib
 
     def add_to_report(self, report, key, dictionary):
-        top_val = XFormSubmissionValue.objects.exclude(submission__has_errors=True)\
-            .exclude(submission__connection__contact=None)\
-            .filter(created__range=(report.start_date, report.end_date))\
-            .filter(attribute__slug__in=self.weekly_attrib)\
-            .values('submission__connection__contact__emisreporter__school__name')\
-            .annotate(Sum('value_int'))
+        top_val = self.total_attribute_by_school(report, self.weekly_attrib)
+        bottom_val = self.total_dateless_attribute_by_school(report, self.total_attrib)
+        num_weeks = self.num_weeks(report)
 
-
-        bottom_val = XFormSubmissionValue.objects.exclude(submission__has_errors=True)\
-            .exclude(submission__connection__contact=None)\
-            .filter(created__range=(report.start_date, report.end_date))\
-            .filter(attribute__slug__in=self.total_attrib)\
-            .values('submission__connection__contact__emisreporter__school__name')\
-            .annotate(Sum('value_int'))
-
-        td = report.start_date - report.end_date
-        holidays = getattr(settings, 'SCHOOL_HOLIDAYS', [])
-        for start, end in holidays:
-            if start > report.start_date and end < report.end_date:
-                td -= (end - start)
-
-        #FIXME : line 78 has a bug, both vals need to return school id and bottom_val needs
-        # to be looked up properly
-        num_weeks = td.days / 7
+        bottom_dict = {}
+        reorganize_dictionary('bottom', bottom_val, bottom_dict, self.SCHOOL_ID, self.SCHOOL_NAME, 'value_int__sum')
         val = []
         for rdict in top_val:
-            rdict['value'] = (rdict['value'] / (bottom_val * num_weeks))
-            val.append(rdict)
+            if rdict[self.SCHOOL_ID] in bottom_dict:
+                rdict['value_int__sum'] = (float(rdict['value_int__sum']) / (bottom_dict[rdict[self.SCHOOL_ID]]['bottom'] * num_weeks)) * 100
+                val.append(rdict)
 
-        reorganize_location(key, val, dictionary)
+        reorganize_dictionary(key, val, dictionary, self.SCHOOL_ID, self.SCHOOL_NAME, 'value_int__sum')
 
 
 class SchoolReport(Report):
+
     def __init__(self, request, dates):
         try:
             self.location = get_location_for_user(request.user)
@@ -112,6 +149,17 @@ class DatelessSchoolReport(Report):
                 val.add_to_report(self, attrname, self.report)
 
         self.report = flatten_list(self.report)
+
+
+class DavidsAttendanceReport(SchoolReport):
+    boys = WeeklyAttributeBySchoolColumn(["boys_%s" % g for g in GRADES])
+    girls = WeeklyAttributeBySchoolColumn(["girls_%s" % g for g in GRADES])
+    total_students = WeeklyAttributeBySchoolColumn((["girls_%s" % g for g in GRADES] + ["boys_%s" % g for g in GRADES]))
+    percentage_students = AverageWeeklyTotalRatioColumn((["girls_%s" % g for g in GRADES] + ["boys_%s" % g for g in GRADES]), (["enrolledg_%s" % g for g in GRADES] + ["enrolledb_%s" % g for g in GRADES]))
+    male_teachers = WeeklyAttributeBySchoolColumn("teachers_m")
+    female_teachers = WeeklyAttributeBySchoolColumn("teachers_f")
+    total_teachers = WeeklyAttributeBySchoolColumn(["teachers_f", "teachers_m"])
+    percentage_teacher = AverageWeeklyTotalRatioColumn(["teachers_f", "teachers_m"], ["deploy_f", "deploy_m"])
 
 
 class MainEmisReport(LocationReport):
@@ -167,7 +215,7 @@ class AttendanceReport(LocationReport):
 
 class HtAttendanceReport(LocationReport):
     htattendance = XFormAttributeColumn("gemteachers_htpresent")
-    htdeployment = TotalSchools()
+#    htdeployment = TotalSchools()
 #    htpercentage = HtPercentage()
 
 class EnrollmentReport(LocationReport):

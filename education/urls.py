@@ -11,6 +11,7 @@ from generic.views import generic
 from rapidsms_httprouter.models import Message
 from rapidsms_xforms.models import XFormSubmission
 from uganda_common.utils import get_xform_dates
+from .reports import DavidsAttendanceReport
 
 urlpatterns = patterns('',
    url(r'^emis/messagelog/$', generic, {
@@ -49,6 +50,34 @@ urlpatterns = patterns('',
                  ('Location', True, 'location__name', SimpleSorter(),),
                  ('', False, '', None,)],
     }, name="emis-contact"),
+    url(r'^emis/david/$', generic, {
+        'model':XFormSubmission,
+        'queryset':DavidsAttendanceReport,
+        'selectable':False,
+        'paginated':False,
+        'results_title':None,
+        'top_columns':[
+            ('', 1, None),
+            ('student weekly attendance', 4, None),
+            ('teacher weekly attendance', 4, None),
+        ],
+        'columns':[
+            ('', False, '', None),
+            ('boys', False, 'boys', None),
+            ('girls', False, 'girls', None),
+            ('total', False, 'total_students', None),
+            ('% of enrolled', False, 'percentage_students', None),
+            ('males', False, 'male_teachers', None),
+            ('females', False, 'female_teachers', None),
+            ('total', False, 'total_teachers', None),
+            ('% of deployed', False, 'percentage_teacher', None),
+        ],
+        'partial_row':'education/partials/school_report_row.html',
+        'partial_header':'education/partials/partial_header.html',
+        'base_template':'generic/timeslider_base.html',
+        'needs_date':True,
+        'dates':get_xform_dates,
+    }, name='attendance-stats'),
     url(r'^emis/stats/$', generic, {
         'model':XFormSubmission,
         'queryset':MainEmisReport,
