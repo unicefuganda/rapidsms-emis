@@ -17,6 +17,7 @@ from poll.models import Poll, ResponseCategory, Response
 from rapidsms.models import Connection, Contact, Contact, Connection
 from rapidsms_httprouter.models import Message
 from uganda_common.utils import get_xform_dates, assign_backend
+from .reports import attendance_stats, enrollment_stats, headteacher_attendance_stats
 from urllib2 import urlopen, urlopen
 import datetime
 import datetime
@@ -27,6 +28,14 @@ Num_REG = re.compile('\d+')
 
 def index(request):
     return render_to_response("education/index.html", {}, RequestContext(request))
+
+def deo_dashboard(request):
+    print enrollment_stats(request)
+    return render_to_response("education/deo_dashboard.html", {\
+                                'attendance_stats':attendance_stats(request), \
+                                'enrollment_stats':enrollment_stats(request), \
+                                'headteacher_attendance_stats':headteacher_attendance_stats(request), \
+                                }, RequestContext(request))
 
 def whitelist(request):
     return render_to_response(

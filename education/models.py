@@ -94,9 +94,9 @@ def emis_autoreg(**kwargs):
     name_poll = script.steps.get(order=6).poll
 
     if not connection.contact:
-#            connection.contact = Contact.objects.create()
-            connection.contact = EmisReporter.objects.create()
-            connection.save
+#        connection.contact = Contact.objects.create()
+        connection.contact = EmisReporter.objects.create()
+        connection.save()
     contact = connection.contact
 
     role = find_best_response(session, role_poll)
@@ -205,6 +205,10 @@ def emis_reschedule_script(**kwargs):
     progress = kwargs['sender']
     slug = progress.script.slug
     if not progress.script.slug.startswith('emis_') or progress.script.slug == 'emis_autoreg':
+        return
+    if not connection.contact:
+        return
+    if not connection.contact.groups.count():
         return
     group = connection.contact.groups.all()[0]
     if slug == 'emis_abuse':

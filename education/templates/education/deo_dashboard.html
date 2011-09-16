@@ -1,0 +1,55 @@
+{% extends "education/index.html" %}
+{% load humanize %}
+{% block content %}
+		<p>
+	        <table width="100%" cellspacing="0" cellpadding="0">
+	        	<tr>
+	        		<td colspan={{ attendance_stats.stats|length }} class="stat"><span class="stats">Latest Attendance Statistics</span><span class="dates">Dates: {{ attendance_stats.dates.start|date:"m/d/Y" }} - {{ attendance_stats.dates.end|date:"m/d/Y" }}</span></td>
+	        	</tr>
+	        	<tr>
+	        		{% for cat, num in attendance_stats.stats %}
+	        			<td class="qt-head">{{ cat|title }}</td>
+	        		{% endfor %}
+	        	</tr>
+	        	<tr>
+	        		{% for cat, num in attendance_stats.stats %}
+	        			<td class="qt-body">{{ num|default_if_none:'-'|intcomma }}</td>
+	        		{% endfor %}
+	        	</tr>
+	        </table>
+        </p>
+        <p>
+	        <table width="100%" cellspacing="0" cellpadding="0">
+	        	<tr>
+	        		<td colspan={{ enrollment_stats.stats|length }} class="stat"><span class="stats">Latest Enrollment & Deployment Statistics</span><span class="dates">Dates: {{ enrollment_stats.dates.start|date:"m/d/Y" }} - {{ enrollment_stats.dates.end|date:"m/d/Y" }}</span></td>
+	        	</tr>
+	        	<tr>
+	        		{% for cat, num in enrollment_stats.stats %}
+	        			<td class="qt-head">{{ cat|title }}</td>
+	        		{% endfor %}
+	        	</tr>
+	        	<tr>
+	        		{% for cat, num in enrollment_stats.stats %}
+	        			<td class="qt-body">{{ num|default_if_none:'-'|intcomma }}</td>
+	        		{% endfor %}
+	        	</tr>
+	        </table>
+        </p>
+        <p>
+	        <table width="100%" cellspacing="0" cellpadding="0">
+	        	<tr>
+	        		<td colspan={{ headteacher_attendance_stats.stats|length }} class="stat"><span class="stats">Head Teacher Attendance & Deployment</span><span class="dates">Dates: {{ headteacher_attendance_stats.dates.start|date:"m/d/Y" }} - {{ headteacher_attendance_stats.dates.end|date:"m/d/Y" }}</span></td>
+	        	</tr>
+	        	<tr>
+	        		{% for cat, num in headteacher_attendance_stats.stats %}
+	        			<td class="qt-head">{{ cat|title }}</td>
+	        		{% endfor %}
+	        	</tr>
+	        	<tr>
+	        		{% for cat, num in headteacher_attendance_stats.stats %}
+	        			<td class="qt-body">{{ num|default_if_none:'-'|intcomma }}</td>
+	        		{% endfor %}
+	        	</tr>
+	        </table>
+        </p>
+{% endblock %}

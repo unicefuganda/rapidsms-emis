@@ -134,3 +134,33 @@ div.module {
     font-weight:bold;
     padding: 15px;
 }
+td.stat {
+	padding:0 0 1.0em 0;
+}
+span.stats	{
+	font-size:1.2em;
+	font-weight:bold;
+}
+
+span.dates {
+	color:red;
+	float:right;
+}
+
+p {
+	padding:0 0 0.2em 0;
+}
+
+.qt-head {
+	text-align: center;
+	font-weight:bold;
+	padding:0.5em;
+	background-color: #FFEEBE;
+}
+
+.qt-body {
+	text-align: center;
+	padding: 0.5em;
+	font-size: 2em;
+	background-color: #FFFFBE;
+}
