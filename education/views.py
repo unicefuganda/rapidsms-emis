@@ -29,6 +29,12 @@ Num_REG = re.compile('\d+')
 def index(request):
     return render_to_response("education/index.html", {}, RequestContext(request))
 
+def dashboard(request):
+    if request.user:
+        return deo_dashboard(request)
+    else:
+        return index(request)
+
 def deo_dashboard(request):
     print enrollment_stats(request)
     return render_to_response("education/deo_dashboard.html", {\
