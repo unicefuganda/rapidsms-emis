@@ -206,6 +206,8 @@ def emis_reschedule_script(**kwargs):
     slug = progress.script.slug
     if not progress.script.slug.startswith('emis_') or progress.script.slug == 'emis_autoreg':
         return
+    if not connection.contanct.groups.count():
+        return
     group = connection.contact.groups.all()[0]
     if slug == 'emis_abuse':
         _schedule_monthly_script(group, connection, 'emis_abuse', 'last', ['Teachers', 'Head Teachers'])

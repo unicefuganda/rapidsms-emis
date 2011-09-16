@@ -2,7 +2,7 @@ from .forms import SchoolFilterForm
 from .models import EmisReporter
 from .reports import MainEmisReport, ClassRoomReport, DashBoardReport, AttendanceReport, HtAttendanceReport, EnrollmentReport, AbuseReport
 from .sorters import LatestSubmissionSorter
-from .views import whitelist, add_connection, delete_connection
+from .views import whitelist, add_connection, delete_connection, deo_dashboard
 from contact.forms import FreeSearchForm, DistictFilterForm, MassTextForm, \
     FreeSearchTextForm, DistictFilterMessageForm, HandledByForm, ReplyTextForm
 from django.conf.urls.defaults import patterns, url
@@ -11,6 +11,7 @@ from generic.views import generic
 from rapidsms_httprouter.models import Message
 from rapidsms_xforms.models import XFormSubmission
 from uganda_common.utils import get_xform_dates
+from django.contrib.auth.views import login_required
 
 urlpatterns = patterns('',
    url(r'^emis/messagelog/$', generic, {
@@ -145,26 +146,7 @@ urlpatterns = patterns('',
     url(r'^connections/add/', add_connection),
     url(r'^connections/(\d+)/delete/', delete_connection),
 
-    url(r'^emis/deo_dashboard/', generic, {
-        'model':XFormSubmission,
-        'queryset':DashBoardReport,
-        'selectable':False,
-        'paginated':False,
-        'results_title':None,
-        'columns':[
-            ('', False, '', None),
-            ('pupil attendance', False, '', None),
-            ('teacher attendance', False, '', None),
-            ('total enrollment', False, '', None),
-            ('teacher deployment', False, '', None),
-            ('abuse cases', False, '', None),
-        ],
-        'partial_row':'education/partials/report_row.html',
-        'partial_header':'education/partials/partial_header.html',
-        'base_template':'generic/timeslider_base.html',
-        'needs_date':True,
-        'dates':get_xform_dates,
-    }, name='deo-dashboard'),
+    url(r'^emis/deo_dashboard/', login_required(deo_dashboard), {}, name='deo-dashboard'),
 
     #attendance table on the DEO dashboard
     url(r'^emis/attendance/', generic, {
