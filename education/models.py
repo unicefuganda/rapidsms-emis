@@ -206,7 +206,7 @@ def emis_reschedule_script(**kwargs):
     slug = progress.script.slug
     if not progress.script.slug.startswith('emis_') or progress.script.slug == 'emis_autoreg':
         return
-    if not connection.contanct.groups.count():
+    if not connection.contact.groups.count():
         return
     group = connection.contact.groups.all()[0]
     if slug == 'emis_abuse':
