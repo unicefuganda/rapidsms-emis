@@ -1,13 +1,15 @@
-function deleteReporter(elem, pk, name) {
+function deleteReporter(elem, pk, name, url) {
     if (confirm('Are you sure you want to remove ' + name + '?')) {
         $(elem).parents('tr').remove();
-        $.post('../reporter/' + pk + '/delete/', function(data) {});
+        $.post(url, function(data) {});
+//        $.post('../reporter/' + pk + '/delete/', function(data) {});
     }
 }
 
-function editReporter(elem, pk) {
+function editReporter(elem, pk, url) {
     overlay_loading_panel($(elem).parents('tr'));
-    $(elem).parents('tr').load('../reporter/' + pk + '/edit/', '', function () {
+    $(elem).parents('tr').load(url, '', function () {
+//    $(elem).parents('tr').load('../reporter/' + pk + '/edit/', '', function () {
         $('#div_panel_loading').hide();    
     });
 }

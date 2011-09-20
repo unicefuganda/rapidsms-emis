@@ -1,5 +1,5 @@
 #from django.db import connection
-from .forms import NewConnectionForm, DateRangeForm
+from .forms import NewConnectionForm, DateRangeForm, EditReporterForm
 from .models import *
 from django.conf import settings, settings, settings
 from django.contrib.auth.decorators import login_required, login_required
@@ -36,7 +36,6 @@ def dashboard(request):
         return index(request)
 
 def deo_dashboard(request):
-    print enrollment_stats(request)
     return render_to_response("education/deo_dashboard.html", {\
                                 'attendance_stats':attendance_stats(request), \
                                 'enrollment_stats':enrollment_stats(request), \
@@ -96,4 +95,33 @@ def delete_connection(request, connection_id):
     _reload_whitelists()
     return render_to_response("education/partials/connection_view.html", {'object':connection.contact }, context_instance=RequestContext(request))
 
+@login_required
+def delete_reporter(request, reporter_pk):
+    reporter = get_object_or_404(EmisReporter, pk=reporter_pk)
+    if request.method == 'POST':
+        reporter.delete()
+    return HttpResponse(status=200)
 
+@login_required
+def edit_reporter(request, reporter_pk):
+    reporter = get_object_or_404(EmisReporter, pk=reporter_pk)
+    reporter_form = EditReporterForm(instance=reporter)
+    if request.method == 'POST':
+        reporter_form = EditReporterForm(instance=reporter,
+                data=request.POST)
+        if reporter_form.is_valid():
+            reporter_form.save()
+        else:
+            return render_to_response('education/partials/edit_reporter.html'
+                    , {'reporter_form': reporter_form, 'reporter'
+                    : reporter},
+                    context_instance=RequestContext(request))
+        return render_to_response('/education/partials/reporter_row.html',
+                                  {'object':Contact.objects.get(pk=reporter_pk),
+                                   'selectable':True},
+                                  context_instance=RequestContext(request))
+    else:
+        return render_to_response('education/partials/edit_reporter.html',
+                                  {'reporter_form': reporter_form,
+                                  'reporter': reporter},
+                                  context_instance=RequestContext(request))

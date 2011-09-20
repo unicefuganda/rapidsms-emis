@@ -2,7 +2,7 @@ from .forms import SchoolFilterForm
 from .models import EmisReporter
 from .reports import AttendanceReport
 from .sorters import LatestSubmissionSorter
-from .views import whitelist, add_connection, delete_connection, deo_dashboard, dashboard
+from .views import whitelist, add_connection, delete_connection, deo_dashboard, dashboard, edit_reporter, delete_reporter
 from contact.forms import FreeSearchForm, DistictFilterForm, MassTextForm, \
     FreeSearchTextForm, DistictFilterMessageForm, HandledByForm, ReplyTextForm
 from django.conf.urls.defaults import patterns, url
@@ -47,10 +47,12 @@ urlpatterns = patterns('',
                  ('District', False, 'district', None,),
                  ('Last Reporting Date', True, 'latest_submission_date', LatestSubmissionSorter(),),
                  ('Total Reports', True, 'connection__submissions__count', SimpleSorter(),),
-                 ('School', True, 'school__name', SimpleSorter(),),
+                 ('School(s)', True, 'schools__name', SimpleSorter(),),
                  ('Location', True, 'location__name', SimpleSorter(),),
                  ('', False, '', None,)],
     }, name="emis-contact"),
+    url(r'^emis/reporter/(\d+)/edit/', edit_reporter, name='edit-reporter'),
+    url(r'^emis/reporter/(\d+)/delete/', delete_reporter, name='delete-reporter'),
     url(r'^emis/attendance/$', generic, {
         'model':XFormSubmission,
         'queryset':AttendanceReport,

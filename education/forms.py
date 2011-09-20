@@ -5,7 +5,7 @@ from rapidsms.contrib.locations.models import Location
 from generic.forms import ActionForm, FilterForm, ModuleForm
 from mptt.forms import TreeNodeChoiceField
 from rapidsms.contrib.locations.models import Location
-from .models import School
+from .models import School, EmisReporter
 
 date_range_choices = (('w', 'Previous Calendar Week'), ('m', 'Previous Calendar Month'), ('q', 'Previous calendar quarter'),)
 
@@ -41,4 +41,13 @@ class SchoolFilterForm(FilterForm):
 
 class NewConnectionForm(forms.Form):
     identity = forms.CharField(max_length=15, required=True, label="Primary contact information")
+
+class EditReporterForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+           super(EditReporterForm, self).__init__(*args, **kwargs)
+           self.fields['reporting_location'] = TreeNodeChoiceField(queryset=self.fields['reporting_location'].queryset, level_indicator=u'.')
+
+    class Meta:
+        model = EmisReporter
+        fields = ('name', 'reporting_location', 'groups', 'schools')
 

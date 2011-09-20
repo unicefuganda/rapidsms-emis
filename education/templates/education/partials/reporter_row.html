@@ -31,14 +31,22 @@
     <td>{{ object.reporting_location|get_district }}</td>
     <td>{{ object|latest|date:"d-m-Y" }}</td>
     <td>{{ object.connection__submissions__count }}</td>
-    <td>{{ object.school.name }}</td>
+    <td>
+    	<ul>
+            {% for s in object.schools.all %}
+                <li>
+                    {{ s.name }}
+                </li>
+            {% endfor %}
+        </ul>
+     </td>
     <td id="row_{{ object.pk }}">{{ object.location.name }}</td>
     <td class="button_col">
         <div class="buttons">
-            <a href="javascript:void(0)" onclick="deleteReporter(this, {{ object.pk }},'{{ object.name }}')">
+            <a href="javascript:void(0)" onclick="deleteReporter(this, {{ object.pk }},'{{ object.name }}', '{% url education.views.delete_reporter object.pk %}')">
                 <img src="{{ MEDIA_URL }}rapidsms/icons/silk/delete.png" />
             </a>
-             <a href="javascript:void(0)" onclick="editReporter(this, {{ object.pk }})">
+             <a href="javascript:void(0)" onclick="editReporter(this, {{ object.pk }}, '{% url education.views.edit_reporter object.pk %}')">
                 <img src="{{ MEDIA_URL }}poll/icons/silk/pencil.png" />
             </a>
         </div>
