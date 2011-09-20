@@ -29,8 +29,8 @@ class School(models.Model):
 
 
 class EmisReporter(Contact):
-    school = models.ForeignKey(School, null=True)
-
+    school = models.ForeignKey(School, null=True, related_name="old_schools")
+    schools = models.ManyToManyField(School, null=True)
 
 def parse_date(command, value):
     return parse_date_value(value)
@@ -143,11 +143,25 @@ def emis_autoreg(**kwargs):
                                                                             location__type__name='district'), True)
         else:
             reporting_school = find_closest_match(school, School.objects.filter(location__name=Location.tree.root_nodes()[0].name))
-#        e = EmisReporter(pk=contact.pk)
-#        e.school = reporting_school
-#        e.save()
-        contact.school = reporting_school
+        contact.schools.add(reporting_school)
         contact.save()
+
+    schools = find_best_response(session, schools_poll)
+    if schools:
+        reporting_school = None
+        school_list = schools.split(',')
+        for school in school_list:
+            if subcounty:
+                reporting_school = find_closest_match(school, School.objects.filter(location__name__in=[subcounty], \
+                                                                                location__type__name='sub_county'), True)
+            elif district:
+                reporting_school = find_closest_match(school, School.objects.filter(location__name__in=[district.name], \
+                                                                                location__type__name='district'), True)
+            else:
+                reporting_school = find_closest_match(school, School.objects.filter(location__name=Location.tree.root_nodes()[0].name))
+            contact.schools.add(reporting_school)
+            contact.save()
+
     if not getattr(settings, 'TRAINING_MODE', False):
         # Now that you have their roll, they should be signed up for the periodic polling
         _schedule_monthly_script(group, connection, 'emis_abuse', 'last', ['Teachers', 'Head Teachers'])
@@ -260,7 +274,7 @@ def emis_autoreg_transition(**kwargs):
     if role:
         group = find_closest_match(role, Group.objects)
     skipsteps = {
-        'emis_subcounty':['Teachers', 'Head Teachers', 'SMC', 'GEM'],
+        'emis_subcounty':['Teachers', 'Head Teachers', 'SMC'],
         'emis_one_school':['Teachers', 'Head Teachers', 'SMC'],
         'emis_many_school':['GEM'],
     }

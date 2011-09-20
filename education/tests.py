@@ -15,12 +15,14 @@ from rapidsms_xforms.models import XForm, XFormSubmission
 from django.conf import settings
 from script.utils.outgoing import check_progress
 from script.models import Script, ScriptProgress, ScriptSession, ScriptResponse
-from education.utils import *
+from education.management import *
 from rapidsms_httprouter.router import get_router
 from script.signals import script_progress_was_completed, script_progress
-from poll.utils import create_attributes
+from poll.management import create_attributes
 from .models import EmisReporter, School
 from django.db import connection
+from script.utils.outgoing import check_progress
+from django.core.management import call_command
 
 
 class ModelTest(TestCase): #pragma: no cover
@@ -85,6 +87,19 @@ class ModelTest(TestCase): #pragma: no cover
         cursor.execute("update rapidsms_xforms_xformsubmission set created = '%s' where id = %d" %
                        (newtime.strftime('%Y-%m-%d %H:%M:%S.%f'), submission.pk))
 
+    def elapseTime2(self, progress, seconds):
+        """
+        This hack mimics the progression of time, from the perspective of a linear test case,
+        by actually *subtracting* from the value that's currently stored (usually datetime.datetime.now())
+        """
+        progress.set_time(progress.time - datetime.timedelta(seconds=seconds))
+        try:
+            session = ScriptSession.objects.get(connection=progress.connection, end_time=None)
+            session.start_time = session.start_time - datetime.timedelta(seconds=seconds)
+            session.save()
+        except ScriptSession.DoesNotExist:
+            pass
+
 
     def setUp(self):
         if 'django.contrib.sites' in settings.INSTALLED_APPS:
@@ -107,6 +122,8 @@ class ModelTest(TestCase): #pragma: no cover
         self.gulu_subcounty = Location.objects.create(type=subcounty, name='Gulu')
         self.gulu_school = School.objects.create(name="St. Mary's", location=self.gulu_subcounty)
         self.kampala_school = School.objects.create(name="St. Mary's", location=self.kampala_subcounty)
+        self.kampala_school2 = School.objects.create(name="St. Peters", location=self.kampala_district)
+        self.kampala_school3 = School.objects.create(name="St. Mary's", location=self.kampala_district)
 
 
     def fake_script_dialog(self, script_prog, connection, responses, emit_signal=True):
@@ -138,7 +155,7 @@ class ModelTest(TestCase): #pragma: no cover
         contact = EmisReporter.objects.all()[0]
         self.assertEquals(contact.name, 'Testy Mctesterton')
         self.assertEquals(contact.reporting_location, self.kampala_subcounty)
-        self.assertEquals(contact.school, self.kampala_school)
+        self.assertEquals(contact.schools.all()[0], self.kampala_school)
         self.assertEquals(contact.groups.all()[0].name, 'Teachers')
 
     def testBadAutoReg(self):
@@ -182,6 +199,57 @@ class ModelTest(TestCase): #pragma: no cover
         self.assertEquals(contact.groups.all()[0].name, 'Other EMIS Reporters')
         self.assertEquals(contact.reporting_location, self.gulu_subcounty)
         self.assertEquals(contact.name, 'Anonymous User')
+
+    def testGemAutoReg(self):
+        self.fake_incoming('join')
+        self.assertEquals(ScriptProgress.objects.count(), 1)
+        script_prog = ScriptProgress.objects.all()[0]
+        self.assertEquals(script_prog.script.slug, 'emis_autoreg')
+
+        self.fake_script_dialog(script_prog, self.connection, [\
+            ('emis_role', 'gem'), \
+            ('emis_district', 'kampala'), \
+            ('emis_many_school', 'st. marys, st. peters'), \
+            ('emis_name', 'testy mctesterton'), \
+        ])
+        self.assertEquals(EmisReporter.objects.count(), 1)
+        contact = EmisReporter.objects.all()[0]
+        self.assertEquals(contact.name, 'Testy Mctesterton')
+        self.assertEquals(contact.reporting_location, self.kampala_district)
+        self.assertEquals(contact.schools.count(), 2)
+        self.assertEquals(len(set(contact.schools.all()) & set([self.kampala_school2, self.kampala_school3])), 2)
+        self.assertEquals(contact.groups.all()[0].name, 'GEM')
+
+    def testGemQuestions(self):
+        self.fake_incoming('join')
+        script_prog = ScriptProgress.objects.get(connection=self.connection)
+        self.elapseTime2(script_prog, 3601)
+        call_command('check_script_progress', e=0, l=20)
+        self.assertEquals(Message.objects.filter(direction='O').order_by('-date')[0].text, 'Welcome to the SMS based school data collection pilot.The information you provide is valuable to improving the quality of education in Uganda.')
+        script_prog = ScriptProgress.objects.get(connection=self.connection)
+        self.elapseTime2(script_prog, 3601)
+        call_command('check_script_progress', e=0, l=20)
+        self.assertEquals(Message.objects.filter(direction='O').order_by('-date')[0].text, 'To register,tell us your role? Teacher, Head Teacher, SMC, GEM, CCT, DEO,or District Official.Reply with one of the roles listed.')
+        self.fake_incoming('GEM')
+        script_prog = ScriptProgress.objects.get(connection=self.connection)
+        self.elapseTime2(script_prog, 3601)
+        call_command('check_script_progress', e=0, l=20)
+        self.assertEquals(Message.objects.filter(direction='O').order_by('-date')[0].text, 'What is the name of your district?')
+        self.fake_incoming('Kampala')
+        script_prog = ScriptProgress.objects.get(connection=self.connection)
+        self.elapseTime2(script_prog, 3601)
+        call_command('check_script_progress', e=0, l=20)
+        self.assertEquals(Message.objects.filter(direction='O').order_by('-date')[0].text, 'Name the schools you are resonsible for.Separate each school name with a comma, for example "St. Mary Secondary,Pader Primary"')
+        self.fake_incoming('St. Marys, St. Peters')
+        script_prog = ScriptProgress.objects.get(connection=self.connection)
+        self.elapseTime2(script_prog, 3601)
+        call_command('check_script_progress', e=0, l=20)
+        self.assertEquals(Message.objects.filter(direction='O').order_by('-date')[0].text, 'What is your name?')
+        self.fake_incoming('test mctester')
+        script_prog = ScriptProgress.objects.get(connection=self.connection)
+        self.elapseTime2(script_prog, 3601)
+        call_command('check_script_progress', e=0, l=20)
+        self.assertEquals(Message.objects.filter(direction='O').order_by('-date')[0].text, 'Welcome to the school monitoring pilot.The information you provide contributes to keeping children in school.')
 
 
     def assertScriptSkips(self, connection, role, initial_question, final_question):
