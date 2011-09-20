@@ -29,7 +29,7 @@ class School(models.Model):
 
 
 class EmisReporter(Contact):
-    school = models.ForeignKey(School, null=True, related_name="old_schools")
+#    school = models.ForeignKey(School, null=True, related_name="old_schools")
     schools = models.ManyToManyField(School, null=True)
 
 def parse_date(command, value):
