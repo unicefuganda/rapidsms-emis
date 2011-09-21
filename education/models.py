@@ -143,8 +143,9 @@ def emis_autoreg(**kwargs):
                                                                             location__type__name='district'), True)
         else:
             reporting_school = find_closest_match(school, School.objects.filter(location__name=Location.tree.root_nodes()[0].name))
-        contact.schools.add(reporting_school)
-        contact.save()
+        if reporting_school:
+            contact.schools.add(reporting_school)
+            contact.save()
 
     schools = find_best_response(session, schools_poll)
     if schools:
@@ -159,8 +160,9 @@ def emis_autoreg(**kwargs):
                                                                                 location__type__name='district'), True)
             else:
                 reporting_school = find_closest_match(school, School.objects.filter(location__name=Location.tree.root_nodes()[0].name))
-            contact.schools.add(reporting_school)
-            contact.save()
+            if reporting_school:
+                contact.schools.add(reporting_school)
+                contact.save()
 
     if not getattr(settings, 'TRAINING_MODE', False):
         # Now that you have their roll, they should be signed up for the periodic polling
