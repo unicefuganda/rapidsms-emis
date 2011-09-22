@@ -10,7 +10,7 @@ from generic.sorters import SimpleSorter
 from generic.views import generic
 from rapidsms_httprouter.models import Message
 from rapidsms_xforms.models import XFormSubmission
-from uganda_common.utils import get_xform_dates
+from uganda_common.utils import get_xform_dates, get_messages
 from django.contrib.auth.views import login_required
 
 
@@ -88,4 +88,20 @@ urlpatterns = patterns('',
     url(r'^connections/(\d+)/delete/', delete_connection),
 
     url(r'^emis/deo_dashboard/', login_required(deo_dashboard), {}, name='deo-dashboard'),
+
+    url(r'^emis/othermessages/$', generic, {
+      'model':Message,
+      'queryset':get_messages,
+      'filter_forms':[FreeSearchTextForm, DistictFilterMessageForm, HandledByForm],
+      'action_forms':[ReplyTextForm],
+      'objects_per_page':25,
+      'partial_row':'education/partials/other_message_row.html',
+      'base_template':'education/messages_base.html',
+      'columns':[('Text', True, 'text', SimpleSorter()),
+                 ('Contact Information', True, 'connection__contact__name', SimpleSorter(),),
+                 ('Date', True, 'date', SimpleSorter(),),
+                 ],
+      'sort_column':'date',
+      'sort_ascending':False,
+    }, name="emis-othermessages"),
 )
