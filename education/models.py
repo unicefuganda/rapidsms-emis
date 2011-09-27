@@ -100,7 +100,7 @@ def emis_autoreg(**kwargs):
     district = find_best_response(session, district_poll)
 
     if name:
-        name = ' '.join([n.capitalize() for n in name.lower().split()])
+        name = ' '.join([n.capitalize() for n in name.lower().split()])[:100]
 
     if subcounty:
         subcounty = find_closest_match(subcounty, Location.objects.filter(type__name='sub_county'))
@@ -143,7 +143,7 @@ def emis_autoreg(**kwargs):
         reporting_schools = filter(None, reporting_schools)
 
         existing_contact = EmisReporter.objects.get(\
-                                  name=name[:100], \
+                                  name=name, \
                                   groups=grp, \
                                   reporting_location=rep_location, \
                                   schools__in=reporting_schools, \
@@ -180,8 +180,7 @@ def emis_autoreg(**kwargs):
             contact.reporting_location = Location.tree.root_nodes()[0]
 
         if name:
-            name = ' '.join([n.capitalize() for n in name.lower().split(' ')])
-            contact.name = name[:100]
+            contact.name = name
 
         if not contact.name:
             contact.name = 'Anonymous User'
