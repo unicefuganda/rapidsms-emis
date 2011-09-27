@@ -7,7 +7,7 @@ from contact.forms import FreeSearchForm, DistictFilterForm, MassTextForm, \
     FreeSearchTextForm, DistictFilterMessageForm, HandledByForm, ReplyTextForm
 from django.conf.urls.defaults import patterns, url
 from generic.sorters import SimpleSorter
-from generic.views import generic
+from generic.views import generic, generic_row
 from rapidsms_httprouter.models import Message
 from rapidsms_xforms.models import XFormSubmission
 from uganda_common.utils import get_xform_dates, get_messages
@@ -53,6 +53,7 @@ urlpatterns = patterns('',
     }, name="emis-contact"),
     url(r'^emis/reporter/(\d+)/edit/', edit_reporter, name='edit-reporter'),
     url(r'^emis/reporter/(\d+)/delete/', delete_reporter, name='delete-reporter'),
+    url(r'^emis/reporter/(?P<pk>\d+)/show', generic_row, {'model':EmisReporter, 'partial_row':'education/partials/reporter_row.html'}),
     url(r'^emis/attendance/$', generic, {
         'model':XFormSubmission,
         'queryset':AttendanceReport,
