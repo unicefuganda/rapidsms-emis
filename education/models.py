@@ -93,68 +93,106 @@ def emis_autoreg(**kwargs):
     schools_poll = script.steps.get(order=5).poll
     name_poll = script.steps.get(order=6).poll
 
-    if not connection.contact:
-#        connection.contact = Contact.objects.create()
-        connection.contact = EmisReporter.objects.create()
-        connection.save()
-    contact = connection.contact
-
+    name = find_best_response(session, name_poll)
     role = find_best_response(session, role_poll)
-
-    group = Group.objects.get(name='Other EMIS Reporters')
-    default_group = group
-    if role:
-        group = find_closest_match(role, Group.objects)
-        if not group:
-            group = default_group
-    contact.groups.add(group)
-
-
+    default_group = Group.objects.get(name='Other EMIS Reporters')
     subcounty = find_best_response(session, subcounty_poll)
     district = find_best_response(session, district_poll)
+
+    if name:
+        name = ' '.join([n.capitalize() for n in name.lower().split()])
 
     if subcounty:
         subcounty = find_closest_match(subcounty, Location.objects.filter(type__name='sub_county'))
 
-    if subcounty:
-        contact.reporting_location = subcounty
-    elif district:
-        contact.reporting_location = district
-    else:
-        contact.reporting_location = Location.tree.root_nodes()[0]
+    try:
+        grp = find_closest_match(role, Group.objects)
+        grp = grp if grp else default_group
 
-    name = find_best_response(session, name_poll)
-    if name:
-        name = ' '.join([n.capitalize() for n in name.lower().split(' ')])
-        contact.name = name[:100]
-
-    if not contact.name:
-        contact.name = 'Anonymous User'
-    contact.save()
-
-    reporting_school = None
-    school = find_best_response(session, school_poll)
-    if school:
         if subcounty:
-            reporting_school = find_closest_match(school, School.objects.filter(location__name__in=[subcounty], \
-                                                                                location__type__name='sub_county'), True)
+            rep_location = subcounty
         elif district:
-            reporting_school = find_closest_match(school, School.objects.filter(location__name__in=[district.name], \
-                                                                            location__type__name='district'), True)
+            rep_location = district
         else:
-            reporting_school = find_closest_match(school, School.objects.filter(location__name=Location.tree.root_nodes()[0].name))
-        if reporting_school:
-            contact.schools.add(reporting_school)
-            contact.save()
+            rep_location = Location.tree.root_nodes()[0]
 
-    schools = find_best_response(session, schools_poll)
-    if schools:
+        school = find_best_response(session, school_poll)
+        reporting_schools = []
+        if school:
+            if subcounty:
+                reporting_schools.append(find_closest_match(school, School.objects.filter(location__name__in=[subcounty], \
+                                                                                    location__type__name='sub_county'), True))
+            elif district:
+                reporting_schools.append(find_closest_match(school, School.objects.filter(location__name__in=[district.name], \
+                                                                                location__type__name='district'), True))
+            else:
+                reporting_schools.append(find_closest_match(school, School.objects.filter(location__name=Location.tree.root_nodes()[0].name)))
+
+        schools = find_best_response(session, schools_poll)
+        if schools:
+            school_list = schools.split(',')
+            for school in school_list:
+                if subcounty:
+                    reporting_schools.append(find_closest_match(school, School.objects.filter(location__name__in=[subcounty], \
+                                                                                    location__type__name='sub_county'), True))
+                elif district:
+                    reporting_schools.append(find_closest_match(school, School.objects.filter(location__name__in=[district.name], \
+                                                                                    location__type__name='district'), True))
+                else:
+                    reporting_schools.append(find_closest_match(school, School.objects.filter(location__name=Location.tree.root_nodes()[0].name)))
+        reporting_schools = filter(None, reporting_schools)
+
+        existing_contact = EmisReporter.objects.get(\
+                                  name=name[:100], \
+                                  groups=grp, \
+                                  reporting_location=rep_location, \
+                                  schools__in=reporting_schools, \
+                                  )
+        if connection.contact:
+            connection.contact.active = True
+        else:
+            existing_contact.active = True
+            existing_contact.save()
+            connection.contact = existing_contact
+            connection.save()
+
+    except EmisReporter.MultipleObjectsReturned:
+        pass
+
+    except EmisReporter.DoesNotExist:
+        connection.contact = EmisReporter.objects.create()
+        connection.save()
+        contact = connection.contact
+
+        group = Group.objects.get(name='Other EMIS Reporters')
+        default_group = group
+        if role:
+            group = find_closest_match(role, Group.objects)
+            if not group:
+                group = default_group
+        contact.groups.add(group)
+
+        if subcounty:
+            contact.reporting_location = subcounty
+        elif district:
+            contact.reporting_location = district
+        else:
+            contact.reporting_location = Location.tree.root_nodes()[0]
+
+        if name:
+            name = ' '.join([n.capitalize() for n in name.lower().split(' ')])
+            contact.name = name[:100]
+
+        if not contact.name:
+            contact.name = 'Anonymous User'
+        contact.save()
+
         reporting_school = None
-        school_list = schools.split(',')
-        for school in school_list:
+        school = find_best_response(session, school_poll)
+        if school:
             if subcounty:
                 reporting_school = find_closest_match(school, School.objects.filter(location__name__in=[subcounty], \
-                                                                                location__type__name='sub_county'), True)
+                                                                                    location__type__name='sub_county'), True)
             elif district:
                 reporting_school = find_closest_match(school, School.objects.filter(location__name__in=[district.name], \
                                                                                 location__type__name='district'), True)
@@ -164,35 +202,52 @@ def emis_autoreg(**kwargs):
                 contact.schools.add(reporting_school)
                 contact.save()
 
-    if not getattr(settings, 'TRAINING_MODE', False):
-        # Now that you have their roll, they should be signed up for the periodic polling
-        _schedule_monthly_script(group, connection, 'emis_abuse', 'last', ['Teachers', 'Head Teachers'])
-        _schedule_monthly_script(group, connection, 'emis_meals', 20, ['Teachers', 'Head Teachers'])
-        _schedule_monthly_script(group, connection, 'emis_school_administrative', 15, ['Teachers', 'Head Teachers'])
+        schools = find_best_response(session, schools_poll)
+        if schools:
+            reporting_school = None
+            school_list = schools.split(',')
+            for school in school_list:
+                if subcounty:
+                    reporting_school = find_closest_match(school, School.objects.filter(location__name__in=[subcounty], \
+                                                                                    location__type__name='sub_county'), True)
+                elif district:
+                    reporting_school = find_closest_match(school, School.objects.filter(location__name__in=[district.name], \
+                                                                                    location__type__name='district'), True)
+                else:
+                    reporting_school = find_closest_match(school, School.objects.filter(location__name=Location.tree.root_nodes()[0].name))
+                if reporting_school:
+                    contact.schools.add(reporting_school)
+                    contact.save()
 
-        start_of_term = getattr(settings, 'SCHOOL_TERM_START', datetime.datetime.now())
-        if group.name in ['Teachers', 'Head Teachers']:
-            sp = ScriptProgress.objects.create(connection=connection, script=Script.objects.get(slug='emis_annual'))
-            sp.set_time(start_of_term + datetime.timedelta(14))
+        if not getattr(settings, 'TRAINING_MODE', False):
+            # Now that you have their roll, they should be signed up for the periodic polling
+            _schedule_monthly_script(group, connection, 'emis_abuse', 'last', ['Teachers', 'Head Teachers'])
+            _schedule_monthly_script(group, connection, 'emis_meals', 20, ['Teachers', 'Head Teachers'])
+            _schedule_monthly_script(group, connection, 'emis_school_administrative', 15, ['Teachers', 'Head Teachers'])
 
-        _schedule_monthly_script(group, connection, 'emis_smc_monthly', 28, ['SMC'])
+            start_of_term = getattr(settings, 'SCHOOL_TERM_START', datetime.datetime.now())
+            if group.name in ['Teachers', 'Head Teachers']:
+                sp = ScriptProgress.objects.create(connection=connection, script=Script.objects.get(slug='emis_annual'))
+                sp.set_time(start_of_term + datetime.timedelta(14))
 
-        holidays = getattr(settings, 'SCHOOL_HOLIDAYS', [])
-        if group.name in ['SMC']:
-            d = datetime.datetime.now()
-            # get the date to a wednesday
-            d = d + datetime.timedelta((2 - d.weekday()) % 7)
-            in_holiday = True
-            while in_holiday:
-                in_holiday = False
-                for start, end in holidays:
-                    if d >= start and d <= end:
-                        in_holiday = True
-                        break
-                if in_holiday:
-                    d = d + datetime.timedelta(7)
-            sp = ScriptProgress.objects.create(connection=connection, script=Script.objects.get(slug='emis_head_teacher_presence'))
-            sp.set_time(d)
+            _schedule_monthly_script(group, connection, 'emis_smc_monthly', 28, ['SMC'])
+
+            holidays = getattr(settings, 'SCHOOL_HOLIDAYS', [])
+            if group.name in ['SMC']:
+                d = datetime.datetime.now()
+                # get the date to a wednesday
+                d = d + datetime.timedelta((2 - d.weekday()) % 7)
+                in_holiday = True
+                while in_holiday:
+                    in_holiday = False
+                    for start, end in holidays:
+                        if d >= start and d <= end:
+                            in_holiday = True
+                            break
+                    if in_holiday:
+                        d = d + datetime.timedelta(7)
+                sp = ScriptProgress.objects.create(connection=connection, script=Script.objects.get(slug='emis_head_teacher_presence'))
+                sp.set_time(d)
 
 
 def _schedule_monthly_script(group, connection, script_slug, day_offset, role_names):

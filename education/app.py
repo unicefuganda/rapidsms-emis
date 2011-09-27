@@ -1,18 +1,34 @@
-import rapidsms
-import datetime
-
 from rapidsms.apps.base import AppBase
-from .models import Poll
-from django.db.models import Q
 from script.models import Script, ScriptProgress
-from rapidsms.models import Contact
+from django.conf import settings
+from unregister.models import Blacklist
+from .models import EmisReporter
 
 class App (AppBase):
 
     def handle (self, message):
-        if not message.connection.contact and \
-           not ScriptProgress.objects.filter(script__slug='emis_autoreg', connection=message.connection).count():
-            ScriptProgress.objects.create(script=Script.objects.get(slug="emis_autoreg"), \
+        if message.text.strip().lower() in [i.lower() for i in getattr(settings, 'OPT_OUT_WORDS', ['exit'])]:
+            Blacklist.objects.create(connection=message.connection)
+            if (message.connection.contact):
+                reporter = EmisReporter.objects.get(pk=message.connection.contact.pk)
+                message.connection.contact.active = False
+                message.connection.contact.save()
+                reporter.active = False
+                reporter.save()
+            message.respond(getattr(settings, 'OPT_OUT_CONFIRMATION', 'Thank you for your contribution as a education monitoring reporter, to rejoin the system send JOIN to 6767'))
+            return True
+        elif message.text.strip().lower() in [i.lower() for i in getattr(settings, 'OPT_IN_WORDS', ['join'])]:
+            if Blacklist.objects.filter(connection=message.connection).count() or not message.connection.contact:
+                for b in Blacklist.objects.filter(connection=message.connection):
+                    b.delete()
+                if not message.connection.contact and \
+                not ScriptProgress.objects.filter(script__slug='emis_autoreg', connection=message.connection).count():
+                    ScriptProgress.objects.create(script=Script.objects.get(slug="emis_autoreg"), \
                                           connection=message.connection)
+            else:
+                message.repond("You are already in the system and do not need to 'Join' again.")
+            return True
+        elif Blacklist.objects.filter(connection=message.connection).count():
             return True
         return False
+

@@ -23,6 +23,7 @@ from .models import EmisReporter, School
 from django.db import connection
 from script.utils.outgoing import check_progress
 from django.core.management import call_command
+from unregister.models import Blacklist
 
 
 class ModelTest(TestCase): #pragma: no cover
@@ -251,6 +252,39 @@ class ModelTest(TestCase): #pragma: no cover
         call_command('check_script_progress', e=0, l=20)
         self.assertEquals(Message.objects.filter(direction='O').order_by('-date')[0].text, 'Welcome to the school monitoring pilot.The information you provide contributes to keeping children in school.')
 
+    def testQuitRejoin(self):
+        #first join
+        self.fake_incoming('join')
+        self.assertEquals(ScriptProgress.objects.count(), 1)
+        script_prog = ScriptProgress.objects.all()[0]
+        self.assertEquals(script_prog.script.slug, 'emis_autoreg')
+
+        self.fake_script_dialog(script_prog, self.connection, [\
+            ('emis_role', 'teacher'), \
+            ('emis_district', 'kampala'), \
+            ('emis_subcounty', 'kampala'), \
+            ('emis_one_school', 'st. marys'), \
+            ('emis_name', 'testy mctesterton'), \
+        ])
+        self.assertEquals(EmisReporter.objects.count(), 1)
+
+        #then quit
+        self.fake_incoming('quit')
+        self.assertEquals(Blacklist.objects.all()[0].connection, self.connection)
+        self.assertEquals(EmisReporter.objects.all()[0].active, False)
+
+        #rejoin
+        self.fake_incoming('join')
+        script_prog = ScriptProgress.objects.all()[0]
+
+        self.fake_script_dialog(script_prog, self.connection, [\
+            ('emis_role', 'teacher'), \
+            ('emis_district', 'kampala'), \
+            ('emis_subcounty', 'kampala'), \
+            ('emis_one_school', 'st. marys'), \
+            ('emis_name', 'testy mctesterton'), \
+        ])
+        self.assertEquals(EmisReporter.objects.count(), 1)
 
     def assertScriptSkips(self, connection, role, initial_question, final_question):
         connection = Connection.objects.create(identity=connection, backend=self.backend)
