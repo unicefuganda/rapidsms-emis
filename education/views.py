@@ -66,6 +66,13 @@ def _reload_whitelists():
         return True
     return False
 
+def _addto_autoreg(connections):
+    for connection in connections:
+        if not connection.contact and \
+            not ScriptProgress.objects.filter(script__slug='emis_autoreg', connection=connection).count():
+                        ScriptProgress.objects.create(script=Script.objects.get(slug="emis_autoreg"), \
+                                              connection=connection)
+
 @login_required
 def add_connection(request):
     form = NewConnectionForm()
@@ -84,6 +91,8 @@ def add_connection(request):
                     connection, created = Connection.objects.get_or_create(identity=identity, backend=backend)
                     connections.append(connection)
             _reload_whitelists()
+            time.sleep(2)
+            _addto_autoreg(connections)
             return render_to_response('education/partials/addnumbers_row.html', {'object':connections, 'selectable':False}, RequestContext(request))
 
     return render_to_response("education/partials/new_connection.html", {'form':form}, RequestContext(request))
