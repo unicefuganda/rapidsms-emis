@@ -12,15 +12,15 @@ import datetime
 GRADES = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7']
 
 class SchoolMixin(object):
-    SCHOOL_ID = 'submission__connection__contact__emisreporter__school__pk'
-    SCHOOL_NAME = 'submission__connection__contact__emisreporter__school__name'
+    SCHOOL_ID = 'submission__connection__contact__emisreporter__schools__pk'
+    SCHOOL_NAME = 'submission__connection__contact__emisreporter__schools__name'
 
     def total_attribute_by_school(self, report, keyword):
         return XFormSubmissionValue.objects.exclude(submission__has_errors=True)\
             .exclude(submission__connection__contact=None)\
             .filter(created__range=(report.start_date, report.end_date))\
             .filter(attribute__slug__in=keyword)\
-            .filter(submission__connection__contact__emisreporter__school__location__in=report.location.get_descendants(include_self=True).all())\
+            .filter(submission__connection__contact__emisreporter__schools__location__in=report.location.get_descendants(include_self=True).all())\
             .values(self.SCHOOL_NAME,
                     self.SCHOOL_ID)\
             .annotate(Sum('value_int'))
@@ -29,7 +29,7 @@ class SchoolMixin(object):
         return XFormSubmissionValue.objects.exclude(submission__has_errors=True)\
             .exclude(submission__connection__contact=None)\
             .filter(attribute__slug__in=keyword)\
-            .filter(submission__connection__contact__emisreporter__school__location__in=report.location.get_descendants(include_self=True).all())\
+            .filter(submission__connection__contact__emisreporter__schools__location__in=report.location.get_descendants(include_self=True).all())\
             .values(self.SCHOOL_NAME,
                     self.SCHOOL_ID)\
             .annotate(Sum('value_int'))
