@@ -97,9 +97,9 @@ def add_connection(request):
                     identity, backend = assign_backend(str(number))
                     connection, created = Connection.objects.get_or_create(identity=identity, backend=backend)
                     connections.append(connection)
+            _addto_autoreg(connections)
             _reload_whitelists()
 #            time.sleep(2)
-            _addto_autoreg(connections)
             return render_to_response('education/partials/addnumbers_row.html', {'object':connections, 'selectable':False}, RequestContext(request))
 
     return render_to_response("education/partials/new_connection.html", {'form':form}, RequestContext(request))
