@@ -6,6 +6,7 @@ from generic.forms import ActionForm, FilterForm, ModuleForm
 from mptt.forms import TreeNodeChoiceField
 from rapidsms.contrib.locations.models import Location
 from .models import School, EmisReporter
+from rapidsms_xforms.models import XFormSubmissionValue
 
 date_range_choices = (('w', 'Previous Calendar Week'), ('m', 'Previous Calendar Month'), ('q', 'Previous calendar quarter'),)
 
@@ -50,4 +51,13 @@ class EditReporterForm(forms.ModelForm):
     class Meta:
         model = EmisReporter
         fields = ('name', 'reporting_location', 'groups', 'schools')
+
+class DistrictFilterForm(forms.Form):
+    """ filter form for districts """
+    locs = Location.objects.filter(name__in=XFormSubmissionValue.objects.values_list('submission__connection__contact__reporting_location__name', flat=True))
+    locs_list = []
+    for loc in locs:
+        if not Location.tree.root_nodes()[0].pk == loc.pk and loc.type.name == 'district':
+            locs_list.append((loc.pk, loc.name))
+    district = forms.ChoiceField(choices=(('', '-----'),) + tuple(locs_list))
 

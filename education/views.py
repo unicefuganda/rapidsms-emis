@@ -1,5 +1,5 @@
 #from django.db import connection
-from .forms import NewConnectionForm, DateRangeForm, EditReporterForm
+from .forms import NewConnectionForm, DateRangeForm, EditReporterForm, DistrictFilterForm
 from .models import *
 from django.conf import settings, settings, settings
 from django.contrib.auth.decorators import login_required, login_required
@@ -36,10 +36,17 @@ def dashboard(request):
         return index(request)
 
 def deo_dashboard(request):
+    form = DistrictFilterForm()
+    district_id = None
+    if request.method == 'POST':
+        form = DistrictFilterForm(request.POST)
+        if form.is_valid():
+            district_id = form.cleaned_data['district']
     return render_to_response("education/deo_dashboard.html", {\
-                                'attendance_stats':attendance_stats(request), \
-                                'enrollment_stats':enrollment_stats(request), \
-                                'headteacher_attendance_stats':headteacher_attendance_stats(request), \
+                                'form':form, \
+                                'attendance_stats':attendance_stats(request, district_id), \
+                                'enrollment_stats':enrollment_stats(request, district_id), \
+                                'headteacher_attendance_stats':headteacher_attendance_stats(request, district_id), \
                                 }, RequestContext(request))
 
 def whitelist(request):
@@ -91,7 +98,7 @@ def add_connection(request):
                     connection, created = Connection.objects.get_or_create(identity=identity, backend=backend)
                     connections.append(connection)
             _reload_whitelists()
-            time.sleep(2)
+#            time.sleep(2)
             _addto_autoreg(connections)
             return render_to_response('education/partials/addnumbers_row.html', {'object':connections, 'selectable':False}, RequestContext(request))
 
