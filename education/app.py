@@ -26,7 +26,7 @@ class App (AppBase):
                     ScriptProgress.objects.create(script=Script.objects.get(slug="emis_autoreg"), \
                                           connection=message.connection)
             else:
-                message.repond("You are already in the system and do not need to 'Join' again.")
+                message.respond("You are already in the system and do not need to 'Join' again.")
             return True
         elif Blacklist.objects.filter(connection=message.connection).count():
             return True

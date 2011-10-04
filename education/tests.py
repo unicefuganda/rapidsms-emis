@@ -252,6 +252,31 @@ class ModelTest(TestCase): #pragma: no cover
         call_command('check_script_progress', e=0, l=20)
         self.assertEquals(Message.objects.filter(direction='O').order_by('-date')[0].text, 'Welcome to the school monitoring pilot.The information you provide contributes to keeping children in school.')
 
+    def testDoubleReg(self):
+        self.fake_incoming('join')
+        self.assertEquals(ScriptProgress.objects.count(), 1)
+        script_prog = ScriptProgress.objects.all()[0]
+        self.assertEquals(script_prog.script.slug, 'emis_autoreg')
+
+        self.fake_script_dialog(script_prog, self.connection, [\
+            ('emis_role', 'teacher'), \
+            ('emis_district', 'kampala'), \
+            ('emis_subcounty', 'kampala'), \
+            ('emis_one_school', 'st. marys'), \
+            ('emis_name', 'testy mctesterton'), \
+        ])
+
+        self.assertEquals(EmisReporter.objects.count(), 1)
+        contact = EmisReporter.objects.all()[0]
+        self.assertEquals(contact.name, 'Testy Mctesterton')
+        self.assertEquals(contact.reporting_location, self.kampala_subcounty)
+        self.assertEquals(contact.schools.all()[0], self.kampala_school)
+        self.assertEquals(contact.groups.all()[0].name, 'Teachers')
+
+        self.fake_incoming('join')
+        self.assertEquals(Message.objects.filter(direction='O').order_by('-date')[0].text, "You are already in the system and do not need to 'Join' again.")
+        self.assertEquals(ScriptProgress.objects.filter(script__slug='emis_autoreg').count(), 1)
+
     def testQuitRejoin(self):
         #first join
         self.fake_incoming('join')
