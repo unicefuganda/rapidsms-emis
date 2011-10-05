@@ -95,7 +95,7 @@ class ModelTest(TestCase): #pragma: no cover
         """
         progress.set_time(progress.time - datetime.timedelta(seconds=seconds))
         try:
-            session = ScriptSession.objects.get(connection=progress.connection, end_time=None)
+            session = ScriptSession.objects.get(connection=progress.connection, script__slug=progress.script.slug, end_time=None)
             session.start_time = session.start_time - datetime.timedelta(seconds=seconds)
             session.save()
         except ScriptSession.DoesNotExist:
@@ -399,3 +399,32 @@ class ModelTest(TestCase): #pragma: no cover
         perc = (float(sum([5, 10])) / float(sum([20, 11]))) * 100
         self.assertEquals(Message.objects.all().order_by('-date')[0].text, "Thank you. Attendance for teachers is %.1f percent lower than it was last week" % (100.0 - perc))
 
+    def testScriptReschedule(self):
+        self.fake_incoming('join')
+        script_prog = ScriptProgress.objects.all()[0]
+
+        self.fake_script_dialog(script_prog, self.connection, [\
+            ('emis_role', 'teacher'), \
+            ('emis_district', 'kampala'), \
+            ('emis_subcounty', 'kampala'), \
+            ('emis_one_school', 'st. marys'), \
+            ('emis_name', 'testy mctesterton'), \
+        ])
+        self.assertEquals(EmisReporter.objects.count(), 1)
+        ScriptProgress.objects.get(script__slug='emis_autoreg').delete()
+        prog = ScriptProgress.objects.get(script__slug='emis_abuse')
+        self.elapseTime2(prog, 50 * 86400)
+        call_command('check_script_progress', e=0, l=20)
+        self.assertEquals(Message.objects.filter(direction='O').order_by('-date')[0].text, Script.objects.get(slug='emis_abuse').steps.all()[0].poll.question)
+        prog = ScriptProgress.objects.get(script__slug='emis_abuse')
+        self.elapseTime2(prog, 86400)
+        call_command('check_script_progress', e=0, l=20)
+        self.assertEquals(Message.objects.filter(direction='O').order_by('-date')[0].text, Script.objects.get(slug='emis_abuse').steps.all()[0].poll.question)
+        prog = ScriptProgress.objects.get(script__slug='emis_abuse')
+        self.elapseTime2(prog, 2 * 86400)
+        call_command('check_script_progress', e=0, l=20)
+        self.assertEquals(Message.objects.filter(text='How many abuse cases were recorded in the record book this month?').count(), 2)
+        prog = ScriptProgress.objects.get(script__slug='emis_abuse')
+        self.elapseTime2(prog, 31 * 86400)
+        call_command('check_script_progress', e=0, l=20)
+        self.assertEquals(Message.objects.filter(text='How many abuse cases were recorded in the record book this month?').count(), 3)
