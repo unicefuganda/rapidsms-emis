@@ -2,7 +2,7 @@
 {% block tablehead %}
 <tr>
     {% for name, colspan, href in top_columns %}
-        <td colspan="{{ colspan }}">
+        <td colspan="{{ colspan }}" class="stats_title">
             {% if href %}<a href="{{ href }}">{{ name }}</a>{% else %}
             {{ name }}
             {% endif %}

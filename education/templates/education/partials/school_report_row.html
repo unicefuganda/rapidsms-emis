@@ -1,7 +1,7 @@
 {% load dict %}
 <tr>
 <td>
-    {{ object.submission__connection__contact__emisreporter__school__name }}
+    {{ object.submission__connection__contact__emisreporter__schools__name }}
 </td>
 {% for colname, sortable, colattr, sorter in columns %}
 {% if not forloop.first %}
