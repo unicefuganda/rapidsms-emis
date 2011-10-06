@@ -7,6 +7,7 @@ from mptt.forms import TreeNodeChoiceField
 from rapidsms.contrib.locations.models import Location
 from .models import School, EmisReporter
 from rapidsms_xforms.models import XFormSubmissionValue
+from django.contrib.auth.models import Group
 
 date_range_choices = (('w', 'Previous Calendar Week'), ('m', 'Previous Calendar Month'), ('q', 'Previous calendar quarter'),)
 
@@ -36,9 +37,9 @@ class SchoolFilterForm(FilterForm):
         if school_pk == '':
             return queryset
         elif int(school_pk) == -1:
-            return queryset.filter(school=None)
+            return queryset.filter(schools__name=None)
         else:
-            return queryset.filter(school=school_pk)
+            return queryset.filter(schools=school_pk)
 
 class NewConnectionForm(forms.Form):
     identity = forms.CharField(max_length=15, required=True, label="Primary contact information")
@@ -60,4 +61,50 @@ class DistrictFilterForm(forms.Form):
         if not Location.tree.root_nodes()[0].pk == loc.pk and loc.type.name == 'district':
             locs_list.append((loc.pk, loc.name))
     district = forms.ChoiceField(choices=(('', '-----'),) + tuple(locs_list))
+
+class LimitedDistictFilterForm(FilterForm):
+
+    """ filter Emis Reporters on their districts """
+
+    locs = Location.objects.filter(name__in=XFormSubmissionValue.objects.values_list('submission__connection__contact__reporting_location__name', flat=True)).order_by('name')
+    locs_list = []
+    for loc in locs:
+        if not Location.tree.root_nodes()[0].pk == loc.pk and loc.type.name == 'district':
+            locs_list.append((loc.pk, loc.name))
+    district = forms.ChoiceField(choices=(('', '-----'),) + tuple(locs_list))
+
+    def filter(self, request, queryset):
+        district_pk = self.cleaned_data['district']
+        if district_pk == '':
+            return queryset
+        elif int(district_pk) == -1:
+            return queryset.filter(reporting_location=None)
+        else:
+
+            try:
+                district = Location.objects.get(pk=district_pk)
+            except Location.DoesNotExist:
+                district = None
+            if district:
+                return queryset.filter(reporting_location__in=district.get_descendants(include_self=True))
+            else:
+                return queryset
+
+class RolesFilterForm(FilterForm):
+    def __init__(self, data=None, **kwargs):
+        self.request = kwargs.pop('request')
+        if data:
+            forms.Form.__init__(self, data, **kwargs)
+        else:
+            forms.Form.__init__(self, **kwargs)
+        choices = ((-1, 'No Group'),) + tuple([(int(g.pk), g.name) for g in Group.objects.all().order_by('name')])
+        self.fields['groups'] = forms.ChoiceField(choices=choices, required=True)
+
+
+    def filter(self, request, queryset):
+        groups_pk = self.cleaned_data['groups']
+        if groups_pk == '-1':
+            return queryset.filter(groups=None)
+        else:
+            return queryset.filter(groups=groups_pk)
 
