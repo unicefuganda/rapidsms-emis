@@ -256,8 +256,25 @@ def headteacher_attendance_stats(request, district_id=None):
         perc = values.count() / Location.objects.get(pk=user_location.pk).get_descendants(include_self=True).aggregate(Count('schools'))['schools__count'] * 100
     else:
         perc = 0
-    stats.append(('percentage attendance', perc))
     res = {}
     res['dates'] = dates
     res['stats'] = stats
     return res
+
+def abuse_stats(request, district_id=None):
+    stats = []
+    user_location = Location.objects.get(pk=district_id) if district_id else get_location_for_user(request.user)
+    if not user_location:
+        user_location = Location.objects.get(name='Kaabong')
+    location = Location.tree.root_nodes()[0]
+    start_date, end_date = previous_calendar_month()
+    dates = {'start':start_date, 'end':end_date}
+    values = total_attribute_value("gemabuse_cases", start_date=start_date, end_date=end_date, location=location)
+    stats.append(('GEM abuse cases', location_values(user_location, values)))
+    res = {}
+    res['dates'] = dates
+    res['stats'] = stats
+    return res
+
+class AbuseReport(SchoolReport):
+    cases = TotalAttributeBySchoolColumn("gemabuse_cases")

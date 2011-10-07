@@ -29,8 +29,7 @@
         			<td class="qt-body">{{ num|default_if_none:'-'|intcomma }}</td>
         		{% endfor %}
         	</tr>
-        </table>
-        <a href="{% url attendance-stats %}">See details &raquo;</a>
+        </table><br /><a href="{% url attendance-stats %}">See Latest Attendance Details &raquo;</a> 
     </p>
     <p>
         <table width="100%" cellspacing="0" cellpadding="0">
@@ -65,5 +64,22 @@
         		{% endfor %}
         	</tr>
         </table>
+    </p>
+    <p>
+        <table width="100%" cellspacing="0" cellpadding="0">
+        	<tr>
+        		<td colspan={{ abuse_stats.stats|length }} class="stat"><span class="stats">GEM Reported Abuse Cases</span><span class="dates">Dates: {{ abuse_stats.dates.start|date:"m/d/Y" }} - {{ abuse_stats.dates.end|date:"m/d/Y" }}</span></td>
+        	</tr>
+        	<tr>
+        		{% for cat, num in abuse_stats.stats %}
+        			<td class="qt-head">{{ cat|title }}</td>
+        		{% endfor %}
+        	</tr>
+        	<tr>
+        		{% for cat, num in abuse_stats.stats %}
+        			<td class="qt-body">{{ num|default_if_none:'-'|intcomma }}</td>
+        		{% endfor %}
+        	</tr>
+        </table><br /><a href="{% url abuse-stats %}">See Abuse Cases Details &raquo;</a>
     </p>
 {% endblock %}

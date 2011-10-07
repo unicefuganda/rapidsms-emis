@@ -17,7 +17,7 @@ from poll.models import Poll, ResponseCategory, Response
 from rapidsms.models import Connection, Contact, Contact, Connection
 from rapidsms_httprouter.models import Message
 from uganda_common.utils import get_xform_dates, assign_backend
-from .reports import attendance_stats, enrollment_stats, headteacher_attendance_stats
+from .reports import attendance_stats, enrollment_stats, headteacher_attendance_stats, abuse_stats
 from urllib2 import urlopen, urlopen
 import datetime
 import datetime
@@ -47,6 +47,7 @@ def deo_dashboard(request):
                                 'attendance_stats':attendance_stats(request, district_id), \
                                 'enrollment_stats':enrollment_stats(request, district_id), \
                                 'headteacher_attendance_stats':headteacher_attendance_stats(request, district_id), \
+                                'abuse_stats':abuse_stats(request, district_id), \
                                 }, RequestContext(request))
 
 def whitelist(request):

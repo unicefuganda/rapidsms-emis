@@ -1,6 +1,6 @@
 from .forms import SchoolFilterForm, LimitedDistictFilterForm, RolesFilterForm
 from .models import EmisReporter
-from .reports import AttendanceReport
+from .reports import AttendanceReport, AbuseReport
 from .sorters import LatestSubmissionSorter
 from .views import whitelist, add_connection, delete_connection, deo_dashboard, dashboard, edit_reporter, delete_reporter
 from contact.forms import FreeSearchForm, DistictFilterForm, MassTextForm, \
@@ -105,4 +105,21 @@ urlpatterns = patterns('',
       'sort_column':'date',
       'sort_ascending':False,
     }, name="emis-othermessages"),
+
+    url(r'^emis/abuse/$', generic, {
+        'model':XFormSubmission,
+        'queryset':AbuseReport,
+        'selectable':False,
+        'paginated':False,
+        'results_title':None,
+        'columns':[
+            ('', False, '', None),
+            ('total cases', False, 'total_cases', None),
+        ],
+        'partial_row':'education/partials/abuse_report_row.html',
+        'partial_header':'education/partials/partial_header.html',
+        'base_template':'generic/timeslider_base.html',
+        'needs_date':True,
+        'dates':get_xform_dates,
+    }, name='abuse-stats'),
 )
