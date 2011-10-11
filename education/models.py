@@ -290,8 +290,12 @@ def emis_reschedule_script(**kwargs):
     elif slug == 'emis_annual':
         start_of_term = getattr(settings, 'SCHOOL_TERM_START', datetime.datetime.now())
         if group.name in ['Teachers', 'Head Teachers']:
-            sp = ScriptProgress.objects.create(connection=connection, script=Script.objects.get(slug='emis_annual'))
-            sp.set_time(start_of_term + datetime.timedelta(14))
+            if (start_of_term + datetime.timedelta(14)) >= datetime.datetime.now() or\
+             ScriptSession.objects.filter(script__slug='emis_annual', \
+                            connection=connection, \
+                            start_time__gt=getattr(settings, 'SCHOOL_TERM_START', datetime.datetime.now())).count() < 1:
+                sp = ScriptProgress.objects.create(connection=connection, script=Script.objects.get(slug='emis_annual'))
+                sp.set_time(start_of_term + datetime.timedelta(14))
     elif slug == 'emis_smc_monthly':
         _schedule_monthly_script(group, connection, 'emis_smc_monthly', 28, ['SMC'])
     elif slug == 'emis_head teacher presence':

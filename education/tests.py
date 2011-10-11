@@ -428,3 +428,34 @@ class ModelTest(TestCase): #pragma: no cover
         self.elapseTime2(prog, 31 * 86400)
         call_command('check_script_progress', e=0, l=20)
         self.assertEquals(Message.objects.filter(text='How many abuse cases were recorded in the record book this month?').count(), 3)
+
+    def testAnnualScriptReschedule(self):
+        self.fake_incoming('join')
+        script_prog = ScriptProgress.objects.all()[0]
+
+        self.fake_script_dialog(script_prog, self.connection, [\
+            ('emis_role', 'teacher'), \
+            ('emis_district', 'kampala'), \
+            ('emis_subcounty', 'kampala'), \
+            ('emis_one_school', 'st. marys'), \
+            ('emis_name', 'testy mctesterton'), \
+        ])
+        self.assertEquals(EmisReporter.objects.count(), 1)
+        ScriptProgress.objects.get(script__slug='emis_autoreg').delete()
+        prog = ScriptProgress.objects.get(script__slug='emis_annual')
+        self.elapseTime2(prog, 14 * 86400)
+        for x in range(Script.objects.get(slug='emis_annual').steps.count()):
+            prog = ScriptProgress.objects.get(script__slug='emis_annual')
+            self.elapseTime2(prog, 61)
+            for y in range(2):
+                call_command('check_script_progress', e=0, l=20)
+                self.assertEquals(Message.objects.filter(direction='O').order_by('-date')[0].text, Script.objects.get(slug='emis_annual').steps.all()[x].poll.question)
+                self.elapseTime2(prog, 86400)
+                if y == 1:
+                    #Factor in giveup_offset=86400
+                    self.elapseTime2(prog, 86400)
+                    call_command('check_script_progress', e=0, l=20)
+        #emis_annual script marked as ended for this session
+        self.assertEquals(ScriptSession.objects.filter(script__slug='emis_annual', end_time=None).count(), 0)
+        #script progress for this user should be empty for the annual scripts
+        self.assertEquals(ScriptProgress.objects.filter(script__slug='emis_annual', connection=self.connection).count(), 0)
