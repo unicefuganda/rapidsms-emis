@@ -431,6 +431,7 @@ class ModelTest(TestCase): #pragma: no cover
         self.assertEquals(Message.objects.filter(text='How many abuse cases were recorded in the record book this month?').count(), 3)
 
     def testAnnualScriptReschedule(self):
+        #TO DO: add setting for schedule of annual scripts
         self.fake_incoming('join')
         script_prog = ScriptProgress.objects.all()[0]
 
@@ -444,7 +445,21 @@ class ModelTest(TestCase): #pragma: no cover
         self.assertEquals(EmisReporter.objects.count(), 1)
         ScriptProgress.objects.get(script__slug='emis_autoreg').delete()
         prog = ScriptProgress.objects.get(script__slug='emis_annual')
-        self.elapseTime2(prog, 14 * 86400)
+
+        #nothing going out after three weeks
+        self.elapseTime2(prog, 21 * 86400)
+        prog = ScriptProgress.objects.get(script__slug='emis_annual')
+        call_command('check_script_progress', e=0, l=20)
+        if Message.objects.filter(direction="O").count():
+            self.assertNotEqual(Message.objects.filter(direction='O').order_by('-date')[0].text, Script.objects.get(slug='emis_annual').steps.all()[0].poll.question)
+
+        #12 weeks after beginning of each year, annual messages are sent out
+        d = datetime.datetime.now()
+        start_of_year = datetime.datetime(d.year, 1, 1, d.hour, d.minute, d.second, d.microsecond)\
+         if d.month < 3 else datetime.datetime(d.year + 1, 1, 1, d.hour, d.minute, d.second, d.microsecond)
+        script_start = start_of_year + datetime.timedelta(weeks=15)
+        import time
+        self.elapseTime2(prog, time.mktime(script_start.timetuple()))
         for x in range(Script.objects.get(slug='emis_annual').steps.count()):
             prog = ScriptProgress.objects.get(script__slug='emis_annual')
             self.elapseTime2(prog, 61)
@@ -458,5 +473,9 @@ class ModelTest(TestCase): #pragma: no cover
                     call_command('check_script_progress', e=0, l=20)
         #emis_annual script marked as ended for this session
         self.assertEquals(ScriptSession.objects.filter(script__slug='emis_annual', end_time=None).count(), 0)
-        #script progress for this user should be empty for the annual scripts
-        self.assertEquals(ScriptProgress.objects.filter(script__slug='emis_annual', connection=self.connection).count(), 0)
+
+        #annual script for this user re-scheduled to 12 weeks after beginning of next year
+        d = ScriptSession.objects.filter(script__slug='emis_annual', connection=self.connection).order_by('-end_time')[0].end_time
+        start_of_year = datetime.datetime(d.year + 1, 1, 1, d.hour, d.minute, d.second, d.microsecond)
+        script_start = start_of_year + datetime.timedelta(weeks=12)
+        self.assertEquals(ScriptProgress.objects.get(script__slug='emis_annual', connection=self.connection).time, script_start)

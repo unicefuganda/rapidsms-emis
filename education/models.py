@@ -224,10 +224,19 @@ def emis_autoreg(**kwargs):
             _schedule_monthly_script(group, connection, 'emis_meals', 20, ['Teachers', 'Head Teachers'])
             _schedule_monthly_script(group, connection, 'emis_school_administrative', 15, ['Teachers', 'Head Teachers'])
 
-            start_of_term = getattr(settings, 'SCHOOL_TERM_START', datetime.datetime.now())
+#            start_of_term = getattr(settings, 'SCHOOL_TERM_START', datetime.datetime.now())
+#            if group.name in ['Teachers', 'Head Teachers']:
+#                sp = ScriptProgress.objects.create(connection=connection, script=Script.objects.get(slug='emis_annual'))
+#                sp.set_time(start_of_term + datetime.timedelta(14))
+
+            #annual polls sent out 12 weeks after beginning of very year
+            #TO DO: add setting for schedule of annual scripts
+            d = datetime.datetime.now()
+            start_of_year = datetime.datetime(d.year, 1, 1, d.hour, d.minute, d.second, d.microsecond)\
+                if d.month < 3 else datetime.datetime(d.year + 1, 1, 1, d.hour, d.minute, d.second, d.microsecond)
             if group.name in ['Teachers', 'Head Teachers']:
                 sp = ScriptProgress.objects.create(connection=connection, script=Script.objects.get(slug='emis_annual'))
-                sp.set_time(start_of_term + datetime.timedelta(14))
+                sp.set_time(start_of_year + datetime.timedelta(weeks=12))
 
             _schedule_monthly_script(group, connection, 'emis_smc_monthly', 28, ['SMC'])
 
@@ -288,14 +297,22 @@ def emis_reschedule_script(**kwargs):
     elif slug == 'emis_school_administrative':
         _schedule_monthly_script(group, connection, 'emis_school_administrative', 15, ['Teachers', 'Head Teachers'])
     elif slug == 'emis_annual':
-        start_of_term = getattr(settings, 'SCHOOL_TERM_START', datetime.datetime.now())
-        if group.name in ['Teachers', 'Head Teachers']:
-            if (start_of_term + datetime.timedelta(14)) >= datetime.datetime.now() or\
-             ScriptSession.objects.filter(script__slug='emis_annual', \
+        #TO DO: add setting for schedule of annual scripts
+        d = ScriptSession.objects.filter(script__slug='emis_annual', \
                             connection=connection, \
-                            start_time__gt=getattr(settings, 'SCHOOL_TERM_START', datetime.datetime.now())).count() < 1:
-                sp = ScriptProgress.objects.create(connection=connection, script=Script.objects.get(slug='emis_annual'))
-                sp.set_time(start_of_term + datetime.timedelta(14))
+                            ).order_by('-end_time')[0].end_time
+#        d = datetime.datetime.now()
+        start_of_year = datetime.datetime(d.year + 1, 1, 1, d.hour, d.minute, d.second, d.microsecond)
+        if group.name in ['Teachers', 'Head Teachers']:
+            sp = ScriptProgress.objects.create(connection=connection, script=Script.objects.get(slug='emis_annual'))
+            sp.set_time(start_of_year + datetime.timedelta(weeks=12))
+#            start_of_term = getattr(settings, 'SCHOOL_TERM_START', datetime.datetime.now())
+#            if (start_of_term + datetime.timedelta(14)) >= datetime.datetime.now() or\
+#             ScriptSession.objects.filter(script__slug='emis_annual', \
+#                            connection=connection, \
+#                            start_time__gt=getattr(settings, 'SCHOOL_TERM_START', datetime.datetime.now())).count() < 1:
+#                sp = ScriptProgress.objects.create(connection=connection, script=Script.objects.get(slug='emis_annual'))
+#                sp.set_time(start_of_term + datetime.timedelta(14))
     elif slug == 'emis_smc_monthly':
         _schedule_monthly_script(group, connection, 'emis_smc_monthly', 28, ['SMC'])
     elif slug == 'emis_head teacher presence':
