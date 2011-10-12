@@ -330,6 +330,7 @@ class ModelTest(TestCase): #pragma: no cover
         self.assertScriptSkips('8675312', 'district officials', 'emis_district', 'emis_name')
 
         self.assertScriptSkips('8675313', 'gem', 'emis_district', 'emis_subcounty')
+#        self.assertScriptSkips('8675313', 'gem', 'emis_district', 'emis_name')
         self.assertScriptSkips('8675314', 'smc', 'emis_district', 'emis_subcounty')
         self.assertScriptSkips('8675315', 'head teachers', 'emis_district', 'emis_subcounty')
         self.assertScriptSkips('8675316', 'teachers', 'emis_district', 'emis_subcounty')
@@ -411,7 +412,7 @@ class ModelTest(TestCase): #pragma: no cover
             ('emis_name', 'testy mctesterton'), \
         ])
         self.assertEquals(EmisReporter.objects.count(), 1)
-        ScriptProgress.objects.get(script__slug='emis_autoreg').delete()
+        ScriptProgress.objects.exclude(script__slug='emis_abuse').delete()
         prog = ScriptProgress.objects.get(script__slug='emis_abuse')
         self.elapseTime2(prog, 50 * 86400)
         call_command('check_script_progress', e=0, l=20)
