@@ -1,4 +1,4 @@
-from .forms import SchoolFilterForm, LimitedDistictFilterForm, RolesFilterForm
+from .forms import SchoolFilterForm, LimitedDistictFilterForm, RolesFilterForm, ReporterFreeSearchForm
 from .models import EmisReporter
 from .reports import AttendanceReport, AbuseReport
 from .sorters import LatestSubmissionSorter
@@ -34,7 +34,7 @@ urlpatterns = patterns('',
    #reporters
     url(r'^emis/reporter/$', generic, {
       'model':EmisReporter,
-      'filter_forms':[FreeSearchForm, RolesFilterForm, LimitedDistictFilterForm, SchoolFilterForm],
+      'filter_forms':[ReporterFreeSearchForm, RolesFilterForm, LimitedDistictFilterForm, SchoolFilterForm],
       'action_forms':[MassTextForm],
       'objects_per_page':25,
       'partial_row':'education/partials/reporter_row.html',

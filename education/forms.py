@@ -8,6 +8,7 @@ from rapidsms.contrib.locations.models import Location
 from .models import School, EmisReporter
 from rapidsms_xforms.models import XFormSubmissionValue
 from django.contrib.auth.models import Group
+from django.db.models import Q
 
 date_range_choices = (('w', 'Previous Calendar Week'), ('m', 'Previous Calendar Month'), ('q', 'Previous calendar quarter'),)
 
@@ -26,6 +27,27 @@ class DateRangeForm(forms.Form): # pragma: no cover
         return cleaned_data
 
 AREAS = Location.tree.all().select_related('type')
+
+class ReporterFreeSearchForm(FilterForm):
+
+    """ concrete implementation of filter form
+        TO DO: add ability to search for multiple search terms separated by 'or'
+    """
+
+    search = forms.CharField(max_length=100, required=False, label="Free-form search",
+                             help_text="Use 'or' to search for multiple names")
+
+    def filter(self, request, queryset):
+        search = self.cleaned_data['search']
+        if search == "":
+            return queryset
+        else:
+            if search[:3] == '256':
+                search = search[3:]
+            elif search[:1] == '0':
+                search = search[1:]
+            queryset = queryset.filter(Q(name__icontains=search) | Q(reporting_location__name__icontains=search) | Q(connection__identity__icontains=search) | Q(schools__name__icontains=search))
+            return queryset
 
 class SchoolFilterForm(FilterForm):
     """ filter form for emis schools """
@@ -104,7 +126,7 @@ class RolesFilterForm(FilterForm):
     def filter(self, request, queryset):
         groups_pk = self.cleaned_data['groups']
         if groups_pk == '-1':
-            return queryset.filter(groups=None)
+            return queryset
         else:
             return queryset.filter(groups=groups_pk)
 

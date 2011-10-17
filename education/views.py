@@ -134,7 +134,7 @@ def edit_reporter(request, reporter_pk):
                     : reporter},
                     context_instance=RequestContext(request))
         return render_to_response('/education/partials/reporter_row.html',
-                                  {'object':Contact.objects.get(pk=reporter_pk),
+                                  {'object':EmisReporter.objects.get(pk=reporter_pk),
                                    'selectable':True},
                                   context_instance=RequestContext(request))
     else:
