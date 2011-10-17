@@ -158,6 +158,7 @@ class ModelTest(TestCase): #pragma: no cover
         self.assertEquals(contact.reporting_location, self.kampala_subcounty)
         self.assertEquals(contact.schools.all()[0], self.kampala_school)
         self.assertEquals(contact.groups.all()[0].name, 'Teachers')
+        self.assertEquals(contact.default_connection, self.connection)
 
     def testBadAutoReg(self):
         """

@@ -7,10 +7,10 @@ from .models import EmisReporter
 class App (AppBase):
 
     def handle (self, message):
-        if message.text.strip().lower() in [i.lower() for i in getattr(settings, 'OPT_OUT_WORDS', ['exit'])]:
+        if message.text.strip().lower() in [i.lower() for i in getattr(settings, 'OPT_OUT_WORDS', ['quit'])]:
             Blacklist.objects.create(connection=message.connection)
             if (message.connection.contact):
-                reporter = EmisReporter.objects.get(pk=message.connection.contact.pk)
+                reporter = EmisReporter.objects.get(connection=message.connection)
                 message.connection.contact.active = False
                 message.connection.contact.save()
                 reporter.active = False
