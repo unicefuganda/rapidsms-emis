@@ -1,5 +1,5 @@
 #from django.db import connection
-from .forms import NewConnectionForm, DateRangeForm, EditReporterForm, DistrictFilterForm
+from .forms import NewConnectionForm, DateRangeForm, EditReporterForm, DistrictFilterForm, SchoolForm
 from .models import *
 from django.conf import settings, settings, settings
 from django.contrib.auth.decorators import login_required, login_required
@@ -42,7 +42,7 @@ def deo_dashboard(request):
         form = DistrictFilterForm(request.POST)
         if form.is_valid():
             district_id = form.cleaned_data['district']
-    return render_to_response("education/deo_dashboard.html", {\
+    return render_to_response("education/deo/deo_dashboard.html", {\
                                 'form':form, \
                                 'attendance_stats':attendance_stats(request, district_id), \
                                 'enrollment_stats':enrollment_stats(request, district_id), \
@@ -141,4 +141,64 @@ def edit_reporter(request, reporter_pk):
         return render_to_response('education/partials/edit_reporter.html',
                                   {'reporter_form': reporter_form,
                                   'reporter': reporter},
+                                  context_instance=RequestContext(request))
+
+@login_required
+def add_schools(request):
+    if request.method == 'POST':
+        form = SchoolForm(request.POST)
+        schools = []
+        if form.is_valid():
+            names = filter(None, request.POST.getlist('name'))
+            locations = filter(None, request.POST.getlist('location'))
+            emis_ids = filter(None, request.POST.getlist('emis_id'))
+            if len(names) > 0:
+                for i, name in enumerate(names):
+                    location = Location.objects.get(pk=int(locations[i]))
+                    if len(emis_ids):
+                        try:
+                            emis_id = emis_ids[i]
+                        except IndexError:
+                            emis_id = ''
+                    else:
+                        emis_id = ''
+                    name, created = School.objects.get_or_create(name=name, location=location, emis_id=emis_id)
+                    schools.append(name)
+
+                return render_to_response('education/partials/addschools_row.html', {'object':schools, 'selectable':False}, RequestContext(request))
+    else:
+        form = SchoolForm()
+    return render_to_response('education/deo/add_schools.html',
+                                  {'form': form,
+                                }, context_instance=RequestContext(request))
+
+@login_required
+def delete_school(request, school_pk):
+    school = get_object_or_404(School, pk=school_pk)
+    if request.method == 'POST':
+        school.delete()
+    return HttpResponse(status=200)
+
+@login_required
+def edit_school(request, school_pk):
+    school = get_object_or_404(School, pk=school_pk)
+    school_form = SchoolForm(instance=school)
+    if request.method == 'POST':
+        school_form = SchoolForm(instance=school,
+                data=request.POST)
+        if school_form.is_valid():
+            school_form.save()
+        else:
+            return render_to_response('education/partials/edit_school.html'
+                    , {'school_form': school_form, 'school'
+                    : school},
+                    context_instance=RequestContext(request))
+        return render_to_response('/education/partials/school_row.html',
+                                  {'object':School.objects.get(pk=school_pk),
+                                   'selectable':True},
+                                  context_instance=RequestContext(request))
+    else:
+        return render_to_response('education/partials/edit_school.html',
+                                  {'school_form': school_form,
+                                  'school': school},
                                   context_instance=RequestContext(request))

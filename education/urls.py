@@ -1,8 +1,10 @@
-from .forms import SchoolFilterForm, LimitedDistictFilterForm, RolesFilterForm, ReporterFreeSearchForm
-from .models import EmisReporter
+from .forms import SchoolFilterForm, LimitedDistictFilterForm, \
+ RolesFilterForm, ReporterFreeSearchForm, SchoolDistictFilterForm, FreeSearchSchoolsForm
+from .models import EmisReporter, School
 from .reports import AttendanceReport, AbuseReport
 from .sorters import LatestSubmissionSorter
-from .views import whitelist, add_connection, delete_connection, deo_dashboard, dashboard, edit_reporter, delete_reporter
+from .views import whitelist, add_connection, delete_connection, deo_dashboard, dashboard, \
+ edit_reporter, delete_reporter, add_schools, edit_school, delete_school
 from contact.forms import FreeSearchForm, DistictFilterForm, MassTextForm, \
     FreeSearchTextForm, DistictFilterMessageForm, HandledByForm, ReplyTextForm
 from django.conf.urls.defaults import patterns, url
@@ -89,6 +91,24 @@ urlpatterns = patterns('',
     url(r'^connections/(\d+)/delete/', delete_connection),
 
     url(r'^emis/deo_dashboard/', login_required(deo_dashboard), {}, name='deo-dashboard'),
+    url(r'^emis/school/$', generic, {
+      'model':School,
+      'filter_forms':[FreeSearchSchoolsForm, SchoolDistictFilterForm],
+      'objects_per_page':25,
+      'partial_row':'education/partials/school_row.html',
+      'partial_header':'education/partials/school_partial_header.html',
+      'base_template':'education/schools_base.html',
+      'columns':[('Name', True, 'name', SimpleSorter()),
+                 ('District', True, 'location__name', None,),
+                 ('School ID', False, 'emis_id', None,),
+                 ],
+      'sort_column':'date',
+      'sort_ascending':False,
+    }, name="emis-schools"),
+    url(r'^emis/add_schools/', login_required(add_schools), {}, name='add-schools'),
+    url(r'^emis/school/(\d+)/edit/', edit_school, name='edit-school'),
+    url(r'^emis/school/(\d+)/delete/', delete_school, name='delete-school'),
+    url(r'^emis/school/(?P<pk>\d+)/show', generic_row, {'model':School, 'partial_row':'education/partials/school_row.html'}, name='show-school'),
 
     url(r'^emis/othermessages/$', generic, {
       'model':Message,

@@ -130,3 +130,60 @@ class RolesFilterForm(FilterForm):
         else:
             return queryset.filter(groups=groups_pk)
 
+class SchoolForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super(SchoolForm, self).__init__(*args, **kwargs)
+        self.fields['location'] = TreeNodeChoiceField(queryset=self.fields['location'].queryset, level_indicator=u'.')
+        self.fields['name'] = forms.CharField(required=False, max_length=160)
+        self.fields['emis_id'] = forms.CharField(required=False, max_length=10)
+
+    class Meta:
+        model = School
+        fields = ('name', 'location', 'emis_id')
+
+class FreeSearchSchoolsForm(FilterForm):
+
+    """ concrete implementation of filter form
+        TO DO: add ability to search for multiple search terms separated by 'or'
+    """
+
+    search = forms.CharField(max_length=100, required=False, label="Free-form search",
+                             help_text="Use 'or' to search for multiple names")
+
+    def filter(self, request, queryset):
+        search = self.cleaned_data['search']
+        if search == "":
+            return queryset
+        else:
+            return queryset.filter(Q(name__icontains=search)
+                                   | Q(emis_id__icontains=search)
+                                   | Q(location__name__icontains=search))
+
+class SchoolDistictFilterForm(FilterForm):
+
+    """ filter Schools on their districts """
+
+    locs = Location.objects.filter(name__in=School.objects.values_list('location__name', flat=True)).order_by('name')
+    locs_list = []
+    for loc in locs:
+        if not Location.tree.root_nodes()[0].pk == loc.pk and loc.type.name == 'district':
+            locs_list.append((loc.pk, loc.name))
+    district = forms.ChoiceField(choices=(('', '-----'),) + tuple(locs_list))
+
+    def filter(self, request, queryset):
+        district_pk = self.cleaned_data['district']
+        if district_pk == '':
+            return queryset
+        elif int(district_pk) == -1:
+            return queryset.filter(reporting_location=None)
+        else:
+
+            try:
+                district = Location.objects.get(pk=district_pk)
+            except Location.DoesNotExist:
+                district = None
+            if district:
+                return queryset.filter(location__in=district.get_descendants(include_self=True))
+            else:
+                return queryset
+
