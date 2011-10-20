@@ -150,18 +150,12 @@ def add_schools(request):
         schools = []
         if form.is_valid():
             names = filter(None, request.POST.getlist('name'))
-            locations = filter(None, request.POST.getlist('location'))
-            emis_ids = filter(None, request.POST.getlist('emis_id'))
+            locations = request.POST.getlist('location')
+            emis_ids = request.POST.getlist('emis_id')
             if len(names) > 0:
                 for i, name in enumerate(names):
                     location = Location.objects.get(pk=int(locations[i]))
-                    if len(emis_ids):
-                        try:
-                            emis_id = emis_ids[i]
-                        except IndexError:
-                            emis_id = ''
-                    else:
-                        emis_id = ''
+                    emis_id = emis_ids[i]
                     name, created = School.objects.get_or_create(name=name, location=location, emis_id=emis_id)
                     schools.append(name)
 
