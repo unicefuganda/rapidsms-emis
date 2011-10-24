@@ -444,7 +444,7 @@ class ModelTest(TestCase): #pragma: no cover
             ('emis_name', 'testy mctesterton'), \
         ])
         self.assertEquals(EmisReporter.objects.count(), 1)
-        ScriptProgress.objects.get(script__slug='emis_autoreg').delete()
+        ScriptProgress.objects.exclude(script__slug='emis_annual').delete()
         prog = ScriptProgress.objects.get(script__slug='emis_annual')
 
         #nothing going out after three weeks
@@ -458,7 +458,7 @@ class ModelTest(TestCase): #pragma: no cover
         d = datetime.datetime.now()
         start_of_year = datetime.datetime(d.year, 1, 1, d.hour, d.minute, d.second, d.microsecond)\
          if d.month < 3 else datetime.datetime(d.year + 1, 1, 1, d.hour, d.minute, d.second, d.microsecond)
-        script_start = start_of_year + datetime.timedelta(weeks=15)
+        script_start = start_of_year + datetime.timedelta(weeks=(getattr(settings, 'SCHOOL_ANNUAL_MESSAGES_START', 12) + 3))
         import time
         self.elapseTime2(prog, time.mktime(script_start.timetuple()))
         for x in range(Script.objects.get(slug='emis_annual').steps.count()):
@@ -478,5 +478,47 @@ class ModelTest(TestCase): #pragma: no cover
         #annual script for this user re-scheduled to 12 weeks after beginning of next year
         d = ScriptSession.objects.filter(script__slug='emis_annual', connection=self.connection).order_by('-end_time')[0].end_time
         start_of_year = datetime.datetime(d.year + 1, 1, 1, d.hour, d.minute, d.second, d.microsecond)
-        script_start = start_of_year + datetime.timedelta(weeks=12)
+        script_start = start_of_year + datetime.timedelta(weeks=getattr(settings, 'SCHOOL_ANNUAL_MESSAGES_START', 12))
         self.assertEquals(ScriptProgress.objects.get(script__slug='emis_annual', connection=self.connection).time, script_start)
+
+    def testTermlyScriptReschedule(self):
+        self.fake_incoming('join')
+        script_prog = ScriptProgress.objects.all()[0]
+
+        self.fake_script_dialog(script_prog, self.connection, [\
+            ('emis_role', 'SMC'), \
+            ('emis_district', 'kampala'), \
+            ('emis_subcounty', 'kampala'), \
+            ('emis_one_school', 'st. marys'), \
+            ('emis_name', 'testy mctesterton'), \
+        ])
+        self.assertEquals(EmisReporter.objects.count(), 1)
+        ScriptProgress.objects.exclude(script__slug='emis_termly').delete()
+        prog = ScriptProgress.objects.get(script__slug='emis_termly')
+
+        #nothing going out after a week
+        self.elapseTime2(prog, 7 * 86400)
+        prog = ScriptProgress.objects.get(script__slug='emis_termly')
+        call_command('check_script_progress', e=0, l=20)
+        if Message.objects.filter(direction="O").count():
+            self.assertNotEqual(Message.objects.filter(direction='O').order_by('-date')[0].text, Script.objects.get(slug='emis_termly').steps.all()[0].poll.question)
+
+        #2 weeks from end of term, termly messages are sent out
+        script_start = getattr(settings, 'SCHOOL_TERM_START', datetime.datetime.now()) + datetime.timedelta(weeks=10)
+        import time
+        self.elapseTime2(prog, time.mktime(script_start.timetuple()))
+        for x in range(Script.objects.get(slug='emis_termly').steps.count()):
+            prog = ScriptProgress.objects.get(script__slug='emis_termly')
+            self.elapseTime2(prog, 61)
+            for y in range(2):
+                call_command('check_script_progress', e=0, l=20)
+                self.assertEquals(Message.objects.filter(direction='O').order_by('-date')[0].text, Script.objects.get(slug='emis_termly').steps.all()[x].poll.question)
+                self.elapseTime2(prog, 86400)
+                if y == 1:
+                    #Factor in giveup_offset=86400
+                    self.elapseTime2(prog, 86400)
+                    call_command('check_script_progress', e=0, l=20)
+        #emis_termly script marked as ended for this session
+        self.assertEquals(ScriptSession.objects.filter(script__slug='emis_termly', end_time=None).count(), 0)
+
+        #check for reschedule of next term's polls

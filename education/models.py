@@ -184,22 +184,17 @@ def emis_autoreg(**kwargs):
         _schedule_monthly_script(group, connection, 'emis_abuse', 'last', ['Teachers', 'Head Teachers'])
         _schedule_monthly_script(group, connection, 'emis_meals', 20, ['Teachers', 'Head Teachers'])
         _schedule_monthly_script(group, connection, 'emis_school_administrative', 15, ['Teachers', 'Head Teachers'])
-
-#            start_of_term = getattr(settings, 'SCHOOL_TERM_START', datetime.datetime.now())
-#            if group.name in ['Teachers', 'Head Teachers']:
-#                sp = ScriptProgress.objects.create(connection=connection, script=Script.objects.get(slug='emis_annual'))
-#                sp.set_time(start_of_term + datetime.timedelta(14))
-
-        #annual polls sent out 12 weeks after beginning of very year
-        #TO DO: add setting for schedule of annual scripts
+        # Schedule annual messages
         d = datetime.datetime.now()
         start_of_year = datetime.datetime(d.year, 1, 1, d.hour, d.minute, d.second, d.microsecond)\
             if d.month < 3 else datetime.datetime(d.year + 1, 1, 1, d.hour, d.minute, d.second, d.microsecond)
         if group.name in ['Teachers', 'Head Teachers']:
             sp = ScriptProgress.objects.create(connection=connection, script=Script.objects.get(slug='emis_annual'))
-            sp.set_time(start_of_year + datetime.timedelta(weeks=12))
+            sp.set_time(start_of_year + datetime.timedelta(weeks=getattr(settings, 'SCHOOL_ANNUAL_MESSAGES_START', 12)))
 
         _schedule_monthly_script(group, connection, 'emis_smc_monthly', 28, ['SMC'])
+        #this feature is currently disabled, its difficult to schedule termly polls without being sure of the length of each term holiday
+#        _schedule_termly_script(group, connection, 'emis_termly', ['SMC'])
 
         holidays = getattr(settings, 'SCHOOL_HOLIDAYS', [])
         if group.name in ['SMC']:
@@ -224,10 +219,11 @@ def _schedule_monthly_script(group, connection, script_slug, day_offset, role_na
         d = datetime.datetime.now()
         day = calendar.mdays[d.month] if day_offset == 'last' else day_offset
         d = datetime.datetime(d.year, d.month, day)
+        #if d is weekend, set time to next monday
         if d.weekday() == 5:
-            d = datetime.datetime(d.year, d.month, day + 2)
+            d = d + datetime.timedelta((0 - d.weekday()) % 7)
         if d.weekday() == 6:
-            d = datetime.datetime(d.year, d.month, day + 1)
+            d = d + datetime.timedelta((0 - d.weekday()) % 7)
         in_holiday = True
         while in_holiday:
             in_holiday = False
@@ -239,10 +235,40 @@ def _schedule_monthly_script(group, connection, script_slug, day_offset, role_na
                 d = d + datetime.timedelta(31)
                 day = calendar.mdays[d.month] if day_offset == 'last' else day_offset
                 d = datetime.datetime(d.year, d.month, day)
+                #if d is weekend, set time to next monday
                 if d.weekday() == 5:
-                    d = datetime.datetime(d.year, d.month, day + 2)
+                    d = d + datetime.timedelta((0 - d.weekday()) % 7)
                 if d.weekday() == 6:
-                    d = datetime.datetime(d.year, d.month, day + 1)
+                    d = d + datetime.timedelta((0 - d.weekday()) % 7)
+        sp = ScriptProgress.objects.create(connection=connection, script=Script.objects.get(slug=script_slug))
+        sp.set_time(d)
+
+def _schedule_termly_script(group, connection, script_slug, role_names):
+    holidays = getattr(settings, 'SCHOOL_HOLIDAYS', [])
+    start_of_term = getattr(settings, 'SCHOOL_TERM_START', datetime.datetime.now())
+    if group.name in role_names:
+        #termly messages are sent (SCHOOL_TERM_LENGTH - 2weeks) from the end of term, term assumed to be approximately 10 weeks
+        d = start_of_term + datetime.timedelta(weeks=(getattr(settings, 'SCHOOL_TERM_LENGTH', 12) - 2))
+        #if d is weekend, set time to next monday
+        if d.weekday() == 5:
+            d = d + datetime.timedelta((0 - d.weekday()) % 7)
+        if d.weekday() == 6:
+            d = d + datetime.timedelta((0 - d.weekday()) % 7)
+        in_holiday = True
+        while in_holiday:
+            in_holiday = False
+            for start, end in holidays:
+                if d >= start and d <= end:
+                    in_holiday = True
+                    break
+            if in_holiday:
+                #termly messages are sent (SCHOOL_TERM_LENGTH - 2weeks) from the end of term, term assumed to be approximately 10 weeks
+                d = start_of_term + datetime.timedelta(weeks=(getattr(settings, 'SCHOOL_TERM_LENGTH', 12) - 2))
+                #if d is weekend, set time to next monday
+                if d.weekday() == 5:
+                    d = d + datetime.timedelta((0 - d.weekday()) % 7)
+                if d.weekday() == 6:
+                    d = d + datetime.timedelta((0 - d.weekday()) % 7)
         sp = ScriptProgress.objects.create(connection=connection, script=Script.objects.get(slug=script_slug))
         sp.set_time(d)
 
@@ -264,23 +290,20 @@ def emis_reschedule_script(**kwargs):
         _schedule_monthly_script(group, connection, 'emis_meals', 20, ['Teachers', 'Head Teachers'])
     elif slug == 'emis_school_administrative':
         _schedule_monthly_script(group, connection, 'emis_school_administrative', 15, ['Teachers', 'Head Teachers'])
+    #schedule termly polls
+#    elif slug == 'emis_termly':
+#        _schedule_termly_script(group, connection, 'emis_termly', ['SMC'])
     elif slug == 'emis_annual':
-        #TO DO: add setting for schedule of annual scripts
+        #Schedule annual polls
         d = ScriptSession.objects.filter(script__slug='emis_annual', \
                             connection=connection, \
                             ).order_by('-end_time')[0].end_time
-#        d = datetime.datetime.now()
+
         start_of_year = datetime.datetime(d.year + 1, 1, 1, d.hour, d.minute, d.second, d.microsecond)
         if group.name in ['Teachers', 'Head Teachers']:
             sp = ScriptProgress.objects.create(connection=connection, script=Script.objects.get(slug='emis_annual'))
-            sp.set_time(start_of_year + datetime.timedelta(weeks=12))
-#            start_of_term = getattr(settings, 'SCHOOL_TERM_START', datetime.datetime.now())
-#            if (start_of_term + datetime.timedelta(14)) >= datetime.datetime.now() or\
-#             ScriptSession.objects.filter(script__slug='emis_annual', \
-#                            connection=connection, \
-#                            start_time__gt=getattr(settings, 'SCHOOL_TERM_START', datetime.datetime.now())).count() < 1:
-#                sp = ScriptProgress.objects.create(connection=connection, script=Script.objects.get(slug='emis_annual'))
-#                sp.set_time(start_of_term + datetime.timedelta(14))
+            sp.set_time(start_of_year + datetime.timedelta(weeks=getattr(settings, 'SCHOOL_ANNUAL_MESSAGES_START', 12)))
+
     elif slug == 'emis_smc_monthly':
         _schedule_monthly_script(group, connection, 'emis_smc_monthly', 28, ['SMC'])
     elif slug == 'emis_head teacher presence':
