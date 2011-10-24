@@ -17,7 +17,7 @@
 	<p>
         <table width="100%" cellspacing="0" cellpadding="0">
         	<tr>
-        		<td colspan={{ attendance_stats.stats|length }} class="stat"><span class="stats">This Week's Attendance Data</span><span class="dates">WEEK: {{ attendance_stats.dates.start|date:"m/d/Y" }} - {{ attendance_stats.dates.end|date:"m/d/Y" }}</span></td>
+        		<td colspan={{ attendance_stats.stats|length }} class="stat"><span class="stats">This Week's Attendance Data</span><span class="dates">WEEK: {{ attendance_stats.dates.start|date:"F/d" }} - {{ attendance_stats.dates.end|date:"F/d" }}</span></td>
         	</tr>
         	<tr>
         		{% for cat, num in attendance_stats.stats %}
