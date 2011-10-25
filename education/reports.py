@@ -60,6 +60,37 @@ class AverageSubmissionBySchoolColumn(Column, SchoolMixin):
         reorganize_location(key, val, dictionary)
 
 
+class DateLessRatioColumn(Column, SchoolMixin):
+    """
+    This divides the total number of an indicator (for instance, boys yearly enrollment)  
+    by the total of another indicator (for instance, total classrooms)].
+    
+    This gives you the ratio between the two indicators, each of which
+    are fixed yearly amounts (not dependent on date).
+    """
+    def __init__(self, top_attrib, bottom_attrib):
+        if type(top_attrib) != list:
+            top_attrib = [top_attrib]
+        if type(bottom_attrib) != list:
+            bottom_attrib = [bottom_attrib]
+        self.top_attrib = top_attrib
+        self.bottom_attrib = bottom_attrib
+
+    def add_to_report(self, report, key, dictionary):
+        top_val = self.total_dateless_attribute_by_school(report, self.top_attrib)
+        bottom_val = self.total_dateless_attribute_by_school(report, self.bottom_attib)
+
+        bottom_dict = {}
+        reorganize_dictionary('bottom', bottom_val, bottom_dict, self.SCHOOL_ID, self.SCHOOL_NAME, 'value_int__sum')
+        val = []
+        for rdict in top_val:
+            if rdict[self.SCHOOL_ID] in bottom_dict:
+                rdict['value_int__sum'] = (float(rdict['value_int__sum']) / bottom_dict[rdict[self.SCHOOL_ID]]['bottom'])
+                val.append(rdict)
+
+        reorganize_dictionary(key, val, dictionary, self.SCHOOL_ID, self.SCHOOL_NAME, 'value_int__sum')
+
+
 class TotalAttributeBySchoolColumn(Column, SchoolMixin):
 
     def __init__(self, keyword, extra_filters=None):
