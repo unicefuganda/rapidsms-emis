@@ -1,5 +1,5 @@
 #from django.db import connection
-from .forms import NewConnectionForm, DateRangeForm
+from .forms import NewConnectionForm, DateRangeForm, EditReporterForm, DistrictFilterForm, SchoolForm
 from .models import *
 from django.conf import settings, settings, settings
 from django.contrib.auth.decorators import login_required, login_required
@@ -17,7 +17,7 @@ from poll.models import Poll, ResponseCategory, Response
 from rapidsms.models import Connection, Contact, Contact, Connection
 from rapidsms_httprouter.models import Message
 from uganda_common.utils import get_xform_dates, assign_backend
-from .reports import attendance_stats, enrollment_stats, headteacher_attendance_stats
+from .reports import attendance_stats, enrollment_stats, headteacher_attendance_stats, abuse_stats
 from urllib2 import urlopen, urlopen
 import datetime
 import datetime
@@ -36,11 +36,18 @@ def dashboard(request):
         return index(request)
 
 def deo_dashboard(request):
-    print enrollment_stats(request)
-    return render_to_response("education/deo_dashboard.html", {\
-                                'attendance_stats':attendance_stats(request), \
-                                'enrollment_stats':enrollment_stats(request), \
-                                'headteacher_attendance_stats':headteacher_attendance_stats(request), \
+    form = DistrictFilterForm()
+    district_id = None
+    if request.method == 'POST':
+        form = DistrictFilterForm(request.POST)
+        if form.is_valid():
+            district_id = form.cleaned_data['district']
+    return render_to_response("education/deo/deo_dashboard.html", {\
+                                'form':form, \
+                                'attendance_stats':attendance_stats(request, district_id), \
+                                'enrollment_stats':enrollment_stats(request, district_id), \
+                                'headteacher_attendance_stats':headteacher_attendance_stats(request, district_id), \
+                                'abuse_stats':abuse_stats(request, district_id), \
                                 }, RequestContext(request))
 
 def whitelist(request):
@@ -67,6 +74,13 @@ def _reload_whitelists():
         return True
     return False
 
+def _addto_autoreg(connections):
+    for connection in connections:
+        if not connection.contact and \
+            not ScriptProgress.objects.filter(script__slug='emis_autoreg', connection=connection).count():
+                        ScriptProgress.objects.create(script=Script.objects.get(slug="emis_autoreg"), \
+                                              connection=connection)
+
 @login_required
 def add_connection(request):
     form = NewConnectionForm()
@@ -84,7 +98,9 @@ def add_connection(request):
                     identity, backend = assign_backend(str(number))
                     connection, created = Connection.objects.get_or_create(identity=identity, backend=backend)
                     connections.append(connection)
+            _addto_autoreg(connections)
             _reload_whitelists()
+#            time.sleep(2)
             return render_to_response('education/partials/addnumbers_row.html', {'object':connections, 'selectable':False}, RequestContext(request))
 
     return render_to_response("education/partials/new_connection.html", {'form':form}, RequestContext(request))
@@ -96,4 +112,87 @@ def delete_connection(request, connection_id):
     _reload_whitelists()
     return render_to_response("education/partials/connection_view.html", {'object':connection.contact }, context_instance=RequestContext(request))
 
+@login_required
+def delete_reporter(request, reporter_pk):
+    reporter = get_object_or_404(EmisReporter, pk=reporter_pk)
+    if request.method == 'POST':
+        reporter.delete()
+    return HttpResponse(status=200)
 
+@login_required
+def edit_reporter(request, reporter_pk):
+    reporter = get_object_or_404(EmisReporter, pk=reporter_pk)
+    reporter_form = EditReporterForm(instance=reporter)
+    if request.method == 'POST':
+        reporter_form = EditReporterForm(instance=reporter,
+                data=request.POST)
+        if reporter_form.is_valid():
+            reporter_form.save()
+        else:
+            return render_to_response('education/partials/edit_reporter.html'
+                    , {'reporter_form': reporter_form, 'reporter'
+                    : reporter},
+                    context_instance=RequestContext(request))
+        return render_to_response('/education/partials/reporter_row.html',
+                                  {'object':EmisReporter.objects.get(pk=reporter_pk),
+                                   'selectable':True},
+                                  context_instance=RequestContext(request))
+    else:
+        return render_to_response('education/partials/edit_reporter.html',
+                                  {'reporter_form': reporter_form,
+                                  'reporter': reporter},
+                                  context_instance=RequestContext(request))
+
+@login_required
+def add_schools(request):
+    if request.method == 'POST':
+        form = SchoolForm(request.POST)
+        schools = []
+        if form.is_valid():
+            names = filter(None, request.POST.getlist('name'))
+            locations = request.POST.getlist('location')
+            emis_ids = request.POST.getlist('emis_id')
+            if len(names) > 0:
+                for i, name in enumerate(names):
+                    location = Location.objects.get(pk=int(locations[i]))
+                    emis_id = emis_ids[i]
+                    name, created = School.objects.get_or_create(name=name, location=location, emis_id=emis_id)
+                    schools.append(name)
+
+                return render_to_response('education/partials/addschools_row.html', {'object':schools, 'selectable':False}, RequestContext(request))
+    else:
+        form = SchoolForm()
+    return render_to_response('education/deo/add_schools.html',
+                                  {'form': form,
+                                }, context_instance=RequestContext(request))
+
+@login_required
+def delete_school(request, school_pk):
+    school = get_object_or_404(School, pk=school_pk)
+    if request.method == 'POST':
+        school.delete()
+    return HttpResponse(status=200)
+
+@login_required
+def edit_school(request, school_pk):
+    school = get_object_or_404(School, pk=school_pk)
+    school_form = SchoolForm(instance=school)
+    if request.method == 'POST':
+        school_form = SchoolForm(instance=school,
+                data=request.POST)
+        if school_form.is_valid():
+            school_form.save()
+        else:
+            return render_to_response('education/partials/edit_school.html'
+                    , {'school_form': school_form, 'school'
+                    : school},
+                    context_instance=RequestContext(request))
+        return render_to_response('/education/partials/school_row.html',
+                                  {'object':School.objects.get(pk=school_pk),
+                                   'selectable':True},
+                                  context_instance=RequestContext(request))
+    else:
+        return render_to_response('education/partials/edit_school.html',
+                                  {'school_form': school_form,
+                                  'school': school},
+                                  context_instance=RequestContext(request))

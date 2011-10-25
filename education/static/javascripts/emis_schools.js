@@ -1,15 +1,14 @@
-function deleteReporter(elem, pk, name, url) {
+function deleteSchool(elem, pk, name, url) {
+	alert('here');
     if (confirm('Are you sure you want to remove ' + name + '?')) {
         $(elem).parents('tr').remove();
         $.post(url, function(data) {});
-//        $.post('../reporter/' + pk + '/delete/', function(data) {});
     }
 }
 
-function editReporter(elem, pk, url) {
+function editSchool(elem, pk, url) {
     overlay_loading_panel($(elem).parents('tr'));
     $(elem).parents('tr').load(url, '', function () {
-//    $(elem).parents('tr').load('../reporter/' + pk + '/edit/', '', function () {
         $('#div_panel_loading').hide();    
     });
 }
@@ -20,26 +19,29 @@ function submitForm(link, action, resultDiv) {
     resultDiv.load(action, form_data);
 }
 
-function deleteConnection(elem,link,name) {
+function deleteSchool(elem,link,name) {
     if (confirm('Are you sure you want to remove ' + name + '?')) {
         $(elem).parents('p').remove();
         $.post(link, function(data) {});
     }
 }
 
-function newConnection(elem, link) {
-	$('#add_contact_form').load(link);
-    $('#add_contact_anchor_row').hide();
+function newSchool(elem, link) {
+	$('#add_school_form').load(link);
+    $('#add_school_anchor_row').hide();
 }
 
-function addNumbers(elem, action) {
+function addSchools(elem, action) {
     form = $(elem).parents("form");
     form_data = form.serializeArray();
-    $('#add_contact_form').load(action, form_data);
+    $('#add_school_form').load(action, form_data);
 }
 
-function addPhoneElm(elem){
+function addSchoolElm(elem){
 	rowelem = $(elem).parents('tr')
     rowelem.after('<tr></tr>')
-    rowelem.next().html('<td>Phone Number: </td><td><input name="other_nums" /></td>');
+    name_form = $('#name_elms').html()
+    location_form = $('#location_elms').html()
+    id_form = $('#id_elms').html()
+    rowelem.next().html('<td>Name: </td><td>'+name_form+'</td><td>Location: </td><td>'+location_form+'</td><td>School ID: </td><td>'+id_form+'</td>');
 }

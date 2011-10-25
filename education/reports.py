@@ -12,8 +12,8 @@ import datetime
 GRADES = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7']
 
 class SchoolMixin(object):
-    SCHOOL_ID = 'submission__connection__contact__emisreporter__school__pk'
-    SCHOOL_NAME = 'submission__connection__contact__emisreporter__school__name'
+    SCHOOL_ID = 'submission__connection__contact__emisreporter__schools__pk'
+    SCHOOL_NAME = 'submission__connection__contact__emisreporter__schools__name'
 
     def total_attribute_by_school(self, report, keyword, single_week=False):
         start_date = report.start_date
@@ -23,7 +23,7 @@ class SchoolMixin(object):
             .exclude(submission__connection__contact=None)\
             .filter(created__range=(start_date, report.end_date))\
             .filter(attribute__slug__in=keyword)\
-            .filter(submission__connection__contact__emisreporter__school__location__in=report.location.get_descendants(include_self=True).all())\
+            .filter(submission__connection__contact__emisreporter__schools__location__in=report.location.get_descendants(include_self=True).all())\
             .values(self.SCHOOL_NAME,
                     self.SCHOOL_ID)\
             .annotate(Sum('value_int'))
@@ -32,7 +32,7 @@ class SchoolMixin(object):
         return XFormSubmissionValue.objects.exclude(submission__has_errors=True)\
             .exclude(submission__connection__contact=None)\
             .filter(attribute__slug__in=keyword)\
-            .filter(submission__connection__contact__emisreporter__school__location__in=report.location.get_descendants(include_self=True).all())\
+            .filter(submission__connection__contact__emisreporter__schools__location__in=report.location.get_descendants(include_self=True).all())\
             .values(self.SCHOOL_NAME,
                     self.SCHOOL_ID)\
             .annotate(Sum('value_int'))
@@ -214,14 +214,15 @@ def location_values(location, data_dicts):
             else:
                 return '-'
 
-def attendance_stats(request):
+def attendance_stats(request, district_id=None):
     stats = []
-    user_location = get_location_for_user(request.user)
+    user_location = Location.objects.get(pk=district_id) if district_id else get_location_for_user(request.user)
     if not user_location:
         user_location = Location.objects.get(name='Kaabong')
     location = Location.tree.root_nodes()[0]
     start_date, end_date = previous_calendar_week()
     dates = {'start':start_date, 'end':end_date}
+#    import pdb;pdb.set_trace()
     boys = ["boys_%s" % g for g in GRADES]
     values = total_attribute_value(boys, start_date=start_date, end_date=end_date, location=location)
     stats.append(('boys', location_values(user_location, values)))
@@ -247,9 +248,9 @@ def attendance_stats(request):
     res['stats'] = stats
     return res
 
-def enrollment_stats(request):
+def enrollment_stats(request, district_id=None):
     stats = []
-    user_location = get_location_for_user(request.user)
+    user_location = Location.objects.get(pk=district_id) if district_id else get_location_for_user(request.user)
     if not user_location:
         user_location = Location.objects.get(name='Kaabong')
     location = Location.tree.root_nodes()[0]
@@ -283,9 +284,9 @@ def enrollment_stats(request):
     res['stats'] = stats
     return res
 
-def headteacher_attendance_stats(request):
+def headteacher_attendance_stats(request, district_id=None):
     stats = []
-    user_location = get_location_for_user(request.user)
+    user_location = Location.objects.get(pk=district_id) if district_id else get_location_for_user(request.user)
     if not user_location:
         user_location = Location.objects.get(name='Kaabong')
     location = Location.tree.root_nodes()[0]
@@ -294,9 +295,29 @@ def headteacher_attendance_stats(request):
     values = total_submissions("gemteachers_htpresent", start_date=start_date, end_date=end_date, location=location, extra_filters={'eav__gemteachers_htpresent':1})
     stats.append(('head teacher attendance', location_values(user_location, values)))
     stats.append(('total head teacher deployment', Location.objects.get(pk=user_location.pk).get_descendants(include_self=True).aggregate(Count('schools'))['schools__count']))
-    perc = values.count() / Location.objects.get(pk=user_location.pk).get_descendants(include_self=True).aggregate(Count('schools'))['schools__count'] * 100
-    stats.append(('percentage attendance', perc))
+    if Location.objects.get(pk=user_location.pk).get_descendants(include_self=True).aggregate(Count('schools'))['schools__count'] > 0:
+        perc = values.count() / Location.objects.get(pk=user_location.pk).get_descendants(include_self=True).aggregate(Count('schools'))['schools__count'] * 100
+    else:
+        perc = 0
     res = {}
     res['dates'] = dates
     res['stats'] = stats
     return res
+
+def abuse_stats(request, district_id=None):
+    stats = []
+    user_location = Location.objects.get(pk=district_id) if district_id else get_location_for_user(request.user)
+    if not user_location:
+        user_location = Location.objects.get(name='Kaabong')
+    location = Location.tree.root_nodes()[0]
+    start_date, end_date = previous_calendar_month()
+    dates = {'start':start_date, 'end':end_date}
+    values = total_attribute_value("gemabuse_cases", start_date=start_date, end_date=end_date, location=location)
+    stats.append(('GEM abuse cases', location_values(user_location, values)))
+    res = {}
+    res['dates'] = dates
+    res['stats'] = stats
+    return res
+
+class AbuseReport(SchoolReport):
+    cases = TotalAttributeBySchoolColumn("gemabuse_cases")

@@ -1,16 +1,18 @@
-from .forms import SchoolFilterForm
-from .models import EmisReporter
-from .reports import AttendanceReport
+from .forms import SchoolFilterForm, LimitedDistictFilterForm, \
+ RolesFilterForm, ReporterFreeSearchForm, SchoolDistictFilterForm, FreeSearchSchoolsForm
+from .models import EmisReporter, School
+from .reports import AttendanceReport, AbuseReport
 from .sorters import LatestSubmissionSorter
-from .views import whitelist, add_connection, delete_connection, deo_dashboard, dashboard
+from .views import whitelist, add_connection, delete_connection, deo_dashboard, dashboard, \
+ edit_reporter, delete_reporter, add_schools, edit_school, delete_school
 from contact.forms import FreeSearchForm, DistictFilterForm, MassTextForm, \
     FreeSearchTextForm, DistictFilterMessageForm, HandledByForm, ReplyTextForm
 from django.conf.urls.defaults import patterns, url
 from generic.sorters import SimpleSorter
-from generic.views import generic
+from generic.views import generic, generic_row
 from rapidsms_httprouter.models import Message
 from rapidsms_xforms.models import XFormSubmission
-from uganda_common.utils import get_xform_dates
+from uganda_common.utils import get_xform_dates, get_messages
 from django.contrib.auth.views import login_required
 
 
@@ -34,7 +36,7 @@ urlpatterns = patterns('',
    #reporters
     url(r'^emis/reporter/$', generic, {
       'model':EmisReporter,
-      'filter_forms':[FreeSearchForm, DistictFilterForm, SchoolFilterForm],
+      'filter_forms':[ReporterFreeSearchForm, RolesFilterForm, LimitedDistictFilterForm, SchoolFilterForm],
       'action_forms':[MassTextForm],
       'objects_per_page':25,
       'partial_row':'education/partials/reporter_row.html',
@@ -47,10 +49,13 @@ urlpatterns = patterns('',
                  ('District', False, 'district', None,),
                  ('Last Reporting Date', True, 'latest_submission_date', LatestSubmissionSorter(),),
                  ('Total Reports', True, 'connection__submissions__count', SimpleSorter(),),
-                 ('School', True, 'school__name', SimpleSorter(),),
+                 ('School(s)', True, 'schools__name', SimpleSorter(),),
                  ('Location', True, 'location__name', SimpleSorter(),),
                  ('', False, '', None,)],
     }, name="emis-contact"),
+    url(r'^emis/reporter/(\d+)/edit/', edit_reporter, name='edit-reporter'),
+    url(r'^emis/reporter/(\d+)/delete/', delete_reporter, name='delete-reporter'),
+    url(r'^emis/reporter/(?P<pk>\d+)/show', generic_row, {'model':EmisReporter, 'partial_row':'education/partials/reporter_row.html'}),
     url(r'^emis/attendance/$', generic, {
         'model':XFormSubmission,
         'queryset':AttendanceReport,
@@ -74,7 +79,7 @@ urlpatterns = patterns('',
             ('% of deployed', False, 'percentage_teacher', None),
         ],
         'partial_row':'education/partials/school_report_row.html',
-        'partial_header':'education/partials/partial_header.html',
+        'partial_header':'education/partials/school_partial_header.html',
         'base_template':'generic/timeslider_base.html',
         'needs_date':True,
         'dates':get_xform_dates,
@@ -86,4 +91,55 @@ urlpatterns = patterns('',
     url(r'^connections/(\d+)/delete/', delete_connection),
 
     url(r'^emis/deo_dashboard/', login_required(deo_dashboard), {}, name='deo-dashboard'),
+    url(r'^emis/school/$', generic, {
+      'model':School,
+      'filter_forms':[FreeSearchSchoolsForm, SchoolDistictFilterForm],
+      'objects_per_page':25,
+      'partial_row':'education/partials/school_row.html',
+      'partial_header':'education/partials/partial_header.html',
+      'base_template':'education/schools_base.html',
+      'columns':[('Name', True, 'name', SimpleSorter()),
+                 ('District', True, 'location__name', None,),
+                 ('School ID', False, 'emis_id', None,),
+                 ],
+      'sort_column':'date',
+      'sort_ascending':False,
+    }, name="emis-schools"),
+    url(r'^emis/add_schools/', login_required(add_schools), {}, name='add-schools'),
+    url(r'^emis/school/(\d+)/edit/', edit_school, name='edit-school'),
+    url(r'^emis/school/(\d+)/delete/', delete_school, name='delete-school'),
+    url(r'^emis/school/(?P<pk>\d+)/show', generic_row, {'model':School, 'partial_row':'education/partials/school_row.html'}, name='show-school'),
+
+    url(r'^emis/othermessages/$', generic, {
+      'model':Message,
+      'queryset':get_messages,
+      'filter_forms':[FreeSearchTextForm, DistictFilterMessageForm, HandledByForm],
+      'action_forms':[ReplyTextForm],
+      'objects_per_page':25,
+      'partial_row':'education/partials/other_message_row.html',
+      'base_template':'education/messages_base.html',
+      'columns':[('Text', True, 'text', SimpleSorter()),
+                 ('Contact Information', True, 'connection__contact__name', SimpleSorter(),),
+                 ('Date', True, 'date', SimpleSorter(),),
+                 ],
+      'sort_column':'date',
+      'sort_ascending':False,
+    }, name="emis-othermessages"),
+
+    url(r'^emis/abuse/$', generic, {
+        'model':XFormSubmission,
+        'queryset':AbuseReport,
+        'selectable':False,
+        'paginated':False,
+        'results_title':None,
+        'columns':[
+            ('', False, '', None),
+            ('total cases', False, 'total_cases', None),
+        ],
+        'partial_row':'education/partials/abuse_report_row.html',
+        'partial_header':'education/partials/partial_header.html',
+        'base_template':'generic/timeslider_base.html',
+        'needs_date':True,
+        'dates':get_xform_dates,
+    }, name='abuse-stats'),
 )
