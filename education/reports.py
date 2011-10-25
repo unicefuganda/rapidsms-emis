@@ -15,10 +15,13 @@ class SchoolMixin(object):
     SCHOOL_ID = 'submission__connection__contact__emisreporter__schools__pk'
     SCHOOL_NAME = 'submission__connection__contact__emisreporter__schools__name'
 
-    def total_attribute_by_school(self, report, keyword):
+    def total_attribute_by_school(self, report, keyword, single_week=False):
+        start_date = report.start_date
+        if single_week:
+            start_date = report.end_date - datetime.timedelta(7)
         return XFormSubmissionValue.objects.exclude(submission__has_errors=True)\
             .exclude(submission__connection__contact=None)\
-            .filter(created__range=(report.start_date, report.end_date))\
+            .filter(created__range=(start_date, report.end_date))\
             .filter(attribute__slug__in=keyword)\
             .filter(submission__connection__contact__emisreporter__schools__location__in=report.location.get_descendants(include_self=True).all())\
             .values(self.SCHOOL_NAME,
@@ -57,6 +60,37 @@ class AverageSubmissionBySchoolColumn(Column, SchoolMixin):
         reorganize_location(key, val, dictionary)
 
 
+class DateLessRatioColumn(Column, SchoolMixin):
+    """
+    This divides the total number of an indicator (for instance, boys yearly enrollment)  
+    by the total of another indicator (for instance, total classrooms)].
+    
+    This gives you the ratio between the two indicators, each of which
+    are fixed yearly amounts (not dependent on date).
+    """
+    def __init__(self, top_attrib, bottom_attrib):
+        if type(top_attrib) != list:
+            top_attrib = [top_attrib]
+        if type(bottom_attrib) != list:
+            bottom_attrib = [bottom_attrib]
+        self.top_attrib = top_attrib
+        self.bottom_attrib = bottom_attrib
+
+    def add_to_report(self, report, key, dictionary):
+        top_val = self.total_dateless_attribute_by_school(report, self.top_attrib)
+        bottom_val = self.total_dateless_attribute_by_school(report, self.bottom_attib)
+
+        bottom_dict = {}
+        reorganize_dictionary('bottom', bottom_val, bottom_dict, self.SCHOOL_ID, self.SCHOOL_NAME, 'value_int__sum')
+        val = []
+        for rdict in top_val:
+            if rdict[self.SCHOOL_ID] in bottom_dict:
+                rdict['value_int__sum'] = (float(rdict['value_int__sum']) / bottom_dict[rdict[self.SCHOOL_ID]]['bottom'])
+                val.append(rdict)
+
+        reorganize_dictionary(key, val, dictionary, self.SCHOOL_ID, self.SCHOOL_NAME, 'value_int__sum')
+
+
 class TotalAttributeBySchoolColumn(Column, SchoolMixin):
 
     def __init__(self, keyword, extra_filters=None):
@@ -83,6 +117,46 @@ class WeeklyAttributeBySchoolColumn(Column, SchoolMixin):
         num_weeks = self.num_weeks(report)
         for rdict in val:
             rdict['value_int__sum'] /= num_weeks
+        reorganize_dictionary(key, val, dictionary, self.SCHOOL_ID, self.SCHOOL_NAME, 'value_int__sum')
+
+
+class WeeklyPercentageColumn(Column, SchoolMixin):
+    """
+    This divides the total number of an indicator for one week (such as, boys weekly attendance) 
+    by the total of another indicator (for instance, boys yearly enrollment)].
+    
+    This gives you the % expected for two indicators, 
+    one that is reported on weekly (for the CURRENT WEEK)
+    and the other which is a fixed total number.
+    
+    If invert is True, this column will evaluate to 100% - the above value.
+    
+    For example, if boys weekly attendance this week was 75%, setting invert to
+    True would instead return 100 - 75 = 25%
+    """
+    def __init__(self, week_attrib, total_attrib, invert=False):
+        if type(week_attrib) != list:
+            week_attrib = [week_attrib]
+        if type(total_attrib) != list:
+            total_attrib = [total_attrib]
+        self.week_attrib = week_attrib
+        self.total_attrib = total_attrib
+        self.invert = invert
+
+    def add_to_report(self, report, key, dictionary):
+        top_val = self.total_attribute_by_school(report, self.week_attrib, single_week=True)
+        bottom_val = self.total_dateless_attribute_by_school(report, self.total_attrib)
+
+        bottom_dict = {}
+        reorganize_dictionary('bottom', bottom_val, bottom_dict, self.SCHOOL_ID, self.SCHOOL_NAME, 'value_int__sum')
+        val = []
+        for rdict in top_val:
+            if rdict[self.SCHOOL_ID] in bottom_dict:
+                rdict['value_int__sum'] = (float(rdict['value_int__sum']) / bottom_dict[rdict[self.SCHOOL_ID]]['bottom']) * 100
+                if self.invert:
+                    rdict['value_int__sum'] = 100 - rdict['value_int__sum']
+                val.append(rdict)
+
         reorganize_dictionary(key, val, dictionary, self.SCHOOL_ID, self.SCHOOL_NAME, 'value_int__sum')
 
 
