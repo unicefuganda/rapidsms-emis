@@ -2,7 +2,7 @@ from django import template
 from django.shortcuts import get_object_or_404
 from rapidsms.contrib.locations.models import Location
 from rapidsms_xforms.models import XFormSubmission
-from poll.models import Poll
+from poll.models import Response
 import datetime
 from django.utils.safestring import mark_safe
 import calendar
@@ -46,8 +46,8 @@ def name(location):
 def latest(obj):
     scripted_polls = ['emis_abuse', 'emis_meals', 'emis_grant', 'emis_inspection', 'emis_cct', 'emis_abuse', 'emis_sms_meals', 'emis_grant_notice', 'emis_inspection_yesno', 'emis_meetings', 'emis_classroom', 'emis_classroom_use', 'emis_latrines', 'emis_latrines_use', 'emis_teachers', 'emis_boys_enrolled', 'emis_girls_enrolled']
     try:
-        poll = Poll.objects.filter(name__in=scripted_polls, responses__message__connection__in=obj.connection_set.all()).latest('responses__date')
-        poll_date = poll.responses.all()[0].date
+        responses = Response.objects.filter(poll__name__in=scripted_polls, message__connection__in=obj.connection_set.all())
+        poll_date = responses.latest('date').date
     except:
         poll_date = datetime.datetime(1900, 1, 1)
     try:
