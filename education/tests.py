@@ -106,11 +106,6 @@ class ModelTest(TestCase): #pragma: no cover
         if 'django.contrib.sites' in settings.INSTALLED_APPS:
             site_id = getattr(settings, 'SITE_ID', 1)
             Site.objects.get_or_create(pk=site_id, defaults={'domain':'rapidemis.com'})
-        init_groups()
-        init_xforms(None)
-        init_autoreg(None)
-        init_scripts(None)
-        create_attributes()
         User.objects.get_or_create(username='admin')
         self.backend = Backend.objects.create(name='test')
         self.connection = Connection.objects.create(identity='8675309', backend=self.backend)
