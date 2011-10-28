@@ -39,13 +39,16 @@ class SchoolMixin(object):
 
 
     def num_weeks(self, report):
+        if report.end_date == report.start_date:
+            report.end_date = report.end_date + datetime.timedelta(days=1)
         td = report.end_date - report.start_date
         holidays = getattr(settings, 'SCHOOL_HOLIDAYS', [])
         for start, end in holidays:
             if start > report.start_date and end < report.end_date:
                 td -= (end - start)
 
-        return td.days / 7
+#        return td.days / 7
+        return td.days / 7 if td.days / 7 > 1 else 1
 
 
 class AverageSubmissionBySchoolColumn(Column, SchoolMixin):
