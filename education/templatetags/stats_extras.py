@@ -61,6 +61,18 @@ def latest(obj):
         return xform_date
     else:
         return None
+    
+def submissions(obj):
+    scripted_polls = ['emis_abuse', 'emis_meals', 'emis_grant', 'emis_inspection', 'emis_cct', 'emis_abuse', 'emis_sms_meals', 'emis_grant_notice', 'emis_inspection_yesno', 'emis_meetings', 'emis_classroom', 'emis_classroom_use', 'emis_latrines', 'emis_latrines_use', 'emis_teachers', 'emis_boys_enrolled', 'emis_girls_enrolled']
+    try:
+        resp_count = Response.objects.filter(poll__name__in=scripted_polls, message__connection__in=obj.connection_set.all()).count()
+    except:
+        resp_count = 0
+    try:
+        subs_count = XFormSubmission.objects.filter(connection__in=obj.connection_set.all()).count()
+    except:
+        subs_count = 0
+    return resp_count + subs_count
 
 def hash(h, key):
     try:
@@ -179,6 +191,7 @@ register.filter('parentId', get_parentId)
 register.filter('ancestors', get_ancestors)
 register.filter('name', name)
 register.filter('latest', latest)
+register.filter('submissions', submissions)
 register.filter('hash', hash)
 register.filter('get_district', get_district)
 register.tag('date_range', do_date_range)
