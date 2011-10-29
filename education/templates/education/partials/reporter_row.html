@@ -40,7 +40,9 @@
             {% endfor %}
         </ul>
      </td>
-    <td id="row_{{ object.pk }}">{{ object.location.name }}</td>
+    {% comment %} 
+    <td id="row_{{ object.pk }}">{{ object.reporting_location.name }}</td>
+    {% endcomment %}
     <td class="button_col">
         <div class="buttons">
             <a href="javascript:void(0)" onclick="deleteReporter(this, {{ object.pk }},'{{ object.name }}', '{% url education.views.delete_reporter object.pk %}')">

@@ -234,10 +234,16 @@ class AttendanceReport(SchoolReport):
     girls = WeeklyAttributeBySchoolColumn(["girls_%s" % g for g in GRADES])
     total_students = WeeklyAttributeBySchoolColumn((["girls_%s" % g for g in GRADES] + ["boys_%s" % g for g in GRADES]))
     percentage_students = AverageWeeklyTotalRatioColumn((["girls_%s" % g for g in GRADES] + ["boys_%s" % g for g in GRADES]), (["enrolledg_%s" % g for g in GRADES] + ["enrolledb_%s" % g for g in GRADES]))
+    week_attrib = ["girls_%s" % g for g in GRADES] + ["boys_%s" % g for g in GRADES]
+    total_attrib = ["enrolledb_%s" % g for g in GRADES] + ["enrolledg_%s" % g for g in GRADES]
+    percentange_student_absentism = WeeklyPercentageColumn(week_attrib, total_attrib, True)
     male_teachers = WeeklyAttributeBySchoolColumn("teachers_m")
     female_teachers = WeeklyAttributeBySchoolColumn("teachers_f")
     total_teachers = WeeklyAttributeBySchoolColumn(["teachers_f", "teachers_m"])
     percentage_teacher = AverageWeeklyTotalRatioColumn(["teachers_f", "teachers_m"], ["deploy_f", "deploy_m"])
+    week_attrib = ["teachers_f", "teachers_m"]
+    total_attrib = ["deploy_f", "deploy_m"]
+    percentange_teachers_absentism = WeeklyPercentageColumn(week_attrib, total_attrib, True)
 
 
 def location_values(location, data_dicts):
