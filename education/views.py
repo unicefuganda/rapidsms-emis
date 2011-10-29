@@ -89,13 +89,13 @@ def add_connection(request):
         connections = []
         if form.is_valid():
             identity = form.cleaned_data['identity']
-            identity, backend = assign_backend(str(identity))
+            identity, backend = assign_backend(str(identity.strip()))
             connection, created = Connection.objects.get_or_create(identity=identity, backend=backend)
             connections.append(connection)
             other_numbers = request.POST.getlist('other_nums')
             if len(other_numbers) > 0:
                 for number in other_numbers:
-                    identity, backend = assign_backend(str(number))
+                    identity, backend = assign_backend(str(number.strip()))
                     connection, created = Connection.objects.get_or_create(identity=identity, backend=backend)
                     connections.append(connection)
             _addto_autoreg(connections)
