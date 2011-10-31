@@ -1,0 +1,27 @@
+{% extends "education/index.html" %}
+{% load humanize %}
+{% block content %}
+    <div class="module">
+        <h2>Last Submissions from {{ school }}</h2>
+	<table width="100%">
+	    <thead>
+	        <tr>
+	            <th>Category/Poll</th>
+	            <th>Value</th>
+	            <th>Reporter</th>
+	            <th>Submission Date</th>
+	        </tr>
+	    </thead>
+	    <tbody>
+	        {% for xform in xforms %}
+	        <tr>
+	            <td>{{ xform.name }}</td>
+	            <td></td>
+	            <td></td>
+	            <td></td>
+	        </tr>
+	        {% endfor %}
+	    </tbody>
+	</table>
+	</div>
+{% endblock %}

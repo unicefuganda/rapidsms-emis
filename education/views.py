@@ -196,3 +196,12 @@ def edit_school(request, school_pk):
                                   {'school_form': school_form,
                                   'school': school},
                                   context_instance=RequestContext(request))
+        
+@login_required
+def last_submission(request, school_id):
+    school = School.objects.get(id=school_id)
+    xforms = XForm.objects.all()
+    return render_to_response("education/last_school_submission.html", {\
+                            'school': school,
+                            'xforms': xforms,
+                                }, RequestContext(request))
