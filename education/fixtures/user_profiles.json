@@ -1,0 +1,43 @@
+[
+
+        {
+        "pk": 1,
+        "model": "education.userprofile",
+        "fields": {
+            "user": 58,
+            "role": 110,
+            "name": "Kaabong District",
+            "location": 1143
+        }
+    },
+    {
+        "pk": 2,
+        "model": "education.userprofile",
+        "fields": {
+            "user": 61,
+            "role": 110,
+            "name": "Kyegegwa District",
+            "location": 1171
+        }
+    },
+    {
+        "pk": 3,
+        "model": "education.userprofile",
+        "fields": {
+            "user": 60,
+            "role": 110,
+            "name": "Kabarole District",
+            "location": 1145
+        }
+    },
+    {
+        "pk": 4,
+        "model": "education.userprofile",
+        "fields": {
+            "user": 59,
+            "role": 110,
+            "name": "Kotido District",
+            "location": 1166
+        }
+    }
+]

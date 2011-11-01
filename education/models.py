@@ -57,7 +57,7 @@ class UserProfile(models.Model):
     name = models.CharField(max_length=160)
     location = models.ForeignKey(Location)
     role = models.ForeignKey(Role)
-    user = models.ForeignKey(User)
+    user = models.ForeignKey(User,related_name="profile")
 
 def parse_date(command, value):
     return parse_date_value(value)
