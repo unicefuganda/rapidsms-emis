@@ -1,28 +1,21 @@
 #from django.db import connection
-from .forms import NewConnectionForm, DateRangeForm, EditReporterForm, DistrictFilterForm, SchoolForm
+from .forms import NewConnectionForm, EditReporterForm, DistrictFilterForm, SchoolForm
 from .models import *
-from django.conf import settings, settings, settings
-from django.contrib.auth.decorators import login_required, login_required
-from django.core.exceptions import ValidationError
-from django.db import transaction
-from django.db.models import Q
-from django.forms.util import ErrorList
+from django.conf import settings
+from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
-from django.shortcuts import redirect, get_object_or_404, render_to_response, \
-    redirect, get_object_or_404, render_to_response
-from django.template import RequestContext, RequestContext
-from django.views.decorators.http import require_GET, require_POST, require_GET, \
-    require_POST
+from django.shortcuts import get_object_or_404, render_to_response
+from django.template import RequestContext
 from poll.models import Poll, ResponseCategory, Response
 from rapidsms.models import Connection, Contact, Contact, Connection
 from rapidsms_httprouter.models import Message
 from uganda_common.utils import get_xform_dates, assign_backend
 from .reports import attendance_stats, enrollment_stats, headteacher_attendance_stats, abuse_stats
-from urllib2 import urlopen, urlopen
-import datetime
-import datetime
-import re
-import time
+from urllib2 import urlopen
+from rapidsms_xforms.models import XFormSubmissionValue
+# data
+import datetime, re, time,xlwt
+from datetime import datetime, date
 
 Num_REG = re.compile('\d+')
 
@@ -206,3 +199,81 @@ def last_submission(request, school_id):
                             'school': school,
                             'xforms': xforms,
                                 }, RequestContext(request))
+
+
+# analytics specific for emis {copy, but adjust to suit your needs}
+def to_excel(req):
+
+    default_style = xlwt.Style.default_style
+    datetime_style = xlwt.easyxf(num_format_str='dd/mm/yyyy hh:mm')
+    date_style = xlwt.easyxf(num_format_str='dd/mm/yyyy')
+
+    data_models = [School, EmisReporter]
+
+    book = xlwt.Workbook(encoding='utf8')
+
+    #POSSIBLE DATASETS
+    sheet_names = ["School",
+        "Emis Reporters",
+        "School and locations",
+        "Emis Reporters and School count",
+        "All poll data",
+        "Vals submitted through polls",
+        ]
+
+    #TODO generalize writing function WIP
+    def write_to_sheet(sheet_name=None,values_list=None):
+        sheet = book.add_sheet(sheet_name)
+        for row, rowdata in enumerate(values_list):
+            for col, val in enumerate(rowdata):
+                sheet.write(row,col,val)
+
+    sheet0 = book.add_sheet(sheet_names[0])
+    values_list0 = School.objects.all().values_list()
+    for row, rowdata in enumerate(values_list0):
+        for col, val in enumerate(rowdata):
+            sheet0.write(row,col,val)
+
+
+    sheet1 = book.add_sheet(sheet_names[1])
+    values_list1 = EmisReporter.objects.all().values_list()
+    for row, rowdata in enumerate(values_list1):
+        for col, val in enumerate(rowdata):
+            sheet1.write(row,col,val)
+
+    # more specific data
+    all_schools_list = School.objects.all() #objects
+
+    # Schools and locations
+    sheet2 = book.add_sheet(sheet_names[2])
+    # format: (`school name` - `location`)
+    data = [(s.name,s.location.name) for s in all_schools_list]
+    for r, rd in enumerate(data):
+        for c, v in enumerate(rd):
+            sheet2.write(r,c,v)
+
+    # EmisReporters and School count (usually by district or all generic locations.)
+    sheet3 = book.add_sheet(sheet_names[3])
+    all_emis_reporters = EmisReporter.objects.all()
+    data = [(e.name,e.schools.values_list().count()) for e in all_emis_reporters]
+    for r, rd in enumerate(data):
+        for c, v in enumerate(rd):
+            sheet3.write(r,c,v)
+
+    # Locations and the number of schools in there
+    sheet4 = book.add_sheet(sheet_names[4])
+    submissions_from_polls = XFormSubmission.objects.all().values_list()
+    for r, rd in enumerate(submissions_from_polls):
+        for c, v in enumerate(rd):
+            sheet4.write(r,c,v)
+
+    # All posible values submitted by XForms
+#    sheet5 = book.add_sheet(sheet_names[5])
+#    submissions_values = XFormSubmissionValue.objects.all()
+#    for r, rd in enumerate(submissions_values):
+#        for c, v in enumerate(rd):
+#            sheet5.write(r,c,v)
+    response = HttpResponse(mimetype='application/vnd.ms-excel')
+    response['Content-Disposition'] = 'attachment; filename=emis.xls'
+    book.save(response)
+    return response
