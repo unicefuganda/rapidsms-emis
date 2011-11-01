@@ -64,7 +64,7 @@ urlpatterns = patterns('',
         'results_title':None,
         'top_columns':[
             ('', 1, None),
-            ('student weekly attendance', 4, None),
+            ('student weekly attendance cutting', 4, None),
             ('teacher weekly attendance', 4, None),
         ],
         'columns':[
