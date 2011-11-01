@@ -207,8 +207,8 @@ def emis_autoreg(**kwargs):
         holidays = getattr(settings, 'SCHOOL_HOLIDAYS', [])
         if group.name in ['SMC']:
             d = datetime.datetime.now()
-            # get the date to a wednesday
-            d = d + datetime.timedelta((2 - d.weekday()) % 7)
+            # get the date to a thursday
+            d = d + datetime.timedelta((3 - d.weekday()) % 7)
             in_holiday = True
             while in_holiday:
                 in_holiday = False
@@ -314,12 +314,12 @@ def emis_reschedule_script(**kwargs):
 
     elif slug == 'emis_smc_monthly':
         _schedule_monthly_script(group, connection, 'emis_smc_monthly', 28, ['SMC'])
-    elif slug == 'emis_head teacher presence':
+    elif slug == 'emis_head_teacher_presence':
         holidays = getattr(settings, 'SCHOOL_HOLIDAYS', [])
         if group.name in ['SMC']:
             d = datetime.datetime.now()
-            # get the date to a wednesday
-            d = d + datetime.timedelta((2 - d.weekday()) % 7)
+            # get the date to a thursday
+            d = d + datetime.timedelta((3 - d.weekday()) % 7)
             in_holiday = True
             while in_holiday:
                 in_holiday = False
@@ -329,7 +329,7 @@ def emis_reschedule_script(**kwargs):
                         break
                 if in_holiday:
                     d = d + datetime.timedelta(7)
-            sp = ScriptProgress.objects.create(connection=connection, script=Script.objects.get(slug='emis_head teacher presence'))
+            sp = ScriptProgress.objects.create(connection=connection, script=Script.objects.get(slug='emis_head_teacher_presence'))
             sp.set_time(d)
 
 

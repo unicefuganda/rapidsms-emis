@@ -29,6 +29,7 @@ Num_REG = re.compile('\d+')
 def index(request):
     return render_to_response("education/index.html", {}, RequestContext(request))
 
+@login_required
 def dashboard(request):
     if request.user:
         return deo_dashboard(request)
