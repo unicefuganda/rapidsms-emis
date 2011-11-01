@@ -201,16 +201,9 @@ def last_submission(request, school_id):
 
 
 # analytics specific for emis {copy, but adjust to suit your needs}
+@login_required
 def to_excel(req):
-
-    default_style = xlwt.Style.default_style
-    datetime_style = xlwt.easyxf(num_format_str='dd/mm/yyyy hh:mm')
-    date_style = xlwt.easyxf(num_format_str='dd/mm/yyyy')
-
-    data_models = [School, EmisReporter]
-
     book = xlwt.Workbook(encoding='utf8')
-
     #POSSIBLE DATASETS
     sheet_names = ["School",
         "Emis Reporters",
@@ -266,12 +259,6 @@ def to_excel(req):
         for c, v in enumerate(rd):
             sheet4.write(r,c,v)
 
-    # All posible values submitted by XForms
-#    sheet5 = book.add_sheet(sheet_names[5])
-#    submissions_values = XFormSubmissionValue.objects.all()
-#    for r, rd in enumerate(submissions_values):
-#        for c, v in enumerate(rd):
-#            sheet5.write(r,c,v)
     response = HttpResponse(mimetype='application/vnd.ms-excel')
     response['Content-Disposition'] = 'attachment; filename=emis.xls'
     book.save(response)
