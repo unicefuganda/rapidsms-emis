@@ -10,7 +10,8 @@ from poll.models import Poll, ResponseCategory, Response
 from rapidsms.models import Connection, Contact, Contact, Connection
 from rapidsms_httprouter.models import Message
 from uganda_common.utils import *
-from rapidsms.lib.rapidsms.contrib.locations.models import Location
+from rapidsms.contrib.locations.models import Location
+
 # reusing reports methods
 from education.reports import *
 from urllib2 import urlopen
@@ -215,6 +216,9 @@ def to_excel(req):
     boys = ["boys_%s" % g for g in GRADES]
     values = total_attribute_value(boys, start_date=start_date, end_date=end_date, location=location)
     stats.append(('boys', location_values(user_location, values)))
+    stats_locations = []
+    stats_locations.append(values)
+    
 
     girls = ["girls_%s" % g for g in GRADES]
     values = total_attribute_value(girls, start_date=start_date, end_date=end_date, location=location)
@@ -235,7 +239,8 @@ def to_excel(req):
     res = {}
     res['dates'] = dates
     res['stats'] = stats
-    
+
+    #return res, stats_locations
     book = xlwt.Workbook(encoding='utf8')
     #OTHER DATASETS
     sheet_names = [
@@ -247,18 +252,24 @@ def to_excel(req):
         "total teachers",
         ]
 
-    #TODO generalize writing function WIP
-    def write_to_sheet(sheet_name=None,values_list=None):
-        sheet = book.add_sheet(sheet_name)
-        for row, rowdata in enumerate(values_list):
-            for col, val in enumerate(rowdata):
-                sheet.write(row,col,val)
-
+    # just a very generic spreadsheet
     for name,val in res.values()[0]:
         sheet = book.add_sheet(name)
         for row, rowdata in enumerate(val):
             for col,v in enumerate(rowdata):
                 sheet.write(row,col,v)
+
+
+
+    new_dict = {}
+    for n in sheet_names:
+        for name,val in res.values()[0]:
+            if name == n:
+                new_dict[n] = val
+
+                    
+    #sheet = book.add_sheet('girls')
+    # more variants of this data
 
     #format (School,
     response = HttpResponse(mimetype='application/vnd.ms-excel')
