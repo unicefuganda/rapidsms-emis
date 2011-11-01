@@ -15,7 +15,7 @@ import datetime
 import time
 from django.db.models import Sum
 from django.forms import ValidationError
-from django.contrib.auth.models import Group
+from django.contrib.auth.models import Group, User
 
 
 
@@ -57,6 +57,7 @@ class UserProfile(models.Model):
     name = models.CharField(max_length=160)
     location = models.ForeignKey(Location)
     role = models.ForeignKey(Role)
+    user = models.ForeignKey(User)
 
 def parse_date(command, value):
     return parse_date_value(value)
