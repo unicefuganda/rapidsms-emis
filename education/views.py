@@ -199,29 +199,79 @@ def last_submission(request, school_id):
                                 }, RequestContext(request))
 
 
-# analytics
+# analytics specific for emis {copy, but adjust to suit your needs}
+def to_excel(req):
 
-
-
-def to_excel(req,transform_model=School):
-    # default model to transform is School
-    book = xlwt.Workbook(encoding='utf8')
-    sheet = book.add_sheet('untitled')
     default_style = xlwt.Style.default_style
     datetime_style = xlwt.easyxf(num_format_str='dd/mm/yyyy hh:mm')
     date_style = xlwt.easyxf(num_format_str='dd/mm/yyyy')
-    values_list = transform_model.objects.all().values_list()
-    response = HttpResponse(mimetype='application/vnd.ms-excel')
-    
-    for row, rowdata in enumerate(values_list):
+
+    data_models = [School, EmisReporter]
+
+    book = xlwt.Workbook(encoding='utf8')
+
+    #POSSIBLE DATASETS
+    sheet_names = ["School",
+        "Emis Reporters",
+        "School and locations",
+        "Emis Reporters and School count",
+        "All poll data",
+        "Vals submitted through polls",
+        ]
+
+    #TODO generalize writing function WIP
+    def write_to_sheet(sheet_name=None,values_list=None):
+        sheet = book.add_sheet(sheet_name)
+        for row, rowdata in enumerate(values_list):
+            for col, val in enumerate(rowdata):
+                sheet.write(row,col,val)
+
+    sheet0 = book.add_sheet(sheet_names[0])
+    values_list0 = School.objects.all().values_list()
+    for row, rowdata in enumerate(values_list0):
         for col, val in enumerate(rowdata):
-            if isinstance(val, datetime):
-                style = datetime_style
-            elif isinstance(val,date):
-                style = date_style
-            else:
-                style = default_style
-            sheet.write(row,col,val,style=style)
-    response['Content-Disposition'] = 'attachment; filename=example.xls'
+            sheet0.write(row,col,val)
+
+
+    sheet1 = book.add_sheet(sheet_names[1])
+    values_list1 = EmisReporter.objects.all().values_list()
+    for row, rowdata in enumerate(values_list1):
+        for col, val in enumerate(rowdata):
+            sheet1.write(row,col,val)
+
+    # more specific data
+    all_schools_list = School.objects.all() #objects
+
+    # Schools and locations
+    sheet2 = book.add_sheet(sheet_names[2])
+    # format: (`school name` - `location`)
+    data = [(s.name,s.location.name) for s in all_schools_list]
+    for r, rd in enumerate(data):
+        for c, v in enumerate(rd):
+            sheet2.write(r,c,v)
+
+    # EmisReporters and School count (usually by district or all generic locations.)
+    sheet3 = book.add_sheet(sheet_names[3])
+    all_emis_reporters = EmisReporter.objects.all()
+    data = [(e.name,e.schools.values_list().count()) for e in all_emis_reporters]
+    for r, rd in enumerate(data):
+        for c, v in enumerate(rd):
+            sheet3.write(r,c,v)
+
+    # Locations and the number of schools in there
+    sheet4 = book.add_sheet(sheet_names[4])
+    submissions_from_polls = XFormSubmission.objects.all().values_list()
+    for r, rd in enumerate(submissions_from_polls):
+        for c, v in enumerate(rd):
+            sheet4.write(r,c,v)
+
+    # All posible values submitted by XForms
+    sheet5 = book.add_sheet(sheet_names[5])
+    submissions_values = XFormSubmissionValue.objects.all()
+    for r, rd in enumerate(submissions_values):
+        for c, v in enumerate(rd):
+            sheet5.write(r,c,v)
+
+    response['Content-Disposition'] = 'attachment; filename=emis.xls'
     book.save(response)
     return response
