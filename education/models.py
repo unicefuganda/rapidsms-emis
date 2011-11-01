@@ -31,6 +31,14 @@ class School(models.Model):
 class EmisReporter(Contact):
 #    school = models.ForeignKey(School, null=True, related_name="old_schools")
     schools = models.ManyToManyField(School, null=True)
+    
+    def is_member_of(self, group):
+        return group.lower() in [grp.lower for grp in self.groups.values_list('name', flat=True)]
+    
+class UserProfile(models.Model):
+    name = models.CharField(max_length=160)
+    location = models.ForeignKey(Location)
+    role = models.ForeignKey(Role)
 
 def parse_date(command, value):
     return parse_date_value(value)
