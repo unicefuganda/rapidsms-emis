@@ -9,8 +9,10 @@ from django.template import RequestContext
 from poll.models import Poll, ResponseCategory, Response
 from rapidsms.models import Connection, Contact, Contact, Connection
 from rapidsms_httprouter.models import Message
-from uganda_common.utils import get_xform_dates, assign_backend
-from .reports import attendance_stats, enrollment_stats, headteacher_attendance_stats, abuse_stats
+from uganda_common.utils import *
+from rapidsms.lib.rapidsms.contrib.locations.models import Location
+# reusing reports methods
+from education.reports import *
 from urllib2 import urlopen
 from rapidsms_xforms.models import XFormSubmissionValue
 # data
@@ -204,14 +206,45 @@ def last_submission(request, school_id):
 # analytics specific for emis {copy, but adjust to suit your needs}
 @login_required
 def to_excel(req):
+    stats = []
+    user_location = Location.objects.get(name='Kaabong')
+    location = Location.tree.root_nodes()[0]
+    start_date, end_date = previous_calendar_week()
+    dates = {'start':start_date, 'end':end_date}
+
+    boys = ["boys_%s" % g for g in GRADES]
+    values = total_attribute_value(boys, start_date=start_date, end_date=end_date, location=location)
+    stats.append(('boys', location_values(user_location, values)))
+
+    girls = ["girls_%s" % g for g in GRADES]
+    values = total_attribute_value(girls, start_date=start_date, end_date=end_date, location=location)
+    stats.append(('girls', location_values(user_location, values)))
+
+    total_pupils = ["boys_%s" % g for g in GRADES] + ["girls_%s" % g for g in GRADES]
+    values = total_attribute_value(total_pupils, start_date=start_date, end_date=end_date, location=location)
+    stats.append(('total pupils', location_values(user_location, values)))
+
+    values = total_attribute_value("teachers_f", start_date=start_date, end_date=end_date, location=location)
+    stats.append(('female teachers', location_values(user_location, values)))
+
+    values = total_attribute_value("teachers_m", start_date=start_date, end_date=end_date, location=location)
+    stats.append(('male teachers', location_values(user_location, values)))
+
+    values = total_attribute_value(["teachers_f", "teachers_m"], start_date=start_date, end_date=end_date, location=location)
+    stats.append(('total teachers', location_values(user_location, values)))
+    res = {}
+    res['dates'] = dates
+    res['stats'] = stats
+    
     book = xlwt.Workbook(encoding='utf8')
-    #POSSIBLE DATASETS
-    sheet_names = ["School",
-        "Emis Reporters",
-        "School and locations",
-        "Emis Reporters and School count",
-        "All poll data",
-        "Vals submitted through polls",
+    #OTHER DATASETS
+    sheet_names = [
+        "girls",
+        "boys",
+        "total pupils",
+        "female teachers",
+        "male teachers",
+        "total teachers",
         ]
 
     #TODO generalize writing function WIP
@@ -221,45 +254,13 @@ def to_excel(req):
             for col, val in enumerate(rowdata):
                 sheet.write(row,col,val)
 
-    sheet0 = book.add_sheet(sheet_names[0])
-    values_list0 = School.objects.all().values_list()
-    for row, rowdata in enumerate(values_list0):
-        for col, val in enumerate(rowdata):
-            sheet0.write(row,col,val)
+    for name,val in res.values()[0]:
+        sheet = book.add_sheet(name)
+        for row, rowdata in enumerate(val):
+            for col,v in enumerate(rowdata):
+                sheet.write(row,col,v)
 
-
-    sheet1 = book.add_sheet(sheet_names[1])
-    values_list1 = EmisReporter.objects.all().values_list()
-    for row, rowdata in enumerate(values_list1):
-        for col, val in enumerate(rowdata):
-            sheet1.write(row,col,val)
-
-    # more specific data
-    all_schools_list = School.objects.all() #objects
-
-    # Schools and locations
-    sheet2 = book.add_sheet(sheet_names[2])
-    # format: (`school name` - `location`)
-    data = [(s.name,s.location.name) for s in all_schools_list]
-    for r, rd in enumerate(data):
-        for c, v in enumerate(rd):
-            sheet2.write(r,c,v)
-
-    # EmisReporters and School count (usually by district or all generic locations.)
-    sheet3 = book.add_sheet(sheet_names[3])
-    all_emis_reporters = EmisReporter.objects.all()
-    data = [(e.name,e.schools.values_list().count()) for e in all_emis_reporters]
-    for r, rd in enumerate(data):
-        for c, v in enumerate(rd):
-            sheet3.write(r,c,v)
-
-    # Locations and the number of schools in there
-    sheet4 = book.add_sheet(sheet_names[4])
-    submissions_from_polls = XFormSubmission.objects.all().values_list()
-    for r, rd in enumerate(submissions_from_polls):
-        for c, v in enumerate(rd):
-            sheet4.write(r,c,v)
-
+    #format (School,
     response = HttpResponse(mimetype='application/vnd.ms-excel')
     response['Content-Disposition'] = 'attachment; filename=emis.xls'
     book.save(response)
