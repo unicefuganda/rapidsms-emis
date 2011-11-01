@@ -1,19 +1,27 @@
 # encoding: utf-8
 import datetime
 from south.db import db
-from south.v2 import DataMigration
+from south.v2 import SchemaMigration
 from django.db import models
 
-class Migration(DataMigration):
+class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        "manually send signal for role model created"
-        db.send_create_signal('education', ['Role'])
+        
+        # Adding model 'UserProfile'
+        db.create_table('education_userprofile', (
+            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('name', self.gf('django.db.models.fields.CharField')(max_length=160)),
+            ('location', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['locations.Location'])),
+            ('role', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['auth.Group'])),
+        ))
+        db.send_create_signal('education', ['UserProfile'])
 
 
     def backwards(self, orm):
-        ""
-        pass
+        
+        # Deleting model 'UserProfile'
+        db.delete_table('education_userprofile')
 
 
     models = {
@@ -68,7 +76,13 @@ class Migration(DataMigration):
             'location': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'schools'", 'to': "orm['locations.Location']"}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': '160'})
         },
-
+        'education.userprofile': {
+            'Meta': {'object_name': 'UserProfile'},
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'location': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['locations.Location']"}),
+            'name': ('django.db.models.fields.CharField', [], {'max_length': '160'}),
+            'role': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['auth.Group']"})
+        },
         'locations.location': {
             'Meta': {'object_name': 'Location'},
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
