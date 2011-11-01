@@ -4,7 +4,7 @@ from .models import EmisReporter, School
 from .reports import AttendanceReport, AbuseReport
 from .sorters import LatestSubmissionSorter
 from .views import whitelist, add_connection, delete_connection, deo_dashboard, dashboard, \
- edit_reporter, delete_reporter, add_schools, edit_school, delete_school, last_submission
+ edit_reporter, delete_reporter, add_schools, edit_school, delete_school, last_submission, to_excel
 from contact.forms import FreeSearchForm, DistictFilterForm, MassTextForm, \
     FreeSearchTextForm, DistictFilterMessageForm, HandledByForm, ReplyTextForm
 from django.conf.urls.defaults import patterns, url
@@ -146,4 +146,7 @@ urlpatterns = patterns('',
         'needs_date':True,
         'dates':get_xform_dates,
     }, name='abuse-stats'),
+
+    # excel
+    url(r'^emis/toexcel/$',to_excel),
 )

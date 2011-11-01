@@ -1,28 +1,20 @@
 #from django.db import connection
-from .forms import NewConnectionForm, DateRangeForm, EditReporterForm, DistrictFilterForm, SchoolForm
+from .forms import NewConnectionForm, EditReporterForm, DistrictFilterForm, SchoolForm
 from .models import *
-from django.conf import settings, settings, settings
-from django.contrib.auth.decorators import login_required, login_required
-from django.core.exceptions import ValidationError
-from django.db import transaction
-from django.db.models import Q
-from django.forms.util import ErrorList
+from django.conf import settings
+from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
-from django.shortcuts import redirect, get_object_or_404, render_to_response, \
-    redirect, get_object_or_404, render_to_response
-from django.template import RequestContext, RequestContext
-from django.views.decorators.http import require_GET, require_POST, require_GET, \
-    require_POST
+from django.shortcuts import get_object_or_404, render_to_response
+from django.template import RequestContext
 from poll.models import Poll, ResponseCategory, Response
 from rapidsms.models import Connection, Contact, Contact, Connection
 from rapidsms_httprouter.models import Message
 from uganda_common.utils import get_xform_dates, assign_backend
 from .reports import attendance_stats, enrollment_stats, headteacher_attendance_stats, abuse_stats
-from urllib2 import urlopen, urlopen
-import datetime
-import datetime
-import re
-import time
+from urllib2 import urlopen
+# data
+import datetime, re, time,xlwt
+from datetime import datetime, date
 
 Num_REG = re.compile('\d+')
 
@@ -205,3 +197,31 @@ def last_submission(request, school_id):
                             'school': school,
                             'xforms': xforms,
                                 }, RequestContext(request))
+
+
+# analytics
+
+
+
+def to_excel(req,transform_model=School):
+    # default model to transform is School
+    book = xlwt.Workbook(encoding='utf8')
+    sheet = book.add_sheet('untitled')
+    default_style = xlwt.Style.default_style
+    datetime_style = xlwt.easyxf(num_format_str='dd/mm/yyyy hh:mm')
+    date_style = xlwt.easyxf(num_format_str='dd/mm/yyyy')
+    values_list = transform_model.objects.all().values_list()
+    response = HttpResponse(mimetype='application/vnd.ms-excel')
+    
+    for row, rowdata in enumerate(values_list):
+        for col, val in enumerate(rowdata):
+            if isinstance(val, datetime):
+                style = datetime_style
+            elif isinstance(val,date):
+                style = date_style
+            else:
+                style = default_style
+            sheet.write(row,col,val,style=style)
+    response['Content-Disposition'] = 'attachment; filename=example.xls'
+    book.save(response)
+    return response
