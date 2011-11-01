@@ -12,6 +12,7 @@ from rapidsms_httprouter.models import Message
 from uganda_common.utils import get_xform_dates, assign_backend
 from .reports import attendance_stats, enrollment_stats, headteacher_attendance_stats, abuse_stats
 from urllib2 import urlopen
+from rapidsms_xforms.models import XFormSubmissionValue
 # data
 import datetime, re, time,xlwt
 from datetime import datetime, date
@@ -266,12 +267,12 @@ def to_excel(req):
             sheet4.write(r,c,v)
 
     # All posible values submitted by XForms
-    sheet5 = book.add_sheet(sheet_names[5])
-    submissions_values = XFormSubmissionValue.objects.all()
-    for r, rd in enumerate(submissions_values):
-        for c, v in enumerate(rd):
-            sheet5.write(r,c,v)
-
+#    sheet5 = book.add_sheet(sheet_names[5])
+#    submissions_values = XFormSubmissionValue.objects.all()
+#    for r, rd in enumerate(submissions_values):
+#        for c, v in enumerate(rd):
+#            sheet5.write(r,c,v)
+    response = HttpResponse(mimetype='application/vnd.ms-excel')
     response['Content-Disposition'] = 'attachment; filename=emis.xls'
     book.save(response)
     return response
