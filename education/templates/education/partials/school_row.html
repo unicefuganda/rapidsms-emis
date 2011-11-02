@@ -1,7 +1,7 @@
 {% extends 'generic/partials/partial_row.html' %}
 {% load stats_extras %}
 {% block remaining_row_content %}
-	<td><a href="{% url last-submission object.id %}">{{ object.name }}</a></td>
+	<td><a href="{% url school-detail object.id %}">{{ object.name }}</a></td>
     <td>{{ object.location|get_district }}</td>
     <td>{{ object.emis_id }}</td>
     <td>

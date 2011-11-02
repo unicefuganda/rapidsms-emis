@@ -15,6 +15,20 @@
 		</p>
 	{% endif %}
 	<p>
+	    <table width="100%" cellspacing="0" cellpadding="0">
+            <tr>
+                <td colspan={{ attendance_stats.stats|length }} class="stat"><span class="stats">Key District Ratios</span></td>
+            </tr>
+            {% for stat, value in keyratios.items %}
+                <tr>
+                    <td>{{ stat }}</td>
+                    <td>{{ value }}</td>
+                </tr>
+             {% endfor %}
+        </table><br /><a href="{% url emis-schools %}">Detailed Schools Statistics &raquo;</a> 
+    </p>
+	</p>
+	<p>
         <table width="100%" cellspacing="0" cellpadding="0">
         	<tr>
         		<td colspan={{ attendance_stats.stats|length }} class="stat"><span class="stats">This Week's Attendance Data</span><span class="dates">WEEK: {{ attendance_stats.dates.start|date:"F/d" }} - {{ attendance_stats.dates.end|date:"F/d" }}</span></td>

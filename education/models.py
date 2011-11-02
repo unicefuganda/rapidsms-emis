@@ -33,7 +33,7 @@ class EmisReporter(Contact):
     schools = models.ManyToManyField(School, null=True)
     
     def is_member_of(self, group):
-        return group.lower() in [grp.lower for grp in self.groups.values_list('name', flat=True)]
+        return group.lower() in [grp.lower for grp in self.groups.objects.values_list('name', flat=True)]
 
 class Role(Group):
    class Meta:
@@ -58,6 +58,9 @@ class UserProfile(models.Model):
     location = models.ForeignKey(Location)
     role = models.ForeignKey(Role)
     user = models.ForeignKey(User,related_name="profile")
+    
+    def is_member_of(self, group):
+        return group.lower() == self.role.name.lower()
 
 def parse_date(command, value):
     return parse_date_value(value)

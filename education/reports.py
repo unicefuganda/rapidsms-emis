@@ -5,11 +5,14 @@ from generic.utils import flatten_list
 from rapidsms.contrib.locations.models import Location
 from rapidsms_xforms.models import XFormSubmissionValue
 from uganda_common.reports import XFormSubmissionColumn, XFormAttributeColumn, PollNumericResultsColumn, PollCategoryResultsColumn, LocationReport
-from uganda_common.utils import total_submissions, reorganize_location, total_attribute_value, get_location_for_user, previous_calendar_week, previous_calendar_month
+from uganda_common.utils import total_submissions, reorganize_location, total_attribute_value, previous_calendar_week, previous_calendar_month
 from uganda_common.utils import reorganize_dictionary
 import datetime
 
 GRADES = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7']
+
+def get_location_for_user(user):
+    return user.get_profile().location
 
 class SchoolMixin(object):
     SCHOOL_ID = 'submission__connection__contact__emisreporter__schools__pk'
@@ -246,6 +249,14 @@ class AttendanceReport(SchoolReport):
     percentange_teachers_absentism = WeeklyPercentageColumn(week_attrib, total_attrib, True)
 
 
+class AbuseReport(SchoolReport):
+    cases = TotalAttributeBySchoolColumn("gemabuse_cases")
+    
+class KeyRatiosReport(SchoolReport):
+    top_attrib = ["girls_%s" % g for g in GRADES] + ["boys_%s" % g for g in GRADES] 
+    bottom_attrib = ["enrolledb_%s" % g for g in GRADES] + ["enrolledg_%s" % g for g in GRADES]
+    pupils_to_teacher = DateLessRatioColumn(top_attrib, bottom_attrib)
+
 def location_values(location, data_dicts):
     for dict in data_dicts:
         if dict['location_name'] == location.name:
@@ -257,7 +268,7 @@ def location_values(location, data_dicts):
 def attendance_stats(request, district_id=None):
     stats = []
     user_location = Location.objects.get(pk=district_id) if district_id else get_location_for_user(request.user)
-    if not user_location:
+    if user_location == Location.tree.root_nodes()[0]:
         user_location = Location.objects.get(name='Kaabong')
     location = Location.tree.root_nodes()[0]
     start_date, end_date = previous_calendar_week()
@@ -291,7 +302,7 @@ def attendance_stats(request, district_id=None):
 def enrollment_stats(request, district_id=None):
     stats = []
     user_location = Location.objects.get(pk=district_id) if district_id else get_location_for_user(request.user)
-    if not user_location:
+    if user_location == Location.tree.root_nodes()[0]:
         user_location = Location.objects.get(name='Kaabong')
     location = Location.tree.root_nodes()[0]
 #    start_date, end_date = previous_calendar_week()
@@ -327,7 +338,7 @@ def enrollment_stats(request, district_id=None):
 def headteacher_attendance_stats(request, district_id=None):
     stats = []
     user_location = Location.objects.get(pk=district_id) if district_id else get_location_for_user(request.user)
-    if not user_location:
+    if user_location == Location.tree.root_nodes()[0]:
         user_location = Location.objects.get(name='Kaabong')
     location = Location.tree.root_nodes()[0]
     start_date, end_date = previous_calendar_month()
@@ -347,7 +358,7 @@ def headteacher_attendance_stats(request, district_id=None):
 def abuse_stats(request, district_id=None):
     stats = []
     user_location = Location.objects.get(pk=district_id) if district_id else get_location_for_user(request.user)
-    if not user_location:
+    if user_location == Location.tree.root_nodes()[0]:
         user_location = Location.objects.get(name='Kaabong')
     location = Location.tree.root_nodes()[0]
     start_date, end_date = previous_calendar_month()
@@ -359,5 +370,32 @@ def abuse_stats(request, district_id=None):
     res['stats'] = stats
     return res
 
-class AbuseReport(SchoolReport):
-    cases = TotalAttributeBySchoolColumn("gemabuse_cases")
+def keyratios_stats(request, district_id=None):
+    stats = {}
+    user_location = Location.objects.get(pk=district_id) if district_id else get_location_for_user(request.user)
+    if user_location == Location.tree.root_nodes()[0]:
+        user_location = Location.objects.get(name='Kaabong')
+    location = Location.tree.root_nodes()[0]
+    start_date = datetime.datetime(datetime.datetime.now().year, 1, 1)
+    end_date = datetime.datetime.now()
+    dates = {'start':start_date, 'end':end_date}
+    top_attrib = ["enrolledb_%s" % g for g in GRADES] + ["enrolledg_%s" % g for g in GRADES]
+    bottom_attrib = ["deploy_f", "deploy_m"]
+    total_pupils = XFormSubmissionValue.objects.exclude(submission__has_errors=True)\
+            .exclude(submission__connection__contact=None)\
+            .filter(created__range=(start_date, end_date))\
+            .filter(attribute__slug__in=top_attrib)\
+            .filter(submission__connection__contact__emisreporter__schools__location__in=user_location.get_descendants(include_self=True).all())\
+            .annotate(Sum('value_int')).values_list('value_int__sum', flat=True)
+    total_teachers = XFormSubmissionValue.objects.exclude(submission__has_errors=True)\
+            .exclude(submission__connection__contact=None)\
+            .filter(attribute__slug__in=bottom_attrib)\
+            .filter(submission__connection__contact__emisreporter__schools__location__in=user_location.get_descendants(include_self=True).all())\
+            .annotate(Sum('value_int')).values_list('value_int__sum', flat=True)
+    if sum(total_teachers) > 0:
+        stats['Pupil to Teacher Ratio'] = sum(total_pupils) / sum(total_teachers)
+    else:
+        stats['Pupil to Teacher Ratio'] = 'Not Available' 
+    return stats
+    
+
