@@ -258,7 +258,7 @@ def to_excel(req):
         for col,col_data in enumerate(loc_data[row]):
             sheet.write(row,col,col_data[1])
 
-
+    loc_data = []
     for loc in CURRENT_DISTRICTS_UNDER_EMIS:
         user_location = Location.objects.get(name=loc)
         stats = []
@@ -285,10 +285,10 @@ def to_excel(req):
         stats.append(('total teachers', location_values(user_location, values)))
         loc_data.append(stats)
     #TODO refactor code and get rid of duplication
-    sheet = book.add_sheet('enrolment')
+    sheet2 = book.add_sheet('enrolment')
     for row in xrange(len(loc_data)):
        for col,col_data in enumerate(loc_data[row]):
-           sheet.write(row,col,col_data[1])
+           sheet2.write(row,col,col_data[1])
 
     response = HttpResponse(mimetype='application/vnd.ms-excel')
     response['Content-Disposition'] = 'attachment; filename=emis.xls'
