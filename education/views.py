@@ -252,20 +252,20 @@ def to_excel(req):
         loc_data.append(stats)
 
 
-#    res['dates'] = dates
-#    res['stats'] = stats
-
     book = xlwt.Workbook(encoding='utf8')
-    # just a very generic spreadsheet
 
-    vals = [val for n,val in res['stats']]
-    #sh
-#    for name,val in res['stats']:
-#
-#        sheet = book.add_sheet(name)
-#        for row, rowdata in enumerate(vals ):
-#            for col,v in enumerate(rowdata):
-#                sheet.write(row,col,v)
+    sheet = book.add_sheet('emis')
+
+    for row in xrange(len(loc_data)):
+        for col,col_data in enumerate(loc_data[row]):
+            sheet.write(row,col,col_data[1])
+
+    
+
+    for district_data in loc_data:
+        for row, rowdata in enumerate(loc_data):
+            for col, val in enumerate(rowdata):
+                sheet.write(row,col, val)
 
 
     #OTHER DATASETS
