@@ -18,7 +18,6 @@ from django.forms import ValidationError
 from django.contrib.auth.models import Group, User
 
 
-
 class School(models.Model):
     name = models.CharField(max_length=160)
     emis_id = models.CharField(max_length=10)
