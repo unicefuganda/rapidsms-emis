@@ -208,6 +208,15 @@ def last_submission(request, school_id):
 @login_required
 def to_excel(req):
     stats = []
+    #this can be expanded for other districts
+    CURRENT_DISTRICTS_UNDER_EMIS = ["Kaabong",
+                                    "Kotido",
+                                    "Kabarole",
+                                    "Kisoro",
+                                    "Kyegegwa",
+                                    "Mpigi",
+                                    "Kabale"
+                                    ]
     user_location = Location.objects.get(name='Kaabong')
     location = Location.tree.root_nodes()[0]
     start_date, end_date = previous_calendar_week()
@@ -240,8 +249,19 @@ def to_excel(req):
     res['dates'] = dates
     res['stats'] = stats
 
-    #return res, stats_locations
     book = xlwt.Workbook(encoding='utf8')
+    # just a very generic spreadsheet
+
+    vals = [val for n,val in res['stats']]
+    #sh
+#    for name,val in res['stats']:
+#
+#        sheet = book.add_sheet(name)
+#        for row, rowdata in enumerate(vals ):
+#            for col,v in enumerate(rowdata):
+#                sheet.write(row,col,v)
+
+
     #OTHER DATASETS
     sheet_names = [
         "girls",
@@ -251,22 +271,6 @@ def to_excel(req):
         "male teachers",
         "total teachers",
         ]
-
-    # just a very generic spreadsheet
-    for name,val in res.values()[0]:
-        sheet = book.add_sheet(name)
-        for row, rowdata in enumerate(val):
-            for col,v in enumerate(rowdata):
-                sheet.write(row,col,v)
-
-
-
-    new_dict = {}
-    for n in sheet_names:
-        for name,val in res.values()[0]:
-            if name == n:
-                new_dict[n] = val
-
                     
     #sheet = book.add_sheet('girls')
     # more variants of this data
