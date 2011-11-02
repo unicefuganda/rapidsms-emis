@@ -207,41 +207,67 @@ def last_submission(request, school_id):
 # analytics specific for emis {copy, but adjust to suit your needs}
 @login_required
 def to_excel(req):
-    stats = []
-    user_location = Location.objects.get(name='Kaabong')
+#    stats = []
+    #this can be expanded for other districts
+    CURRENT_DISTRICTS_UNDER_EMIS = ["Kaabong",
+                                    "Kotido",
+                                    "Kabarole",
+                                    "Kisoro",
+                                    "Kyegegwa",
+                                    "Mpigi",
+                                    "Kabale"
+                                    ]
+
+
+    user_locations_by_district = [Location.objects.get(name=l) for l in CURRENT_DISTRICTS_UNDER_EMIS]
     location = Location.tree.root_nodes()[0]
     start_date, end_date = previous_calendar_week()
     dates = {'start':start_date, 'end':end_date}
-
-    boys = ["boys_%s" % g for g in GRADES]
-    values = total_attribute_value(boys, start_date=start_date, end_date=end_date, location=location)
-    stats.append(('boys', location_values(user_location, values)))
-    stats_locations = []
-    stats_locations.append(values)
-    
-
-    girls = ["girls_%s" % g for g in GRADES]
-    values = total_attribute_value(girls, start_date=start_date, end_date=end_date, location=location)
-    stats.append(('girls', location_values(user_location, values)))
-
-    total_pupils = ["boys_%s" % g for g in GRADES] + ["girls_%s" % g for g in GRADES]
-    values = total_attribute_value(total_pupils, start_date=start_date, end_date=end_date, location=location)
-    stats.append(('total pupils', location_values(user_location, values)))
-
-    values = total_attribute_value("teachers_f", start_date=start_date, end_date=end_date, location=location)
-    stats.append(('female teachers', location_values(user_location, values)))
-
-    values = total_attribute_value("teachers_m", start_date=start_date, end_date=end_date, location=location)
-    stats.append(('male teachers', location_values(user_location, values)))
-
-    values = total_attribute_value(["teachers_f", "teachers_m"], start_date=start_date, end_date=end_date, location=location)
-    stats.append(('total teachers', location_values(user_location, values)))
+    loc_data = []
     res = {}
-    res['dates'] = dates
-    res['stats'] = stats
+    for loc in CURRENT_DISTRICTS_UNDER_EMIS:
+        user_location = Location.objects.get(name=loc)
+        stats = []
 
-    #return res, stats_locations
+        boys = ["boys_%s" % g for g in GRADES]
+        values = total_attribute_value(boys, start_date=start_date, end_date=end_date, location=location)
+        stats.append(('boys', location_values(user_location, values)))
+
+        girls = ["girls_%s" % g for g in GRADES]
+        values = total_attribute_value(girls, start_date=start_date, end_date=end_date, location=location)
+        stats.append(('girls', location_values(user_location, values)))
+
+        total_pupils = ["boys_%s" % g for g in GRADES] + ["girls_%s" % g for g in GRADES]
+        values = total_attribute_value(total_pupils, start_date=start_date, end_date=end_date, location=location)
+        stats.append(('total pupils', location_values(user_location, values)))
+
+        values = total_attribute_value("teachers_f", start_date=start_date, end_date=end_date, location=location)
+        stats.append(('female teachers', location_values(user_location, values)))
+
+        values = total_attribute_value("teachers_m", start_date=start_date, end_date=end_date, location=location)
+        stats.append(('male teachers', location_values(user_location, values)))
+
+        values = total_attribute_value(["teachers_f", "teachers_m"], start_date=start_date, end_date=end_date, location=location)
+        stats.append(('total teachers', location_values(user_location, values)))
+        loc_data.append(stats)
+
+
+#    res['dates'] = dates
+#    res['stats'] = stats
+
     book = xlwt.Workbook(encoding='utf8')
+    # just a very generic spreadsheet
+
+    vals = [val for n,val in res['stats']]
+    #sh
+#    for name,val in res['stats']:
+#
+#        sheet = book.add_sheet(name)
+#        for row, rowdata in enumerate(vals ):
+#            for col,v in enumerate(rowdata):
+#                sheet.write(row,col,v)
+
+
     #OTHER DATASETS
     sheet_names = [
         "girls",
@@ -251,22 +277,6 @@ def to_excel(req):
         "male teachers",
         "total teachers",
         ]
-
-    # just a very generic spreadsheet
-    for name,val in res.values()[0]:
-        sheet = book.add_sheet(name)
-        for row, rowdata in enumerate(val):
-            for col,v in enumerate(rowdata):
-                sheet.write(row,col,v)
-
-
-
-    new_dict = {}
-    for n in sheet_names:
-        for name,val in res.values()[0]:
-            if name == n:
-                new_dict[n] = val
-
                     
     #sheet = book.add_sheet('girls')
     # more variants of this data
