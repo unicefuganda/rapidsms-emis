@@ -14,6 +14,7 @@ from rapidsms.contrib.locations.models import Location
 
 # reusing reports methods
 from education.reports import *
+from .reports import *
 from urllib2 import urlopen
 from rapidsms_xforms.models import XFormSubmissionValue
 # data
@@ -206,7 +207,7 @@ def last_submission(request, school_id):
 
 # analytics specific for emis {copy, but adjust to suit your needs}
 @login_required
-def to_excel(req):
+def to_excel(req,district_id=None):
 #    stats = []
     #this can be expanded for other districts
     CURRENT_DISTRICTS_UNDER_EMIS = ["Kaabong",
@@ -217,14 +218,14 @@ def to_excel(req):
                                     "Mpigi",
                                     "Kabale"
                                     ]
-
-
     user_locations_by_district = [Location.objects.get(name=l) for l in CURRENT_DISTRICTS_UNDER_EMIS]
     location = Location.tree.root_nodes()[0]
     start_date, end_date = previous_calendar_week()
     dates = {'start':start_date, 'end':end_date}
     loc_data = []
     res = {}
+    book = xlwt.Workbook(encoding='utf8')
+    
     for loc in CURRENT_DISTRICTS_UNDER_EMIS:
         user_location = Location.objects.get(name=loc)
         stats = []
@@ -251,7 +252,7 @@ def to_excel(req):
         stats.append(('total teachers', location_values(user_location, values)))
         loc_data.append(stats)
 
-    book = xlwt.Workbook(encoding='utf8')
+
     sheet = book.add_sheet('attendance')
     # data in loc_data is organized by district, every new list element is a district under EMIS
     for row in xrange(len(loc_data)):
@@ -297,4 +298,12 @@ def to_excel(req):
 
 @login_required
 def excel_reports(req):
-    return render_to_response('education/excelreports/excel_dashboard.html',{},RequestContext(req))
+    #all dicts
+    head_teacher_res =headteacher_attendance_stats(req)
+    attendance_res = attendance_stats(req)
+    enrollment_res = enrollment_stats(req)
+    abuse_res = abuse_stats(req)
+    
+
+    
+    return render_to_response('education/excelreports/excel_dashboard.html',{"res":head_teacher_res,"en":enrollment_res},RequestContext(req))
