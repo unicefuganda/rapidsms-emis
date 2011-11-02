@@ -245,7 +245,7 @@ def _schedule_monthly_script(group, connection, script_slug, day_offset, role_na
     if group.name in role_names:
         d = datetime.datetime.now()
         day = calendar.mdays[d.month] if day_offset == 'last' else day_offset
-        d = datetime.datetime(d.year, d.month, day)
+        d = datetime.datetime(d.year, d.month, day, d.hour, d.minute, d.second, d.microsecond)
         #if d is weekend, set time to next monday
         if d.weekday() == 5:
             d = d + datetime.timedelta((0 - d.weekday()) % 7)
@@ -261,7 +261,7 @@ def _schedule_monthly_script(group, connection, script_slug, day_offset, role_na
             if in_holiday:
                 d = d + datetime.timedelta(31)
                 day = calendar.mdays[d.month] if day_offset == 'last' else day_offset
-                d = datetime.datetime(d.year, d.month, day)
+                d = datetime.datetime(d.year, d.month, day, d.hour, d.minute, d.second, d.microsecond)
                 #if d is weekend, set time to next monday
                 if d.weekday() == 5:
                     d = d + datetime.timedelta((0 - d.weekday()) % 7)
