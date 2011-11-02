@@ -262,3 +262,7 @@ def to_excel(req):
     response['Content-Disposition'] = 'attachment; filename=emis.xls'
     book.save(response)
     return response
+
+@login_required
+def excel_reports(req):
+    return render_to_response('education/excelreports/excel_dashboard.html',{},RequestContext(req))

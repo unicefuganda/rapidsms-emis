@@ -148,5 +148,6 @@ urlpatterns = patterns('',
     }, name='abuse-stats'),
 
     # excel
+    url(r'^emis/excelreports/$',excel_reports),
     url(r'^emis/toexcel/$',to_excel),
 )
