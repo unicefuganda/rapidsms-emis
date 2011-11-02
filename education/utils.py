@@ -90,7 +90,7 @@ def reschedule_monthly_polls():
     #enable scripts in case they are disabled
     for slug in slugs:
         script = Script.objects.get(slug=slug)
-        script.enable = True
+        script.enabled = True
         script.save()
     #first remove all existing script progress for the monthly scripts
     ScriptProgress.objects.filter(script__slug__in=slugs).delete()
@@ -113,7 +113,7 @@ def reschedule_monthly_polls():
 def reschedule_weekly_smc_polls():
     #enable script in case its disabled
     script = Script.objects.get(slug='emis_head_teacher_presence')
-    script.enable = True
+    script.enabled = True
     script.save()
     #first destroy all existing script progress for the SMCs
     ScriptProgress.objects.filter(connection__contact__groups__name='SMC', script__slug='emis_head_teacher_presence').delete()
