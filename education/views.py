@@ -251,38 +251,18 @@ def to_excel(req):
         stats.append(('total teachers', location_values(user_location, values)))
         loc_data.append(stats)
 
-
-#    res['dates'] = dates
-#    res['stats'] = stats
-
     book = xlwt.Workbook(encoding='utf8')
-    # just a very generic spreadsheet
+    sheet = book.add_sheet('emis')
+    # data in loc_data is organized by district, every new list element is a district under EMIS
+    for row in xrange(len(loc_data)):
+        for col,col_data in enumerate(loc_data[row]):
+            sheet.write(row,col,col_data[1])
 
-    vals = [val for n,val in res['stats']]
-    #sh
-#    for name,val in res['stats']:
-#
-#        sheet = book.add_sheet(name)
-#        for row, rowdata in enumerate(vals ):
-#            for col,v in enumerate(rowdata):
-#                sheet.write(row,col,v)
-
-
-    #OTHER DATASETS
-    sheet_names = [
-        "girls",
-        "boys",
-        "total pupils",
-        "female teachers",
-        "male teachers",
-        "total teachers",
-        ]
-                    
-    #sheet = book.add_sheet('girls')
-    # more variants of this data
-
-    #format (School,
     response = HttpResponse(mimetype='application/vnd.ms-excel')
     response['Content-Disposition'] = 'attachment; filename=emis.xls'
     book.save(response)
     return response
+
+@login_required
+def excel_reports(req):
+    return render_to_response('education/excelreports/excel_dashboard.html',{},RequestContext(req))
