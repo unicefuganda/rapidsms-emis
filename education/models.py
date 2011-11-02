@@ -33,7 +33,7 @@ class EmisReporter(Contact):
     schools = models.ManyToManyField(School, null=True)
     
     def is_member_of(self, group):
-        return group.lower() in [grp.lower for grp in self.groups.values_list('name', flat=True)]
+        return group.lower() in [grp.lower for grp in self.groups.objects.values_list('name', flat=True)]
 
 class Role(Group):
    class Meta:
@@ -58,6 +58,9 @@ class UserProfile(models.Model):
     location = models.ForeignKey(Location)
     role = models.ForeignKey(Role)
     user = models.ForeignKey(User,related_name="profile")
+    
+    def is_member_of(self, group):
+        return group.lower() == self.role.name.lower()
 
 def parse_date(command, value):
     return parse_date_value(value)
@@ -245,7 +248,7 @@ def _schedule_monthly_script(group, connection, script_slug, day_offset, role_na
     if group.name in role_names:
         d = datetime.datetime.now()
         day = calendar.mdays[d.month] if day_offset == 'last' else day_offset
-        d = datetime.datetime(d.year, d.month, day)
+        d = datetime.datetime(d.year, d.month, day, d.hour, d.minute, d.second, d.microsecond)
         #if d is weekend, set time to next monday
         if d.weekday() == 5:
             d = d + datetime.timedelta((0 - d.weekday()) % 7)
@@ -261,7 +264,7 @@ def _schedule_monthly_script(group, connection, script_slug, day_offset, role_na
             if in_holiday:
                 d = d + datetime.timedelta(31)
                 day = calendar.mdays[d.month] if day_offset == 'last' else day_offset
-                d = datetime.datetime(d.year, d.month, day)
+                d = datetime.datetime(d.year, d.month, day, d.hour, d.minute, d.second, d.microsecond)
                 #if d is weekend, set time to next monday
                 if d.weekday() == 5:
                     d = d + datetime.timedelta((0 - d.weekday()) % 7)

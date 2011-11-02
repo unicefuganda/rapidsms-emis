@@ -28,7 +28,8 @@ def index(request):
 
 @login_required
 def dashboard(request):
-    if request.user:
+    profile = request.user.get_profile()
+    if profile.is_member_of('DEO'):
         return deo_dashboard(request)
     else:
         return index(request)
@@ -42,6 +43,7 @@ def deo_dashboard(request):
             district_id = form.cleaned_data['district']
     return render_to_response("education/deo/deo_dashboard.html", {\
                                 'form':form, \
+                                'keyratios':keyratios_stats(request, district_id),\
                                 'attendance_stats':attendance_stats(request, district_id), \
                                 'enrollment_stats':enrollment_stats(request, district_id), \
                                 'headteacher_attendance_stats':headteacher_attendance_stats(request, district_id), \
@@ -196,10 +198,10 @@ def edit_school(request, school_pk):
                                   context_instance=RequestContext(request))
         
 @login_required
-def last_submission(request, school_id):
+def school_detail(request, school_id):
     school = School.objects.get(id=school_id)
     xforms = XForm.objects.all()
-    return render_to_response("education/last_school_submission.html", {\
+    return render_to_response("education/school_detail.html", {\
                             'school': school,
                             'xforms': xforms,
                                 }, RequestContext(request))

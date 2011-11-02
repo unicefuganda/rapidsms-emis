@@ -4,8 +4,8 @@ Created on Sep 15, 2011
 @author: asseym
 '''
 from script.utils.handling import find_best_response
-from script.models import Script, ScriptSession
-from .models import EmisReporter
+from script.models import Script, ScriptSession, ScriptProgress
+from .models import EmisReporter, _schedule_monthly_script
 from rapidsms.models import Connection
 from datetime import datetime,date
 
@@ -14,6 +14,7 @@ from rapidsms.models import Contact
 from poll.models import Poll
 from script.models import ScriptStep
 from django.db.models import Count
+from django.conf import settings
 
 
 def match_connections():
@@ -82,4 +83,48 @@ def retrieve_poll(request, pks=None):
 def get_flagged_messages(**kwargs):
 
     return MessageFlag.objects.all()
+
+# a manual reschedule of all monthly polls
+def reschedule_monthly_polls():
+    slugs = ['emis_abuse', 'emis_meals', 'emis_school_administrative', 'emis_smc_monthly']
+    #first remove all existing script progress for the monthly scripts
+    ScriptProgress.objects.filter(script__slug__in=slugs).delete()
+    for slug in slugs:
+        reporters = EmisReporter.objects.all()
+        for reporter in reporters:
+            if reporter.default_connection and reporter.groups.count() > 0:
+                connection = reporter.default_connection
+                group = reporter.groups.all()[0]
+                if slug == 'emis_abuse':
+                    _schedule_monthly_script(group, connection, 'emis_abuse', 'last', ['Teachers', 'Head Teachers'])
+                elif slug == 'emis_meals':
+                    _schedule_monthly_script(group, connection, 'emis_meals', 20, ['Teachers', 'Head Teachers'])
+                elif slug == 'emis_school_administrative':
+                    _schedule_monthly_script(group, connection, 'emis_school_administrative', 15, ['Teachers', 'Head Teachers'])
+                else:
+                    _schedule_monthly_script(group, connection, 'emis_smc_monthly', 28, ['SMC'])
+
+#reschedule weekly SMS questions                
+def reschedule_weekly_smc_polls():
+    #first destroy all existing script progress for the SMCs
+    ScriptProgress.objects.filter(connection__contact__groups__name='SMC', script__slug='emis_head_teacher_presence').delete()
+    smcs = EmisReporter.objects.filter(groups__name='SMC')
+    import datetime
+    for smc in smcs:
+        connection = smc.default_connection
+        holidays = getattr(settings, 'SCHOOL_HOLIDAYS', [])
+        d = datetime.datetime.now()
+        # get the date to a thursday
+        d = d + datetime.timedelta((3 - d.weekday()) % 7)
+        in_holiday = True
+        while in_holiday:
+            in_holiday = False
+            for start, end in holidays:
+                if d >= start and d <= end:
+                    in_holiday = True
+                    break
+            if in_holiday:
+                d = d + datetime.timedelta(7)
+        sp, created = ScriptProgress.objects.get_or_create(connection=connection, script=Script.objects.get(slug='emis_head_teacher_presence'))
+        sp.set_time(d) 
 

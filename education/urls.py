@@ -1,10 +1,10 @@
 from .forms import SchoolFilterForm, LimitedDistictFilterForm, \
  RolesFilterForm, ReporterFreeSearchForm, SchoolDistictFilterForm, FreeSearchSchoolsForm
 from .models import EmisReporter, School
-from .reports import AttendanceReport, AbuseReport
+from .reports import AttendanceReport, AbuseReport, KeyRatiosReport
 from .sorters import LatestSubmissionSorter
 from .views import whitelist, add_connection, delete_connection, deo_dashboard, dashboard, \
- edit_reporter, delete_reporter, add_schools, edit_school, delete_school, last_submission, to_excel, excel_reports
+ edit_reporter, delete_reporter, add_schools, edit_school, delete_school, school_detail, to_excel, excel_reports
 from contact.forms import FreeSearchForm, DistictFilterForm, MassTextForm, \
     FreeSearchTextForm, DistictFilterMessageForm, HandledByForm, ReplyTextForm
 from django.conf.urls.defaults import patterns, url
@@ -103,12 +103,15 @@ urlpatterns = patterns('',
       'columns':[('Name', True, 'name', SimpleSorter()),
                  ('District', True, 'location__name', None,),
                  ('School ID', False, 'emis_id', None,),
+                 ('# of pupils', False, 'pupils', None,),
+                 ('# of Teachers', False, 'teachers', None,),
+                 ('Head Teacher', False, 'emisreporter', None,),
                  ('Reporters', False, 'emisreporter', None,),
                  ],
       'sort_column':'date',
       'sort_ascending':False,
     }, name="emis-schools"),
-    url(r'^emis/(\d+)/last_submission/', last_submission, {}, name='last-submission'),
+    url(r'^emis/(\d+)/school_detail/', school_detail, {}, name='school-detail'),
     url(r'^emis/add_schools/', login_required(add_schools), {}, name='add-schools'),
     url(r'^emis/school/(\d+)/edit/', edit_school, name='edit-school'),
     url(r'^emis/school/(\d+)/delete/', delete_school, name='delete-school'),
