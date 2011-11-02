@@ -4,7 +4,7 @@ from .models import EmisReporter, School
 from .reports import AttendanceReport, AbuseReport
 from .sorters import LatestSubmissionSorter
 from .views import whitelist, add_connection, delete_connection, deo_dashboard, dashboard, \
- edit_reporter, delete_reporter, add_schools, edit_school, delete_school, last_submission, to_excel
+ edit_reporter, delete_reporter, add_schools, edit_school, delete_school, last_submission, to_excel, excel_reports
 from contact.forms import FreeSearchForm, DistictFilterForm, MassTextForm, \
     FreeSearchTextForm, DistictFilterMessageForm, HandledByForm, ReplyTextForm
 from django.conf.urls.defaults import patterns, url
