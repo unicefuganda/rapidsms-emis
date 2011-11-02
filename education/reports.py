@@ -389,6 +389,7 @@ def keyratios_stats(request, district_id=None):
             .annotate(Sum('value_int')).values_list('value_int__sum', flat=True)
     total_teachers = XFormSubmissionValue.objects.exclude(submission__has_errors=True)\
             .exclude(submission__connection__contact=None)\
+            .filter(created__range=(start_date, end_date))\
             .filter(attribute__slug__in=bottom_attrib)\
             .filter(submission__connection__contact__emisreporter__schools__location__in=user_location.get_descendants(include_self=True).all())\
             .annotate(Sum('value_int')).values_list('value_int__sum', flat=True)
