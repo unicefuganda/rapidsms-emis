@@ -284,7 +284,11 @@ def to_excel(req):
         values = total_attribute_value(["deploy_f", "deploy_m"], start_date=start_date, end_date=end_date, location=location)
         stats.append(('total teachers', location_values(user_location, values)))
         loc_data.append(stats)
+    #TODO refactor code and get rid of duplication
     sheet = book.add_sheet('enrolment')
+    for row in xrange(len(loc_data)):
+       for col,col_data in enumerate(loc_data[row]):
+           sheet.write(row,col,col_data[1])
 
     response = HttpResponse(mimetype='application/vnd.ms-excel')
     response['Content-Disposition'] = 'attachment; filename=emis.xls'
