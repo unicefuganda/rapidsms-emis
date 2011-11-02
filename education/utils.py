@@ -87,6 +87,11 @@ def get_flagged_messages(**kwargs):
 # a manual reschedule of all monthly polls
 def reschedule_monthly_polls():
     slugs = ['emis_abuse', 'emis_meals', 'emis_school_administrative', 'emis_smc_monthly']
+    #enable scripts in case they are disabled
+    for slug in slugs:
+        script = Script.objects.get(slug=slug)
+        script.enable = True
+        script.save()
     #first remove all existing script progress for the monthly scripts
     ScriptProgress.objects.filter(script__slug__in=slugs).delete()
     for slug in slugs:
@@ -106,6 +111,10 @@ def reschedule_monthly_polls():
 
 #reschedule weekly SMS questions                
 def reschedule_weekly_smc_polls():
+    #enable script in case its disabled
+    script = Script.objects.get(slug='emis_head_teacher_presence')
+    script.enable = True
+    script.save()
     #first destroy all existing script progress for the SMCs
     ScriptProgress.objects.filter(connection__contact__groups__name='SMC', script__slug='emis_head_teacher_presence').delete()
     smcs = EmisReporter.objects.filter(groups__name='SMC')
