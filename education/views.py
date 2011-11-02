@@ -10,7 +10,8 @@ from poll.models import Poll, ResponseCategory, Response
 from rapidsms.models import Connection, Contact, Contact, Connection
 from rapidsms_httprouter.models import Message
 from uganda_common.utils import *
-from rapidsms.lib.rapidsms.contrib.locations.models import Location
+from rapidsms.contrib.locations.models import Location
+
 # reusing reports methods
 from education.reports import *
 from urllib2 import urlopen
@@ -206,37 +207,67 @@ def last_submission(request, school_id):
 # analytics specific for emis {copy, but adjust to suit your needs}
 @login_required
 def to_excel(req):
-    stats = []
-    user_location = Location.objects.get(name='Kaabong')
+#    stats = []
+    #this can be expanded for other districts
+    CURRENT_DISTRICTS_UNDER_EMIS = ["Kaabong",
+                                    "Kotido",
+                                    "Kabarole",
+                                    "Kisoro",
+                                    "Kyegegwa",
+                                    "Mpigi",
+                                    "Kabale"
+                                    ]
+
+
+    user_locations_by_district = [Location.objects.get(name=l) for l in CURRENT_DISTRICTS_UNDER_EMIS]
     location = Location.tree.root_nodes()[0]
     start_date, end_date = previous_calendar_week()
     dates = {'start':start_date, 'end':end_date}
-
-    boys = ["boys_%s" % g for g in GRADES]
-    values = total_attribute_value(boys, start_date=start_date, end_date=end_date, location=location)
-    stats.append(('boys', location_values(user_location, values)))
-
-    girls = ["girls_%s" % g for g in GRADES]
-    values = total_attribute_value(girls, start_date=start_date, end_date=end_date, location=location)
-    stats.append(('girls', location_values(user_location, values)))
-
-    total_pupils = ["boys_%s" % g for g in GRADES] + ["girls_%s" % g for g in GRADES]
-    values = total_attribute_value(total_pupils, start_date=start_date, end_date=end_date, location=location)
-    stats.append(('total pupils', location_values(user_location, values)))
-
-    values = total_attribute_value("teachers_f", start_date=start_date, end_date=end_date, location=location)
-    stats.append(('female teachers', location_values(user_location, values)))
-
-    values = total_attribute_value("teachers_m", start_date=start_date, end_date=end_date, location=location)
-    stats.append(('male teachers', location_values(user_location, values)))
-
-    values = total_attribute_value(["teachers_f", "teachers_m"], start_date=start_date, end_date=end_date, location=location)
-    stats.append(('total teachers', location_values(user_location, values)))
+    loc_data = []
     res = {}
-    res['dates'] = dates
-    res['stats'] = stats
-    
+    for loc in CURRENT_DISTRICTS_UNDER_EMIS:
+        user_location = Location.objects.get(name=loc)
+        stats = []
+
+        boys = ["boys_%s" % g for g in GRADES]
+        values = total_attribute_value(boys, start_date=start_date, end_date=end_date, location=location)
+        stats.append(('boys', location_values(user_location, values)))
+
+        girls = ["girls_%s" % g for g in GRADES]
+        values = total_attribute_value(girls, start_date=start_date, end_date=end_date, location=location)
+        stats.append(('girls', location_values(user_location, values)))
+
+        total_pupils = ["boys_%s" % g for g in GRADES] + ["girls_%s" % g for g in GRADES]
+        values = total_attribute_value(total_pupils, start_date=start_date, end_date=end_date, location=location)
+        stats.append(('total pupils', location_values(user_location, values)))
+
+        values = total_attribute_value("teachers_f", start_date=start_date, end_date=end_date, location=location)
+        stats.append(('female teachers', location_values(user_location, values)))
+
+        values = total_attribute_value("teachers_m", start_date=start_date, end_date=end_date, location=location)
+        stats.append(('male teachers', location_values(user_location, values)))
+
+        values = total_attribute_value(["teachers_f", "teachers_m"], start_date=start_date, end_date=end_date, location=location)
+        stats.append(('total teachers', location_values(user_location, values)))
+        loc_data.append(stats)
+
+
+#    res['dates'] = dates
+#    res['stats'] = stats
+
     book = xlwt.Workbook(encoding='utf8')
+    # just a very generic spreadsheet
+
+    vals = [val for n,val in res['stats']]
+    #sh
+#    for name,val in res['stats']:
+#
+#        sheet = book.add_sheet(name)
+#        for row, rowdata in enumerate(vals ):
+#            for col,v in enumerate(rowdata):
+#                sheet.write(row,col,v)
+
+
     #OTHER DATASETS
     sheet_names = [
         "girls",
@@ -246,19 +277,9 @@ def to_excel(req):
         "male teachers",
         "total teachers",
         ]
-
-    #TODO generalize writing function WIP
-    def write_to_sheet(sheet_name=None,values_list=None):
-        sheet = book.add_sheet(sheet_name)
-        for row, rowdata in enumerate(values_list):
-            for col, val in enumerate(rowdata):
-                sheet.write(row,col,val)
-
-    for name,val in res.values()[0]:
-        sheet = book.add_sheet(name)
-        for row, rowdata in enumerate(val):
-            for col,v in enumerate(rowdata):
-                sheet.write(row,col,v)
+                    
+    #sheet = book.add_sheet('girls')
+    # more variants of this data
 
     #format (School,
     response = HttpResponse(mimetype='application/vnd.ms-excel')
