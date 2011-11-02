@@ -275,13 +275,13 @@ def to_excel(req):
         values = total_attribute_value(total_pupils, start_date=start_date, end_date=end_date, location=location)
         stats.append(('total pupils', location_values(user_location, values)))
 
-        values = total_attribute_value("teachers_f", start_date=start_date, end_date=end_date, location=location)
+        values = total_attribute_value("deploy_f", start_date=start_date, end_date=end_date, location=location)
         stats.append(('female teachers', location_values(user_location, values)))
 
-        values = total_attribute_value("teachers_m", start_date=start_date, end_date=end_date, location=location)
+        values = total_attribute_value("deploy_m", start_date=start_date, end_date=end_date, location=location)
         stats.append(('male teachers', location_values(user_location, values)))
 
-        values = total_attribute_value(["teachers_f", "teachers_m"], start_date=start_date, end_date=end_date, location=location)
+        values = total_attribute_value(["deploy_f", "deploy_m"], start_date=start_date, end_date=end_date, location=location)
         stats.append(('total teachers', location_values(user_location, values)))
         loc_data.append(stats)
     sheet = book.add_sheet('enrolment')
