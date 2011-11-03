@@ -74,6 +74,20 @@ def submissions(obj):
         subs_count = 0
     return resp_count + subs_count
 
+def headteacher(obj):
+    try:
+        reps = obj.emisreporter_set.filter(groups__name='Head Teachers')
+        return reps[0].name
+    except:
+        return ''
+    
+def headteacher_connection(obj):
+    try:
+        reps = obj.emisreporter_set.filter(groups__name='Head Teachers')
+        return reps[0].default_connection.identity
+    except:
+        return ''
+
 def hash(h, key):
     try:
         val = h[key]
@@ -192,6 +206,8 @@ register.filter('ancestors', get_ancestors)
 register.filter('name', name)
 register.filter('latest', latest)
 register.filter('submissions', submissions)
+register.filter('headteacher',headteacher)
+register.filter('headteacher_connection',headteacher_connection)
 register.filter('hash', hash)
 register.filter('get_district', get_district)
 register.tag('date_range', do_date_range)

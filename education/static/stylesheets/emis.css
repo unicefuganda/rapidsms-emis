@@ -168,6 +168,20 @@ p {
 	padding:0 0 0.2em 0;
 }
 
+.ratios-left {
+    text-align: left;
+    font-weight:bold;
+    padding:1em;
+    background-color: #FFEEBE;
+}
+
+.ratios-right {
+    text-align: left;
+    padding: 0.5em;
+    font-size: 1em;
+    background-color: #FFFFBE;
+}
+
 .qt-head {
 	text-align: center;
 	font-weight:bold;
@@ -180,6 +194,14 @@ p {
 	padding: 0.5em;
 	font-size: 2em;
 	background-color: #FFFFBE;
+}
+
+.school_detail{
+    border-collapse:collapse;
+    border-color:#cecece;
+}
+.school_detail th{
+    text-align:left;
 }
 
 .filter_form_help {
