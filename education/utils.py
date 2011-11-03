@@ -130,5 +130,184 @@ def reschedule_weekly_smc_polls():
             if in_holiday:
                 d = d + datetime.timedelta(7)
         sp, created = ScriptProgress.objects.get_or_create(connection=connection, script=Script.objects.get(slug='emis_head_teacher_presence'))
-        sp.set_time(d) 
+
+        sp.set_time(d)
+
+
+def create_excel_dataset():
+    """
+    # for excelification
+    for up to 6 districts
+    a function to return some excel output from varying datasets
+
+    **Important**
+
+    full_stat_data => [ <enrollment>, <enrollment_and_deployment>, <students_enrolled_by_district>]
+
+    """
+
+    #This can be expanded for other districts
+    CURRENT_DISTRICTS_UNDER_EMIS = ["Kaabong",
+                                    "Kotido",
+                                    "Kabarole",
+                                    "Kisoro",
+                                    "Kyegegwa",
+                                    "Mpigi",
+                                    "Kabale"
+    ]
+    location = Location.tree.root_nodes()[0]
+    start_date, end_date = previous_calendar_week()
+    dates = {'start':start_date, 'end':end_date}
+
+    # store the different datasets in here (list of data about enrollement, attendance, and more) by district
+    full_stat_data = []
+
+    # localised data by district
+    loc_data = []
+
+    # initialize Excel workbook and set encoding
+    book = xlwt.Workbook(encoding='utf8')
+
+    # write to sheet
+    def write_to_sheet(ld=loc_data,sheet=sheet):
+        for row in xrange(len(loc_data)):
+            for col,col_data in enumerate(loc_data[row]):
+                sheet.write(row,col,col_data[1])
+
+    # enrollment data
+    for loc in CURRENT_DISTRICTS_UNDER_EMIS:
+        user_location = Location.objects.get(name=loc)
+        stats = []
+
+        boys = ["boys_%s" % g for g in GRADES]
+        values = total_attribute_value(boys, start_date=start_date, end_date=end_date, location=location)
+        stats.append(('boys', location_values(user_location, values)))
+
+        girls = ["girls_%s" % g for g in GRADES]
+        values = total_attribute_value(girls, start_date=start_date, end_date=end_date, location=location)
+        stats.append(('girls', location_values(user_location, values)))
+
+        total_pupils = ["boys_%s" % g for g in GRADES] + ["girls_%s" % g for g in GRADES]
+        values = total_attribute_value(total_pupils, start_date=start_date, end_date=end_date, location=location)
+        stats.append(('total pupils', location_values(user_location, values)))
+
+        values = total_attribute_value("teachers_f", start_date=start_date, end_date=end_date, location=location)
+        stats.append(('female teachers', location_values(user_location, values)))
+
+        values = total_attribute_value("teachers_m", start_date=start_date, end_date=end_date, location=location)
+        stats.append(('male teachers', location_values(user_location, values)))
+
+        values = total_attribute_value(["teachers_f", "teachers_m"], start_date=start_date, end_date=end_date, location=location)
+        stats.append(('total teachers', location_values(user_location, values)))
+        loc_data.append(stats)
+    full_stat_data.append(loc_data)
+
+    sheet1 = book.add_sheet('attendance')
+    # data in loc_data is organized by district, every new list element is a district under EMIS
+    write_to_sheet(ld=loc_data,sheet=sheet1)
+
+    # Enrollment and Deployment
+    loc_data = []
+    for loc in CURRENT_DISTRICTS_UNDER_EMIS:
+        user_location = Location.objects.get(name=loc)
+        stats = []
+
+        boys = ["enrolledb_%s" % g for g in GRADES]
+        values = total_attribute_value(boys, start_date=start_date, end_date=end_date, location=location)
+        stats.append(('boys', location_values(user_location, values)))
+
+        girls = ["enrolledg_%s" % g for g in GRADES]
+        values = total_attribute_value(girls, start_date=start_date, end_date=end_date, location=location)
+        stats.append(('girls', location_values(user_location, values)))
+
+        total_pupils = ["enrolledb_%s" % g for g in GRADES] + ["enrolledg_%s" % g for g in GRADES]
+        values = total_attribute_value(total_pupils, start_date=start_date, end_date=end_date, location=location)
+        stats.append(('total pupils', location_values(user_location, values)))
+
+        values = total_attribute_value("deploy_f", start_date=start_date, end_date=end_date, location=location)
+        stats.append(('female teachers', location_values(user_location, values)))
+
+        values = total_attribute_value("deploy_m", start_date=start_date, end_date=end_date, location=location)
+        stats.append(('male teachers', location_values(user_location, values)))
+
+        values = total_attribute_value(["deploy_f", "deploy_m"], start_date=start_date, end_date=end_date, location=location)
+        stats.append(('total teachers', location_values(user_location, values)))
+        loc_data.append(stats)
+    full_stat_data.append(loc_data)
+    sheet2 = book.add_sheet('Enrolment and Deployment')
+    write_to_sheet(ld=loc_data,sheet=sheet2)
+    
+    #Students enrolled by district (excludes teachers)
+    loc_data = []
+    for loc in CURRENT_DISTRICTS_UNDER_EMIS:
+        user_location = Location.objects.get(name=loc)
+        stats = []
+
+        boys = ["enrolledb_%s" % g for g in GRADES]
+        values = total_attribute_value(boys, start_date=start_date, end_date=end_date, location=location)
+        stats.append(('boys', location_values(user_location, values)))
+
+        girls = ["enrolledg_%s" % g for g in GRADES]
+        values = total_attribute_value(girls, start_date=start_date, end_date=end_date, location=location)
+        stats.append(('girls', location_values(user_location, values)))
+
+        total_pupils = ["enrolledb_%s" % g for g in GRADES] + ["enrolledg_%s" % g for g in GRADES]
+        values = total_attribute_value(total_pupils, start_date=start_date, end_date=end_date, location=location)
+        stats.append(('total pupils in %s'%loc, location_values(user_location, values)))
+
+        loc_data.append(stats)
+    full_stat_data.append(loc_data)
+    sheet3 = book.add_sheet("Student Enrollment")
+    write_to_sheet(ld=loc_data,sheet=sheet3)
+    
+    # number of boys per district
+    loc_data = []
+    for loc in CURRENT_DISTRICTS_UNDER_EMIS:
+        user_location = Location.objects.get(name=loc)
+        stats = []
+
+        boys = ["boys_%s" % g for g in GRADES]
+        values = total_attribute_value(boys, start_date=start_date, end_date=end_date, location=location)
+        stats.append(('Boys (all grades) in %s district'%loc, location_values(user_location, values)))
+
+        loc_data.append(stats)
+    full_stat_data.append(loc_data)
+    sheet4 = book.add_sheet("Boys in all Grades")
+    write_to_sheet(ld=loc_data,sheet=sheet4)
+
+    #number of girls per district
+    loc_data = []
+    for loc in CURRENT_DISTRICTS_UNDER_EMIS:
+        user_location = Location.objects.get(name=loc)
+        stats = []
+
+        girls = ["girls_%s" % g for g in GRADES]
+        values = total_attribute_value(girls, start_date=start_date, end_date=end_date, location=location)
+        stats.append(('Girls in %s district'%loc, location_values(user_location, values)))
+
+        loc_data.append(stats)
+    full_stat_data.append(loc_data)
+    sheet5 = book.add_sheet("Girls in all grades")
+    write_to_sheet(ld=loc_data,sheet=sheet5)
+    #classroom data by district
+    loc_data = []
+    for loc in CURRENT_DISTRICTS_UNDER_EMIS:
+        user_location = Location.objects.get(name=loc)
+        stats = []
+
+        classrooms = ["classrooms_%s" % g for g in GRADES]
+        values = total_attribute_value(classrooms, start_date=start_date, end_date=end_date, location=location)
+        stats.append(('Total Classrooms in %s district' % loc, location_values(user_location, values)))
+
+        loc_data.append(stats)
+    full_stat_data.append(loc_data)
+    sheet6 = book.add_sheet("Classrooms for all grades by district")
+    write_to_sheet(ld=loc_data,sheet=sheet6)
+
+
+    response = HttpResponse(mimetype='application/vnd.ms-excel')
+    response['Content-Disposition'] = 'attachment; filename=emis.xls'
+    book.save(response)
+    return response
+
 
