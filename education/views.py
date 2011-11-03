@@ -1,7 +1,6 @@
 #from django.db import connection
 from .forms import NewConnectionForm, EditReporterForm, DistrictFilterForm, SchoolForm
 from .models import *
-from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, render_to_response
@@ -12,13 +11,11 @@ from rapidsms_httprouter.models import Message
 from uganda_common.utils import *
 from rapidsms.contrib.locations.models import Location
 
-# reusing reports methods
-from education.reports import *
 from .reports import *
+from .utils import *
 from urllib2 import urlopen
 from rapidsms_xforms.models import XFormSubmissionValue
-# data
-import datetime, re, time,xlwt
+import datetime, re, time
 from datetime import datetime, date
 
 Num_REG = re.compile('\d+')
@@ -210,93 +207,7 @@ def school_detail(request, school_id):
 # analytics specific for emis {copy, but adjust to suit your needs}
 @login_required
 def to_excel(req,district_id=None):
-#    stats = []
-    #this can be expanded for other districts
-    CURRENT_DISTRICTS_UNDER_EMIS = ["Kaabong",
-                                    "Kotido",
-                                    "Kabarole",
-                                    "Kisoro",
-                                    "Kyegegwa",
-                                    "Mpigi",
-                                    "Kabale"
-                                    ]
-    user_locations_by_district = [Location.objects.get(name=l) for l in CURRENT_DISTRICTS_UNDER_EMIS]
-    location = Location.tree.root_nodes()[0]
-    start_date, end_date = previous_calendar_week()
-    dates = {'start':start_date, 'end':end_date}
-    loc_data = []
-    res = {}
-    book = xlwt.Workbook(encoding='utf8')
-    
-    for loc in CURRENT_DISTRICTS_UNDER_EMIS:
-        user_location = Location.objects.get(name=loc)
-        stats = []
-
-        boys = ["boys_%s" % g for g in GRADES]
-        values = total_attribute_value(boys, start_date=start_date, end_date=end_date, location=location)
-        stats.append(('boys', location_values(user_location, values)))
-
-        girls = ["girls_%s" % g for g in GRADES]
-        values = total_attribute_value(girls, start_date=start_date, end_date=end_date, location=location)
-        stats.append(('girls', location_values(user_location, values)))
-
-        total_pupils = ["boys_%s" % g for g in GRADES] + ["girls_%s" % g for g in GRADES]
-        values = total_attribute_value(total_pupils, start_date=start_date, end_date=end_date, location=location)
-        stats.append(('total pupils', location_values(user_location, values)))
-
-        values = total_attribute_value("teachers_f", start_date=start_date, end_date=end_date, location=location)
-        stats.append(('female teachers', location_values(user_location, values)))
-
-        values = total_attribute_value("teachers_m", start_date=start_date, end_date=end_date, location=location)
-        stats.append(('male teachers', location_values(user_location, values)))
-
-        values = total_attribute_value(["teachers_f", "teachers_m"], start_date=start_date, end_date=end_date, location=location)
-        stats.append(('total teachers', location_values(user_location, values)))
-        loc_data.append(stats)
-
-
-    sheet = book.add_sheet('attendance')
-    # data in loc_data is organized by district, every new list element is a district under EMIS
-    for row in xrange(len(loc_data)):
-        for col,col_data in enumerate(loc_data[row]):
-            sheet.write(row,col,col_data[1])
-
-    loc_data = []
-    for loc in CURRENT_DISTRICTS_UNDER_EMIS:
-        user_location = Location.objects.get(name=loc)
-        stats = []
-
-        boys = ["enrolledb_%s" % g for g in GRADES]
-        values = total_attribute_value(boys, start_date=start_date, end_date=end_date, location=location)
-        stats.append(('boys', location_values(user_location, values)))
-
-        girls = ["enrolledg_%s" % g for g in GRADES]
-        values = total_attribute_value(girls, start_date=start_date, end_date=end_date, location=location)
-        stats.append(('girls', location_values(user_location, values)))
-
-        total_pupils = ["enrolledb_%s" % g for g in GRADES] + ["enrolledg_%s" % g for g in GRADES]
-        values = total_attribute_value(total_pupils, start_date=start_date, end_date=end_date, location=location)
-        stats.append(('total pupils', location_values(user_location, values)))
-
-        values = total_attribute_value("deploy_f", start_date=start_date, end_date=end_date, location=location)
-        stats.append(('female teachers', location_values(user_location, values)))
-
-        values = total_attribute_value("deploy_m", start_date=start_date, end_date=end_date, location=location)
-        stats.append(('male teachers', location_values(user_location, values)))
-
-        values = total_attribute_value(["deploy_f", "deploy_m"], start_date=start_date, end_date=end_date, location=location)
-        stats.append(('total teachers', location_values(user_location, values)))
-        loc_data.append(stats)
-    #TODO refactor code and get rid of duplication
-    sheet2 = book.add_sheet('enrolment')
-    for row in xrange(len(loc_data)):
-       for col,col_data in enumerate(loc_data[row]):
-           sheet2.write(row,col,col_data[1])
-
-    response = HttpResponse(mimetype='application/vnd.ms-excel')
-    response['Content-Disposition'] = 'attachment; filename=emis.xls'
-    book.save(response)
-    return response
+    return create_excel_dataset()
 
 @login_required
 def excel_reports(req):
