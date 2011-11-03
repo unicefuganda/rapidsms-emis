@@ -147,6 +147,13 @@ def create_excel_dataset():
     """
     #This can be expanded for other districts using the rapidSMS locations models
     #CURRENT_DISTRICTS = Location.objects.filter(name__in=XFormSubmissionValue.objects.values_list('submission__connection__contact__reporting_location__name', flat=True)).order_by('name')
+
+    location = Location.tree.root_nodes()[0]
+    start_date, end_date = previous_calendar_week()
+    dates = {'start':start_date, 'end':end_date}
+    # initialize Excel workbook and set encoding
+    book = xlwt.Workbook(encoding='utf8')
+
     def write_xls(sheet_name, headings, data):
         sheet = book.add_sheet(sheet_name)
         rowx = 0
@@ -159,6 +166,7 @@ def create_excel_dataset():
             rowx += 1
             for colx, value in enumerate(row):
                 sheet.write(rowx, colx, value)
+
 
     def xform_data_picker(xform_name=None,*args):
         school_vals = {}
@@ -180,8 +188,8 @@ def create_excel_dataset():
     GRADES = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7']
     boy_slugs = ['boys_%s'% g for g in GRADES]
     girl_slugs = ['girls_%s'%g for g in GRADES]
-    data = {}
-    headings = ["School"].extend(GRADES)
+
+
     school_vals = {}
     for school in School.objects.all():
         grade_val = {}
@@ -190,10 +198,13 @@ def create_excel_dataset():
                 grade_val[g] = XFormSubmissionValue.objects.exclude(submission__has_errors=True).filter(attribute__slug__in=["boys_%s"%g],submission__connection__contact__emisreporter__schools=school).order_by('-created')[:1][0].value_int
             except IndexError:
                 grade_val[g] = 0
-    school_vals[school.name]=grade_val
+        school_vals[school.name]=grade_val
+    headings = ["School"] + GRADES
+    print school_vals
     data_set = []
     for school_name,d_set in zip(school_vals.keys(),school_vals.values()):
         data_set.append([school_name]+d_set.values())
+    print data_set
     write_xls("boys",headings,data_set)
     
     CURRENT_DISTRICTS_UNDER_EMIS =\
@@ -205,11 +216,6 @@ def create_excel_dataset():
                                     "Mpigi",
                                     "Kabale"
     ]
-    location = Location.tree.root_nodes()[0]
-    start_date, end_date = previous_calendar_week()
-    dates = {'start':start_date, 'end':end_date}
-    # initialize Excel workbook and set encoding
-    book = xlwt.Workbook(encoding='utf8')
 
     # localised data by district
     loc_data = []
