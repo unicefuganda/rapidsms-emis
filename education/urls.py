@@ -4,7 +4,8 @@ from .models import EmisReporter, School
 from .reports import AttendanceReport, AbuseReport
 from .sorters import LatestSubmissionSorter
 from .views import whitelist, add_connection, delete_connection, deo_dashboard, dashboard, \
- edit_reporter, delete_reporter, add_schools, edit_school, delete_school, last_submission, to_excel, excel_reports
+ edit_reporter,edit_user,UserForm, delete_reporter, add_schools, edit_school, delete_school, last_submission, to_excel, excel_reports
+
 from contact.forms import FreeSearchForm, DistictFilterForm, MassTextForm, \
     FreeSearchTextForm, DistictFilterMessageForm, HandledByForm, ReplyTextForm
 from django.conf.urls.defaults import patterns, url
@@ -14,7 +15,8 @@ from rapidsms_httprouter.models import Message
 from rapidsms_xforms.models import XFormSubmission
 from uganda_common.utils import get_xform_dates, get_messages
 from django.contrib.auth.views import login_required
-
+from django.contrib.auth.models import User
+from .utils import get_users
 
 urlpatterns = patterns('',
    url(r'^emis/messagelog/$', generic, {
@@ -149,5 +151,24 @@ urlpatterns = patterns('',
 
     # excel
     url(r'^emis/excelreports/$',excel_reports),
+    #users and permissions
     url(r'^emis/toexcel/$',to_excel),
+     url(r'^emis/users/(\d+)/edit/', edit_user, name='edit_user'),
+     url(r'^emis/users/add/', edit_user, name='add_user'),
+      url(r'^emis/user/$', generic, {
+      'model':User,
+      'objects_per_page':25,
+      'partial_row':'education/partials/user_row.html',
+      'partial_header':'education/partials/user_partial_header.html',
+      'base_template':'education/users_base.html',
+      'results_title':'Managed Users',
+      'user_form':UserForm(),
+      'columns':[('Username', True, 'username', SimpleSorter()),
+                 ('Email', True, 'email', None,),
+                 ('Name', False, 'first_name', None,),
+                 ('Location', False, 'profile__location', None,),
+                 ],
+      'sort_column':'date',
+      'sort_ascending':False,
+    }, name="emis_users"),
 )
