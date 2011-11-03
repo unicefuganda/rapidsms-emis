@@ -1,7 +1,7 @@
 from .forms import SchoolFilterForm, LimitedDistictFilterForm, \
  RolesFilterForm, ReporterFreeSearchForm, SchoolDistictFilterForm, FreeSearchSchoolsForm
 from .models import EmisReporter, School
-from .reports import AttendanceReport, AbuseReport, KeyRatiosReport
+from .reports import AttendanceReport, AbuseReport, KeyRatiosReport, messages, othermessages, reporters, schools
 from .sorters import LatestSubmissionSorter
 from .views import whitelist, add_connection, delete_connection, deo_dashboard, dashboard, \
  edit_reporter, delete_reporter, add_schools, edit_school, delete_school, school_detail, to_excel, excel_reports
@@ -19,6 +19,7 @@ from django.contrib.auth.views import login_required
 urlpatterns = patterns('',
    url(r'^emis/messagelog/$', generic, {
       'model':Message,
+      'queryset':messages,
       'filter_forms':[FreeSearchTextForm, DistictFilterMessageForm, HandledByForm],
       'action_forms':[ReplyTextForm],
       'objects_per_page':25,
@@ -36,6 +37,7 @@ urlpatterns = patterns('',
    #reporters
     url(r'^emis/reporter/$', generic, {
       'model':EmisReporter,
+      'queryset':reporters,
       'filter_forms':[ReporterFreeSearchForm, RolesFilterForm, LimitedDistictFilterForm, SchoolFilterForm],
       'action_forms':[MassTextForm],
       'objects_per_page':25,
@@ -112,6 +114,7 @@ urlpatterns = patterns('',
     url(r'^emis/deo_dashboard/', login_required(deo_dashboard), {}, name='deo-dashboard'),
     url(r'^emis/school/$', generic, {
       'model':School,
+      'queryset':schools,
       'filter_forms':[FreeSearchSchoolsForm, SchoolDistictFilterForm],
       'objects_per_page':25,
       'partial_row':'education/partials/school_row.html',
@@ -134,7 +137,7 @@ urlpatterns = patterns('',
 
     url(r'^emis/othermessages/$', generic, {
       'model':Message,
-      'queryset':get_messages,
+      'queryset':othermessages,
       'filter_forms':[FreeSearchTextForm, DistictFilterMessageForm, HandledByForm],
       'action_forms':[ReplyTextForm],
       'objects_per_page':25,

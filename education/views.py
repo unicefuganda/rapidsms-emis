@@ -39,10 +39,10 @@ def deo_dashboard(request):
         if form.is_valid():
             district_id = form.cleaned_data['district']
     user_location = Location.objects.get(pk=district_id) if district_id else get_location_for_user(request.user)
-    if user_location == Location.tree.root_nodes()[0]:
-        user_location = Location.objects.get(name='Kaabong')
+    top_node = Location.tree.root_nodes()[0]
     return render_to_response("education/deo/deo_dashboard.html", {\
                                 'location':user_location,\
+                                'top_node':top_node,\
                                 'form':form, \
                                 'keyratios':keyratios_stats(request, district_id),\
                                 'attendance_stats':attendance_stats(request, district_id), \
