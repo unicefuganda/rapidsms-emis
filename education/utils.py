@@ -204,7 +204,9 @@ def create_excel_dataset():
     data_set = []
     for school_name,d_set in zip(school_vals.keys(),school_vals.values()):
         data_set.append([school_name]+d_set.values())
-    print data_set
+    print data_set[:5]
+    print "heading"
+    print headings
     write_xls("boys",headings,data_set)
     
     CURRENT_DISTRICTS_UNDER_EMIS =\
