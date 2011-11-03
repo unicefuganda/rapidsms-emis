@@ -139,6 +139,11 @@ def create_excel_dataset():
     # for excelification
     for up to 6 districts
     a function to return some excel output from varying datasets
+
+    **Important**
+
+    full_stat_data => [ <enrollment>, <enrollment_and_deployment>, <students_enrolled_by_district>]
+
     """
 
     #This can be expanded for other districts
@@ -169,7 +174,7 @@ def create_excel_dataset():
             for col,col_data in enumerate(loc_data[row]):
                 sheet.write(row,col,col_data[1])
 
-
+    # enrollment data
     for loc in CURRENT_DISTRICTS_UNDER_EMIS:
         user_location = Location.objects.get(name=loc)
         stats = []
@@ -197,10 +202,11 @@ def create_excel_dataset():
         loc_data.append(stats)
     full_stat_data.append(loc_data)
 
-    sheet = book.add_sheet('attendance')
+    sheet1 = book.add_sheet('attendance')
     # data in loc_data is organized by district, every new list element is a district under EMIS
-    write_to_sheet(ld=loc_data,sheet=sheet)
-    
+    write_to_sheet(ld=loc_data,sheet=sheet1)
+
+    # Enrollment and Deployment
     loc_data = []
     for loc in CURRENT_DISTRICTS_UNDER_EMIS:
         user_location = Location.objects.get(name=loc)
@@ -231,7 +237,7 @@ def create_excel_dataset():
     sheet2 = book.add_sheet('Enrolment and Deployment')
     write_to_sheet(ld=loc_data,sheet=sheet2)
     
-    #Students enrolled by district
+    #Students enrolled by district (excludes teachers)
     loc_data = []
     for loc in CURRENT_DISTRICTS_UNDER_EMIS:
         user_location = Location.objects.get(name=loc)
@@ -283,6 +289,21 @@ def create_excel_dataset():
     full_stat_data.append(loc_data)
     sheet5 = book.add_sheet("Girls in all grades")
     write_to_sheet(ld=loc_data,sheet=sheet5)
+    #classroom data by district
+    loc_data = []
+    for loc in CURRENT_DISTRICTS_UNDER_EMIS:
+        user_location = Location.objects.get(name=loc)
+        stats = []
+
+        classrooms = ["classrooms_%s" % g for g in GRADES]
+        values = total_attribute_value(classrooms, start_date=start_date, end_date=end_date, location=location)
+        stats.append(('Total Classrooms in %s district' % loc, location_values(user_location, values)))
+
+        loc_data.append(stats)
+    full_stat_data.append(loc_data)
+    sheet6 = book.add_sheet("Classrooms for all grades by district")
+    write_to_sheet(ld=loc_data,sheet=sheet6)
+
 
     response = HttpResponse(mimetype='application/vnd.ms-excel')
     response['Content-Disposition'] = 'attachment; filename=emis.xls'
