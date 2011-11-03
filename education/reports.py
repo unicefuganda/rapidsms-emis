@@ -3,11 +3,14 @@ from django.db.models import Count, Sum
 from generic.reports import Column, Report
 from generic.utils import flatten_list
 from rapidsms.contrib.locations.models import Location
+from rapidsms_httprouter.models import Message
+from django.db.models import Q
 from script.models import Script
-from rapidsms_xforms.models import XFormSubmissionValue, XForm
+from rapidsms_xforms.models import XFormSubmissionValue, XForm, XFormSubmission
 from uganda_common.reports import XFormSubmissionColumn, XFormAttributeColumn, PollNumericResultsColumn, PollCategoryResultsColumn, LocationReport
 from uganda_common.utils import total_submissions, reorganize_location, total_attribute_value, previous_calendar_week, previous_calendar_month
 from uganda_common.utils import reorganize_dictionary
+from .models import EmisReporter
 from poll.models import Response, Poll
 from .models import School
 import datetime
@@ -16,6 +19,31 @@ GRADES = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7']
 
 def get_location_for_user(user):
     return user.get_profile().location
+
+def get_location(request, district_id):
+    #location of current logged in user or selected district
+    user_location = Location.objects.get(pk=district_id) if district_id else get_location_for_user(request.user)
+#    if user_location == Location.tree.root_nodes()[0]:
+#        user_location = Location.objects.get(name='Kaabong')
+    return user_location
+
+def attrib_ratios(top_attrib, bottom_attrib, dates, location):
+    top_value = XFormSubmissionValue.objects.exclude(submission__has_errors=True)\
+            .exclude(submission__connection__contact=None)\
+            .filter(created__range=(dates.get('start'), dates.get('end')))\
+            .filter(attribute__slug__in=top_attrib)\
+            .filter(submission__connection__contact__emisreporter__schools__location__in=location.get_descendants(include_self=True).all())\
+            .annotate(Sum('value_int')).values_list('value_int__sum', flat=True)
+    bottom_value = XFormSubmissionValue.objects.exclude(submission__has_errors=True)\
+            .exclude(submission__connection__contact=None)\
+            .filter(created__range=(dates.get('start'), dates.get('end')))\
+            .filter(attribute__slug__in=bottom_attrib)\
+            .filter(submission__connection__contact__emisreporter__schools__location__in=location.get_descendants(include_self=True).all())\
+            .annotate(Sum('value_int')).values_list('value_int__sum', flat=True)
+    if sum(bottom_value) > 0:
+        return sum(top_value) / sum(bottom_value)
+    else:
+        return None
 
 class SchoolMixin(object):
     SCHOOL_ID = 'submission__connection__contact__emisreporter__schools__pk'
@@ -261,18 +289,21 @@ class KeyRatiosReport(SchoolReport):
     pupils_to_classroom = DateLessRatioColumn(["girls_%s" % g for g in GRADES] + ["boys_%s" % g for g in GRADES] , ["classroomsused_%s" % g for g in GRADES])
 
 def location_values(location, data_dicts):
-    for dict in data_dicts:
-        if dict['location_name'] == location.name:
+    value = 0
+    if location == Location.tree.root_nodes()[0]:
+        for dict in data_dicts:
             if dict['value']:
-                return dict['value']
-            else:
-                return '-'
+                value +=dict['value']
+    else:
+        for dict in data_dicts:
+            if dict['location_name'] == location.name:
+                if dict['value']:
+                    value = dict['value']
+    return value if value else '-'
 
 def attendance_stats(request, district_id=None):
     stats = []
-    user_location = Location.objects.get(pk=district_id) if district_id else get_location_for_user(request.user)
-    if user_location == Location.tree.root_nodes()[0]:
-        user_location = Location.objects.get(name='Kaabong')
+    user_location = get_location(request, district_id)
     location = Location.tree.root_nodes()[0]
     start_date, end_date = previous_calendar_week()
     dates = {'start':start_date, 'end':end_date}
@@ -304,9 +335,7 @@ def attendance_stats(request, district_id=None):
 
 def enrollment_stats(request, district_id=None):
     stats = []
-    user_location = Location.objects.get(pk=district_id) if district_id else get_location_for_user(request.user)
-    if user_location == Location.tree.root_nodes()[0]:
-        user_location = Location.objects.get(name='Kaabong')
+    user_location = get_location(request, district_id)
     location = Location.tree.root_nodes()[0]
 #    start_date, end_date = previous_calendar_week()
     start_date = datetime.datetime(datetime.datetime.now().year, 1, 1)
@@ -340,9 +369,7 @@ def enrollment_stats(request, district_id=None):
 
 def headteacher_attendance_stats(request, district_id=None):
     stats = []
-    user_location = Location.objects.get(pk=district_id) if district_id else get_location_for_user(request.user)
-    if user_location == Location.tree.root_nodes()[0]:
-        user_location = Location.objects.get(name='Kaabong')
+    user_location = get_location(request, district_id)
     location = Location.tree.root_nodes()[0]
     start_date, end_date = previous_calendar_month()
     dates = {'start':start_date, 'end':end_date}
@@ -360,9 +387,7 @@ def headteacher_attendance_stats(request, district_id=None):
 
 def abuse_stats(request, district_id=None):
     stats = []
-    user_location = Location.objects.get(pk=district_id) if district_id else get_location_for_user(request.user)
-    if user_location == Location.tree.root_nodes()[0]:
-        user_location = Location.objects.get(name='Kaabong')
+    user_location = get_location(request, district_id)
     location = Location.tree.root_nodes()[0]
     start_date, end_date = previous_calendar_month()
     dates = {'start':start_date, 'end':end_date}
@@ -373,29 +398,9 @@ def abuse_stats(request, district_id=None):
     res['stats'] = stats
     return res
 
-def attrib_ratios(top_attrib, bottom_attrib, dates, location):
-    top_value = XFormSubmissionValue.objects.exclude(submission__has_errors=True)\
-            .exclude(submission__connection__contact=None)\
-            .filter(created__range=(dates.get('start'), dates.get('end')))\
-            .filter(attribute__slug__in=top_attrib)\
-            .filter(submission__connection__contact__emisreporter__schools__location__in=location.get_descendants(include_self=True).all())\
-            .annotate(Sum('value_int')).values_list('value_int__sum', flat=True)
-    bottom_value = XFormSubmissionValue.objects.exclude(submission__has_errors=True)\
-            .exclude(submission__connection__contact=None)\
-            .filter(created__range=(dates.get('start'), dates.get('end')))\
-            .filter(attribute__slug__in=bottom_attrib)\
-            .filter(submission__connection__contact__emisreporter__schools__location__in=location.get_descendants(include_self=True).all())\
-            .annotate(Sum('value_int')).values_list('value_int__sum', flat=True)
-    if sum(bottom_value) > 0:
-        return sum(top_value) / sum(bottom_value)
-    else:
-        return None
-
 def keyratios_stats(request, district_id=None):
     stats = {}
-    user_location = Location.objects.get(pk=district_id) if district_id else get_location_for_user(request.user)
-    if user_location == Location.tree.root_nodes()[0]:
-        user_location = Location.objects.get(name='Kaabong')
+    user_location = get_location(request, district_id)
     start_date = datetime.datetime(datetime.datetime.now().year, 1, 1)
     end_date = datetime.datetime.now()
     dates = {'start':start_date, 'end':end_date}
@@ -454,5 +459,34 @@ def school_last_xformsubmission(request, school_id):
             scripted_polls.append((step.poll,resp))
         
     return {'xforms':xforms, 'scripted_polls':scripted_polls}
+
+def messages(request, district_id=None):
+    user_location = get_location(request, district_id)
+    return Message.objects.filter(connection__contact__emisreporter__reporting_location__in=user_location.get_descendants(include_self=True).all())
+
+
+def othermessages(request, district_id=None):
+    user_location = get_location(request, district_id)
+    #First we get all incoming messages
+    messages = Message.objects.filter(direction='I', connection__contact__emisreporter__reporting_location__in=user_location.get_descendants(include_self=True).all())
+
+    #Get only messages handled by rapidsms_xforms and the polls app (this exludes opt in and opt out messages)
+    messages = messages.filter(Q(application=None) | Q(application__in=['rapidsms_xforms', 'poll']))
+
+    #Exclude XForm submissions
+    messages = messages.exclude(pk__in=XFormSubmission.objects.exclude(message=None).filter(has_errors=False).values_list('message__pk', flat=True))
+
+    # Exclude Poll responses
+    messages = messages.exclude(pk__in=Response.objects.exclude(message=None).filter(has_errors=False).values_list('message__pk', flat=True))
+
+    return messages
+
+def reporters(request, district_id=None):
+    user_location = get_location(request, district_id)
+    return EmisReporter.objects.filter(reporting_location__in=user_location.get_descendants(include_self=True).all())
+
+def schools(request, district_id=None):
+    user_location = get_location(request, district_id)
+    return School.objects.filter(location__in=user_location.get_descendants(include_self=True).all())
     
 
