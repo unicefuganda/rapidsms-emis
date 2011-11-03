@@ -9,8 +9,8 @@ from django.template import RequestContext
 from poll.models import Poll, ResponseCategory, Response
 from rapidsms.models import Connection, Contact, Contact, Connection
 from rapidsms_httprouter.models import Message
-from uganda_common.utils import *
 from rapidsms.contrib.locations.models import Location
+from uganda_common.utils import *
 
 # reusing reports methods
 from education.reports import *
@@ -41,7 +41,11 @@ def deo_dashboard(request):
         form = DistrictFilterForm(request.POST)
         if form.is_valid():
             district_id = form.cleaned_data['district']
+    user_location = Location.objects.get(pk=district_id) if district_id else get_location_for_user(request.user)
+    if user_location == Location.tree.root_nodes()[0]:
+        user_location = Location.objects.get(name='Kaabong')
     return render_to_response("education/deo/deo_dashboard.html", {\
+                                'location':user_location,\
                                 'form':form, \
                                 'keyratios':keyratios_stats(request, district_id),\
                                 'attendance_stats':attendance_stats(request, district_id), \
@@ -200,10 +204,10 @@ def edit_school(request, school_pk):
 @login_required
 def school_detail(request, school_id):
     school = School.objects.get(id=school_id)
-    xforms = XForm.objects.all()
+    last_submissions = school_last_xformsubmission(request, school_id)
     return render_to_response("education/school_detail.html", {\
                             'school': school,
-                            'xforms': xforms,
+                            'last_submissions': last_submissions,
                                 }, RequestContext(request))
 
 

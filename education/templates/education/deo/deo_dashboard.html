@@ -1,99 +1,102 @@
 {% extends "education/index.html" %}
 {% load humanize %}
 {% block content %}
-	{% if user.is_authenticated and user.is_superuser %}
-		<p>
-			<form action="{% url deo-dashboard %}" method="post">
-			    {{ form.non_field_errors }}
-			    <div class="fieldWrapper">
-			        {{ form.district.errors }}
-			        <label for="id_district">Select District:</label>
-			        {{ form.district }}
-			        <input type="submit" value="Submit" />
-			    </div>
-			</form>
-		</p>
-	{% endif %}
-	<p>
-	    <table width="100%" cellspacing="0" cellpadding="0">
-            <tr>
-                <td colspan={{ attendance_stats.stats|length }} class="stat"><span class="stats">Key District Ratios</span></td>
-            </tr>
-            {% for stat, value in keyratios.items %}
+    <div class="module">
+    	{% if user.is_authenticated and user.is_superuser %}
+    		<p>
+    			<form action="{% url deo-dashboard %}" method="post">
+    			    {{ form.non_field_errors }}
+    			    <div class="fieldWrapper">
+    			        {{ form.district.errors }}
+    			        <label for="id_district">Select District:</label>
+    			        {{ form.district }}
+    			        <input type="submit" value="Submit" />
+    			    </div>
+    			</form>
+    		</p>
+    	{% endif %}
+    	<h2>District Sumarry for {{ location.name }}</h2>
+    	<p>
+    	    <table width="35%" cellspacing="0" cellpadding="0">
                 <tr>
-                    <td>{{ stat }}</td>
-                    <td>{{ value }}</td>
+                    <td colspan={{ attendance_stats.stats|length }} class="stat"><span class="stats">Key District Ratios</span></td>
                 </tr>
-             {% endfor %}
-        </table><br /><a href="{% url emis-schools %}">Detailed Schools Statistics &raquo;</a> 
-    </p>
-	</p>
-	<p>
-        <table width="100%" cellspacing="0" cellpadding="0">
-        	<tr>
-        		<td colspan={{ attendance_stats.stats|length }} class="stat"><span class="stats">This Week's Attendance Data</span><span class="dates">WEEK: {{ attendance_stats.dates.start|date:"F/d" }} - {{ attendance_stats.dates.end|date:"F/d" }}</span></td>
-        	</tr>
-        	<tr>
-        		{% for cat, num in attendance_stats.stats %}
-        			<td class="qt-head">{{ cat|title }}</td>
-        		{% endfor %}
-        	</tr>
-        	<tr>
-        		{% for cat, num in attendance_stats.stats %}
-        			<td class="qt-body">{{ num|default_if_none:'-'|intcomma }}</td>
-        		{% endfor %}
-        	</tr>
-        </table><br /><a href="{% url attendance-stats %}">See Latest Attendance Details &raquo;</a> 
-    </p>
-    <p>
-        <table width="100%" cellspacing="0" cellpadding="0">
-        	<tr>
-        		<td colspan={{ enrollment_stats.stats|length }} class="stat"><span class="stats">This Year's Enrollment & Deployment Data</span><span class="dates">YEAR: {{ enrollment_stats.dates.start|date:"Y" }}</span></td>
-        	</tr>
-        	<tr>
-        		{% for cat, num in enrollment_stats.stats %}
-        			<td class="qt-head">{{ cat|title }}</td>
-        		{% endfor %}
-        	</tr>
-        	<tr>
-        		{% for cat, num in enrollment_stats.stats %}
-        			<td class="qt-body">{{ num|default_if_none:'-'|intcomma }}</td>
-        		{% endfor %}
-        	</tr>
-        </table>
-    </p>
-    <p>
-        <table width="100%" cellspacing="0" cellpadding="0">
-        	<tr>
-        		<td colspan={{ headteacher_attendance_stats.stats|length }} class="stat"><span class="stats">Monthly Head Teacher Attendance & Deployment</span><span class="dates">Month: {{ headteacher_attendance_stats.dates.start|date:"F" }}</span></td>
-        	</tr>
-        	<tr>
-        		{% for cat, num in headteacher_attendance_stats.stats %}
-        			<td class="qt-head">{{ cat|title }}</td>
-        		{% endfor %}
-        	</tr>
-        	<tr>
-        		{% for cat, num in headteacher_attendance_stats.stats %}
-        			<td class="qt-body">{{ num|default_if_none:'-'|intcomma }}</td>
-        		{% endfor %}
-        	</tr>
-        </table>
-    </p>
-    <p>
-        <table width="100%" cellspacing="0" cellpadding="0">
-        	<tr>
-        		<td colspan={{ abuse_stats.stats|length }} class="stat"><span class="stats">Monthly GEM Reported Abuse Cases</span><span class="dates">Month: {{ abuse_stats.dates.start|date:"F" }}</span></td>
-        	</tr>
-        	<tr>
-        		{% for cat, num in abuse_stats.stats %}
-        			<td class="qt-head">{{ cat|title }}</td>
-        		{% endfor %}
-        	</tr>
-        	<tr>
-        		{% for cat, num in abuse_stats.stats %}
-        			<td class="qt-body">{{ num|default_if_none:'-'|intcomma }}</td>
-        		{% endfor %}
-        	</tr>
-        </table><br /><a href="{% url abuse-stats %}">See Abuse Cases Details &raquo;</a>
-    </p>
+                {% for stat, value in keyratios.items %}
+                    <tr>
+                        <td class="ratios-left">{{ stat }}</td>
+                        <td class="ratios-right">{{ value }}</td>
+                    </tr>
+                 {% endfor %}
+            </table><br /><a href="{% url keyratios-stats %}">See Detailed School Ratios &raquo;</a> 
+        </p>
+    	</p>
+    	<p>
+            <table width="100%" cellspacing="0" cellpadding="0">
+            	<tr>
+            		<td colspan={{ attendance_stats.stats|length }} class="stat"><span class="stats">This Week's Attendance Data</span><span class="dates">WEEK: {{ attendance_stats.dates.start|date:"F/d" }} - {{ attendance_stats.dates.end|date:"F/d" }}</span></td>
+            	</tr>
+            	<tr>
+            		{% for cat, num in attendance_stats.stats %}
+            			<td class="qt-head">{{ cat|title }}</td>
+            		{% endfor %}
+            	</tr>
+            	<tr>
+            		{% for cat, num in attendance_stats.stats %}
+            			<td class="qt-body">{{ num|default_if_none:'-'|intcomma }}</td>
+            		{% endfor %}
+            	</tr>
+            </table><br /><a href="{% url attendance-stats %}">See Latest Attendance Details &raquo;</a> 
+        </p>
+        <p>
+            <table width="100%" cellspacing="0" cellpadding="0">
+            	<tr>
+            		<td colspan={{ enrollment_stats.stats|length }} class="stat"><span class="stats">This Year's Enrollment & Deployment Data</span><span class="dates">YEAR: {{ enrollment_stats.dates.start|date:"Y" }}</span></td>
+            	</tr>
+            	<tr>
+            		{% for cat, num in enrollment_stats.stats %}
+            			<td class="qt-head">{{ cat|title }}</td>
+            		{% endfor %}
+            	</tr>
+            	<tr>
+            		{% for cat, num in enrollment_stats.stats %}
+            			<td class="qt-body">{{ num|default_if_none:'-'|intcomma }}</td>
+            		{% endfor %}
+            	</tr>
+            </table>
+        </p>
+        <p>
+            <table width="100%" cellspacing="0" cellpadding="0">
+            	<tr>
+            		<td colspan={{ headteacher_attendance_stats.stats|length }} class="stat"><span class="stats">Monthly Head Teacher Attendance & Deployment</span><span class="dates">Month: {{ headteacher_attendance_stats.dates.start|date:"F" }}</span></td>
+            	</tr>
+            	<tr>
+            		{% for cat, num in headteacher_attendance_stats.stats %}
+            			<td class="qt-head">{{ cat|title }}</td>
+            		{% endfor %}
+            	</tr>
+            	<tr>
+            		{% for cat, num in headteacher_attendance_stats.stats %}
+            			<td class="qt-body">{{ num|default_if_none:'-'|intcomma }}</td>
+            		{% endfor %}
+            	</tr>
+            </table>
+        </p>
+        <p>
+            <table width="100%" cellspacing="0" cellpadding="0">
+            	<tr>
+            		<td colspan={{ abuse_stats.stats|length }} class="stat"><span class="stats">Monthly GEM Reported Abuse Cases</span><span class="dates">Month: {{ abuse_stats.dates.start|date:"F" }}</span></td>
+            	</tr>
+            	<tr>
+            		{% for cat, num in abuse_stats.stats %}
+            			<td class="qt-head">{{ cat|title }}</td>
+            		{% endfor %}
+            	</tr>
+            	<tr>
+            		{% for cat, num in abuse_stats.stats %}
+            			<td class="qt-body">{{ num|default_if_none:'-'|intcomma }}</td>
+            		{% endfor %}
+            	</tr>
+            </table><br /><a href="{% url abuse-stats %}">See Abuse Cases Details &raquo;</a>
+        </p>
+    </div>
 {% endblock %}
