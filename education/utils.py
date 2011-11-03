@@ -147,16 +147,7 @@ def create_excel_dataset():
     """
     #This can be expanded for other districts using the rapidSMS locations models
     #CURRENT_DISTRICTS = Location.objects.filter(name__in=XFormSubmissionValue.objects.values_list('submission__connection__contact__reporting_location__name', flat=True)).order_by('name')
-    
-    CURRENT_DISTRICTS_UNDER_EMIS =\
-    ["Kaabong",
-                                    "Kotido",
-                                    "Kabarole",
-                                    "Kisoro",
-                                    "Kyegegwa",
-                                    "Mpigi",
-                                    "Kabale"
-    ]
+
     location = Location.tree.root_nodes()[0]
     start_date, end_date = previous_calendar_week()
     dates = {'start':start_date, 'end':end_date}
@@ -176,135 +167,62 @@ def create_excel_dataset():
             for colx, value in enumerate(row):
                 sheet.write(rowx, colx, value)
 
-    # localised data by district
-    loc_data = []
-    # enrollment data
-    headings = ["boys","girls","total pupils","female teachers","male teachers","total teachers"]
-    for loc in CURRENT_DISTRICTS_UNDER_EMIS:
-        user_location = Location.objects.get(name=loc)
-        stats = []
 
-        boys = ["boys_%s" % g for g in GRADES]
-        values = total_attribute_value(boys, start_date=start_date, end_date=end_date, location=location)
-        stats.append(location_values(user_location, values))
+    def xform_data_picker(xform_name=None,*args):
+        school_vals = {}
+        if xform_name:
+            #TODO this part is incomplete and should handle other xform value
+            for school in School.objects.all():
+                pass
+        else:
+            for school in School.objects.all():
+                grade_val = {}
+                for g in GRADES:
+                    try:
+                        grade_val[g] = XFormSubmissionValue.objects.exclude(submission__has_errors=True).filter(attribute__slug__in=["boys_%s"%g],submission__connection__contact__emisreporter__schools=school).order_by('-created')[:1][0].value_int
+                    except IndexError:
+                        grade_val[g] = 0
+                school_vals[school.name]=grade_val
 
-        girls = ["girls_%s" % g for g in GRADES]
-        values = total_attribute_value(girls, start_date=start_date, end_date=end_date, location=location)
-        stats.append(location_values(user_location, values))
+            
+    GRADES = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7']
+    boy_slugs = ['boys_%s'% g for g in GRADES]
+    girl_slugs = ['girls_%s'%g for g in GRADES]
 
-        total_pupils = ["boys_%s" % g for g in GRADES] + ["girls_%s" % g for g in GRADES]
-        values = total_attribute_value(total_pupils, start_date=start_date, end_date=end_date, location=location)
-        stats.append(location_values(user_location, values))
+    ### Boys
+    school_vals = {}
+    for school in School.objects.all():
+        grade_val = {}
+        for g in GRADES:
+            try:
+                grade_val[g] = XFormSubmissionValue.objects.exclude(submission__has_errors=True).filter(attribute__slug__in=["boys_%s"%g],submission__connection__contact__emisreporter__schools=school).order_by('-created')[:1][0].value_int
+            except IndexError:
+                grade_val[g] = 0
+        school_vals[school.name]=grade_val
+    headings = ["School"] + GRADES
+    data_set = []
+    for school_name,d_set in zip(school_vals.keys(),school_vals.values()):
+        data_set.append([school_name]+d_set.values())
+    write_xls("Latest Attendance for Boys",headings,data_set)
 
-        values = total_attribute_value("teachers_f", start_date=start_date, end_date=end_date, location=location)
-        stats.append(location_values(user_location, values))
-
-        values = total_attribute_value("teachers_m", start_date=start_date, end_date=end_date, location=location)
-        stats.append(location_values(user_location, values))
-
-        values = total_attribute_value(["teachers_f", "teachers_m"], start_date=start_date, end_date=end_date, location=location)
-        stats.append(location_values(user_location, values))
-        loc_data.append(stats)
-    write_xls("All Enrollment",headings,loc_data)
-        
-    # data in loc_data is organized by district, every new list element is a district under EMIS
-    # Enrollment and Deployment
-    loc_data = []
-    headings = ["Boys","Girls","Total Pupils","Female Teachers","Male Teachers","Total Teachers"]
-    for loc in CURRENT_DISTRICTS_UNDER_EMIS:
-        user_location = Location.objects.get(name=loc)
-        stats = []
-
-        boys = ["enrolledb_%s" % g for g in GRADES]
-        values = total_attribute_value(boys, start_date=start_date, end_date=end_date, location=location)
-        stats.append(location_values(user_location, values))
-
-        girls = ["enrolledg_%s" % g for g in GRADES]
-        values = total_attribute_value(girls, start_date=start_date, end_date=end_date, location=location)
-        stats.append(location_values(user_location, values))
-
-        total_pupils = ["enrolledb_%s" % g for g in GRADES] + ["enrolledg_%s" % g for g in GRADES]
-        values = total_attribute_value(total_pupils, start_date=start_date, end_date=end_date, location=location)
-        stats.append(location_values(user_location, values))
-
-        values = total_attribute_value("deploy_f", start_date=start_date, end_date=end_date, location=location)
-        stats.append(location_values(user_location, values))
-
-        values = total_attribute_value("deploy_m", start_date=start_date, end_date=end_date, location=location)
-        stats.append(location_values(user_location, values))
-
-        values = total_attribute_value(["deploy_f", "deploy_m"], start_date=start_date, end_date=end_date, location=location)
-        stats.append(location_values(user_location, values))
-        loc_data.append(stats)
-    write_xls("Enrollment and Deployment",headings,loc_data)
-    
-    #Students enrolled by district (excludes teachers)
-    loc_data = []
-    headings = [ "Boys", "Girls", "Total Pupils" ]
-    for loc in CURRENT_DISTRICTS_UNDER_EMIS:
-        user_location = Location.objects.get(name=loc)
-        stats = []
-
-        boys = ["enrolledb_%s" % g for g in GRADES]
-        values = total_attribute_value(boys, start_date=start_date, end_date=end_date, location=location)
-        stats.append(location_values(user_location, values))
-
-        girls = ["enrolledg_%s" % g for g in GRADES]
-        values = total_attribute_value(girls, start_date=start_date, end_date=end_date, location=location)
-        stats.append(location_values(user_location, values))
-
-        total_pupils = ["enrolledb_%s" % g for g in GRADES] + ["enrolledg_%s" % g for g in GRADES]
-        values = total_attribute_value(total_pupils, start_date=start_date, end_date=end_date, location=location)
-        stats.append(location_values(user_location, values))
-
-        loc_data.append(stats)
-    write_xls("Student Enrollment",headings,loc_data)
-
-    # number of boys enrolled per district
-    loc_data = []
-    headings = ["District","Boys"]
-    for loc in CURRENT_DISTRICTS_UNDER_EMIS:
-        user_location = Location.objects.get(name=loc)
-        stats = []
-
-        boys = ["boys_%s" % g for g in GRADES]
-        values = total_attribute_value(boys, start_date=start_date, end_date=end_date, location=location)
-        stats.append(location_values(user_location, values))
-        stats.insert(0,loc)
-        loc_data.append(stats)
-    write_xls("Boy enrollment",headings,loc_data)
-
-    #number of girls per district
-    loc_data = []
-    headings = ["District","Girls"]
-    for loc in CURRENT_DISTRICTS_UNDER_EMIS:
-        user_location = Location.objects.get(name=loc)
-        stats = []
-
-        girls = ["girls_%s" % g for g in GRADES]
-        values = total_attribute_value(girls, start_date=start_date, end_date=end_date, location=location)
-        stats.append(location_values(user_location, values))
-        stats.insert(0,loc)
-        loc_data.append(stats)
-    write_xls("Girl enrollment",headings,loc_data)
-    
-    #Classrooms by district
-    loc_data = []
-    heagings = ["District", "Classrooms"]
-    for loc in CURRENT_DISTRICTS_UNDER_EMIS:
-        user_location = Location.objects.get(name=loc)
-        stats = []
-        classrooms = ["classrooms_%s" % g for g in GRADES]
-        values = total_attribute_value(classrooms, start_date=start_date, end_date=end_date, location=location)
-        stats.append(location_values(user_location, values))
-        stats.insert(0,loc)
-        loc_data.append(stats)
-    write_xls("Classrooms by district",headings,loc_data)
-    
+    ### Girls
+    # piece of data collect from girls_p{x}
+    school_vals = {}
+    for school in School.objects.all():
+        grade_val = {}
+        for g in GRADES:
+            try:
+                grade_val[g] = XFormSubmissionValue.objects.exclude(submission__has_errors=True).filter(attribute__slug__in=["girls_%s"%g],submission__connection__contact__emisreporter__schools=school).order_by('-created')[:1][0].value_int
+            except IndexError:
+                grade_val[g] = 0
+        school_vals[school.name]=grade_val
+    headings = ["School"] + GRADES
+    data_set = []
+    for school_name,d_set in zip(school_vals.keys(),school_vals.values()):
+        data_set.append([school_name]+d_set.values())
+    write_xls("Latest Attendance for Girls",headings,data_set)
 
     response = HttpResponse(mimetype='application/vnd.ms-excel')
     response['Content-Disposition'] = 'attachment; filename=emis.xls'
     book.save(response)
     return response
-
-

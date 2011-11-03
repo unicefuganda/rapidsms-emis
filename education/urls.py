@@ -171,7 +171,7 @@ urlpatterns = patterns('',
     # excel
     url(r'^emis/excelreports/$',excel_reports),
     #users and permissions
-    url(r'^emis/toexcel/$',to_excel),
+    url(r'^emis/toexcel/$',to_excel, name="to-excel"),
      url(r'^emis/users/(\d+)/edit/', edit_user, name='edit_user'),
      url(r'^emis/users/add/', edit_user, name='add_user'),
 
