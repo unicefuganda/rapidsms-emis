@@ -3,13 +3,19 @@ from django.db.models import Count, Sum
 from generic.reports import Column, Report
 from generic.utils import flatten_list
 from rapidsms.contrib.locations.models import Location
-from rapidsms_xforms.models import XFormSubmissionValue
+from script.models import Script
+from rapidsms_xforms.models import XFormSubmissionValue, XForm
 from uganda_common.reports import XFormSubmissionColumn, XFormAttributeColumn, PollNumericResultsColumn, PollCategoryResultsColumn, LocationReport
-from uganda_common.utils import total_submissions, reorganize_location, total_attribute_value, get_location_for_user, previous_calendar_week, previous_calendar_month
+from uganda_common.utils import total_submissions, reorganize_location, total_attribute_value, previous_calendar_week, previous_calendar_month
 from uganda_common.utils import reorganize_dictionary
+from poll.models import Response, Poll
+from .models import School
 import datetime
 
 GRADES = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7']
+
+def get_location_for_user(user):
+    return user.get_profile().location
 
 class SchoolMixin(object):
     SCHOOL_ID = 'submission__connection__contact__emisreporter__schools__pk'
@@ -81,7 +87,7 @@ class DateLessRatioColumn(Column, SchoolMixin):
 
     def add_to_report(self, report, key, dictionary):
         top_val = self.total_dateless_attribute_by_school(report, self.top_attrib)
-        bottom_val = self.total_dateless_attribute_by_school(report, self.bottom_attib)
+        bottom_val = self.total_dateless_attribute_by_school(report, self.bottom_attrib)
 
         bottom_dict = {}
         reorganize_dictionary('bottom', bottom_val, bottom_dict, self.SCHOOL_ID, self.SCHOOL_NAME, 'value_int__sum')
@@ -246,6 +252,14 @@ class AttendanceReport(SchoolReport):
     percentange_teachers_absentism = WeeklyPercentageColumn(week_attrib, total_attrib, True)
 
 
+class AbuseReport(SchoolReport):
+    cases = TotalAttributeBySchoolColumn("gemabuse_cases")
+    
+class KeyRatiosReport(SchoolReport):
+    pupils_to_teacher = DateLessRatioColumn(["girls_%s" % g for g in GRADES] + ["boys_%s" % g for g in GRADES] , ["enrolledb_%s" % g for g in GRADES] + ["enrolledg_%s" % g for g in GRADES])
+    pupils_to_latrine = DateLessRatioColumn(["girls_%s" % g for g in GRADES] + ["boys_%s" % g for g in GRADES] , ["latrinesused_b", "latrinesused_g"])
+    pupils_to_classroom = DateLessRatioColumn(["girls_%s" % g for g in GRADES] + ["boys_%s" % g for g in GRADES] , ["classroomsused_%s" % g for g in GRADES])
+
 def location_values(location, data_dicts):
     for dict in data_dicts:
         if dict['location_name'] == location.name:
@@ -257,7 +271,7 @@ def location_values(location, data_dicts):
 def attendance_stats(request, district_id=None):
     stats = []
     user_location = Location.objects.get(pk=district_id) if district_id else get_location_for_user(request.user)
-    if not user_location:
+    if user_location == Location.tree.root_nodes()[0]:
         user_location = Location.objects.get(name='Kaabong')
     location = Location.tree.root_nodes()[0]
     start_date, end_date = previous_calendar_week()
@@ -291,7 +305,7 @@ def attendance_stats(request, district_id=None):
 def enrollment_stats(request, district_id=None):
     stats = []
     user_location = Location.objects.get(pk=district_id) if district_id else get_location_for_user(request.user)
-    if not user_location:
+    if user_location == Location.tree.root_nodes()[0]:
         user_location = Location.objects.get(name='Kaabong')
     location = Location.tree.root_nodes()[0]
 #    start_date, end_date = previous_calendar_week()
@@ -327,7 +341,7 @@ def enrollment_stats(request, district_id=None):
 def headteacher_attendance_stats(request, district_id=None):
     stats = []
     user_location = Location.objects.get(pk=district_id) if district_id else get_location_for_user(request.user)
-    if not user_location:
+    if user_location == Location.tree.root_nodes()[0]:
         user_location = Location.objects.get(name='Kaabong')
     location = Location.tree.root_nodes()[0]
     start_date, end_date = previous_calendar_month()
@@ -347,7 +361,7 @@ def headteacher_attendance_stats(request, district_id=None):
 def abuse_stats(request, district_id=None):
     stats = []
     user_location = Location.objects.get(pk=district_id) if district_id else get_location_for_user(request.user)
-    if not user_location:
+    if user_location == Location.tree.root_nodes()[0]:
         user_location = Location.objects.get(name='Kaabong')
     location = Location.tree.root_nodes()[0]
     start_date, end_date = previous_calendar_month()
@@ -359,5 +373,86 @@ def abuse_stats(request, district_id=None):
     res['stats'] = stats
     return res
 
-class AbuseReport(SchoolReport):
-    cases = TotalAttributeBySchoolColumn("gemabuse_cases")
+def attrib_ratios(top_attrib, bottom_attrib, dates, location):
+    top_value = XFormSubmissionValue.objects.exclude(submission__has_errors=True)\
+            .exclude(submission__connection__contact=None)\
+            .filter(created__range=(dates.get('start'), dates.get('end')))\
+            .filter(attribute__slug__in=top_attrib)\
+            .filter(submission__connection__contact__emisreporter__schools__location__in=location.get_descendants(include_self=True).all())\
+            .annotate(Sum('value_int')).values_list('value_int__sum', flat=True)
+    bottom_value = XFormSubmissionValue.objects.exclude(submission__has_errors=True)\
+            .exclude(submission__connection__contact=None)\
+            .filter(created__range=(dates.get('start'), dates.get('end')))\
+            .filter(attribute__slug__in=bottom_attrib)\
+            .filter(submission__connection__contact__emisreporter__schools__location__in=location.get_descendants(include_self=True).all())\
+            .annotate(Sum('value_int')).values_list('value_int__sum', flat=True)
+    if sum(bottom_value) > 0:
+        return sum(top_value) / sum(bottom_value)
+    else:
+        return None
+
+def keyratios_stats(request, district_id=None):
+    stats = {}
+    user_location = Location.objects.get(pk=district_id) if district_id else get_location_for_user(request.user)
+    if user_location == Location.tree.root_nodes()[0]:
+        user_location = Location.objects.get(name='Kaabong')
+    start_date = datetime.datetime(datetime.datetime.now().year, 1, 1)
+    end_date = datetime.datetime.now()
+    dates = {'start':start_date, 'end':end_date}
+    #pupil to teacher ratio
+    top_attrib = ["enrolledb_%s" % g for g in GRADES] + ["enrolledg_%s" % g for g in GRADES]
+    bottom_attrib = ["deploy_f", "deploy_m"]
+    pupil_to_teacher_ratio = attrib_ratios(top_attrib, bottom_attrib, dates, user_location)
+    if pupil_to_teacher_ratio:
+        stats['Pupil to Teacher Ratio'] = pupil_to_teacher_ratio
+    else:
+        stats['Pupil to Teacher Ratio'] = 'Not Available'
+    #pupil to latrine ratio    
+    top_attrib = ["enrolledb_%s" % g for g in GRADES] + ["enrolledg_%s" % g for g in GRADES]
+    bottom_attrib = ["latrinesused_b", "latrinesused_g"]
+    latrinesused_ratio = attrib_ratios(top_attrib, bottom_attrib, dates, user_location)
+    if latrinesused_ratio:
+        stats['Pupil to Latrine Ratio'] = latrinesused_ratio
+    else:
+        stats['Pupil to Latrine Ratio'] = 'Not Available'
+    #pupil to classroom ratio    
+    top_attrib = ["enrolledb_%s" % g for g in GRADES] + ["enrolledg_%s" % g for g in GRADES]
+    bottom_attrib = ["classroomsused_%s" % g for g in GRADES]
+    pupil_to_classroom_ratio = attrib_ratios(top_attrib, bottom_attrib, dates, user_location)
+    if pupil_to_classroom_ratio:
+        stats['Pupil to Classroom Ratio'] = pupil_to_classroom_ratio
+    else:
+        stats['Pupil to Classroom Ratio'] = 'Not Available'
+    #Level of functionality of SMCs
+    smc_meetings_ratio = Response.objects.filter(poll__name='emis_meetings', message__connection__contact__emisreporter__schools__location__in=user_location.get_descendants(include_self=True).all()).count()
+    total_schools = School.objects.filter(location__in=user_location.get_descendants(include_self=True).all()).count()
+    if total_schools:
+        smc_meetings_ratio /= total_schools
+        stats['Level of Functionality of SMCs'] = smc_meetings_ratio*100 #'%.1f%%'% smc_meetings_ratio*100
+    else:
+        stats['Level of Functionality of SMCs'] = 'Not Available'
+
+    return stats
+
+def school_last_xformsubmission(request, school_id):
+    xforms = []
+    scripted_polls = []
+    for xform in XForm.objects.all():
+        xform_values = XFormSubmissionValue.objects.exclude(submission__has_errors=True)\
+                .exclude(submission__connection__contact=None)\
+                .filter(submission__connection__contact__emisreporter__schools__pk=school_id)\
+                .filter(submission__xform=xform)\
+                .order_by('-created')\
+                .annotate(Sum('value_int'))[:1] #.values_list('submission__xform__name', 'value_int__sum', 'submission__connection__contact__name', 'submission__created')
+        xforms.append((xform, xform_values))
+        
+    for script in Script.objects.exclude(slug='emis_autoreg'):
+        for step in script.steps.all():
+            resp = Response.objects.filter(poll=step.poll)\
+                .filter(message__connection__contact__emisreporter__schools__pk=school_id)\
+                .order_by('-date')[:1]
+            scripted_polls.append((step.poll,resp))
+        
+    return {'xforms':xforms, 'scripted_polls':scripted_polls}
+    
+

@@ -1,12 +1,8 @@
 from .forms import SchoolFilterForm, LimitedDistictFilterForm, \
  RolesFilterForm, ReporterFreeSearchForm, SchoolDistictFilterForm, FreeSearchSchoolsForm
-from .models import EmisReporter, School
-from .reports import AttendanceReport, AbuseReport
 from .sorters import LatestSubmissionSorter
-from .views import whitelist, add_connection, delete_connection, deo_dashboard, dashboard, \
- edit_reporter,edit_user,UserForm, delete_reporter, add_schools, edit_school, delete_school, last_submission, to_excel, excel_reports
-
-from contact.forms import FreeSearchForm, DistictFilterForm, MassTextForm, \
+from .views import *
+from contact.forms import  MassTextForm, \
     FreeSearchTextForm, DistictFilterMessageForm, HandledByForm, ReplyTextForm
 from django.conf.urls.defaults import patterns, url
 from generic.sorters import SimpleSorter
@@ -16,7 +12,6 @@ from rapidsms_xforms.models import XFormSubmission
 from uganda_common.utils import get_xform_dates, get_messages
 from django.contrib.auth.views import login_required
 from django.contrib.auth.models import User
-from .utils import get_users
 
 urlpatterns = patterns('',
    url(r'^emis/messagelog/$', generic, {
@@ -88,6 +83,23 @@ urlpatterns = patterns('',
         'needs_date':True,
         'dates':get_xform_dates,
     }, name='attendance-stats'),
+    url(r'^emis/ratios/$', generic, {
+        'model':XFormSubmission,
+        'queryset':KeyRatiosReport,
+        'selectable':False,
+        'paginated':False,
+        'results_title':None,
+        'columns':[
+            ('', False, '', None),
+            ('pupil to teacher ratio', False, 'pupil_to_teacher', None),
+            ('pupil to latrine ratio', False, 'pupil_to_latrine', None),
+            ('pupil to classroom ratio', False, 'pupil_to_classroom', None),
+        ],
+        'partial_row':'education/partials/school_report_row.html',
+        'base_template':'generic/base.html',
+        'needs_date':True,
+        'dates':get_xform_dates,
+    }, name='keyratios-stats'),
 
     url(r'^$', dashboard, name='rapidsms-dashboard'),
     url(r'^emis/whitelist/', whitelist),
@@ -105,12 +117,13 @@ urlpatterns = patterns('',
       'columns':[('Name', True, 'name', SimpleSorter()),
                  ('District', True, 'location__name', None,),
                  ('School ID', False, 'emis_id', None,),
+                 ('Head Teacher', False, 'emisreporter', None,),
                  ('Reporters', False, 'emisreporter', None,),
                  ],
       'sort_column':'date',
       'sort_ascending':False,
     }, name="emis-schools"),
-    url(r'^emis/(\d+)/last_submission/', last_submission, {}, name='last-submission'),
+    url(r'^emis/(\d+)/school_detail/', school_detail, {}, name='school-detail'),
     url(r'^emis/add_schools/', login_required(add_schools), {}, name='add-schools'),
     url(r'^emis/school/(\d+)/edit/', edit_school, name='edit-school'),
     url(r'^emis/school/(\d+)/delete/', delete_school, name='delete-school'),
