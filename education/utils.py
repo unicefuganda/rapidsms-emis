@@ -203,7 +203,7 @@ def create_excel_dataset():
     data_set = []
     for school_name,d_set in zip(school_vals.keys(),school_vals.values()):
         data_set.append([school_name]+d_set.values())
-    write_xls("Enrollment of Boys",headings,data_set)
+    write_xls("Boys attendance",headings,data_set)
 
     ### Girls
     # piece of data collect from girls_p{x}
@@ -220,7 +220,7 @@ def create_excel_dataset():
     data_set = []
     for school_name,d_set in zip(school_vals.keys(),school_vals.values()):
         data_set.append([school_name]+d_set.values())
-    write_xls("Enrollment of Girls",headings,data_set)
+    write_xls("Girls attendance",headings,data_set)
 
     response = HttpResponse(mimetype='application/vnd.ms-excel')
     response['Content-Disposition'] = 'attachment; filename=emis.xls'
