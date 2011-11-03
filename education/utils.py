@@ -203,11 +203,8 @@ def create_excel_dataset():
     data_set = []
     for school_name,d_set in zip(school_vals.keys(),school_vals.values()):
         data_set.append([school_name]+d_set.values())
-<<<<<<< HEAD
-    write_xls("Boys attendance",headings,data_set)
-=======
     write_xls("Latest Attendance for Boys",headings,data_set)
->>>>>>> 0b88e6ca2e69f4b6a27b69264735164a64094ac6
+
 
     ### Girls attendance
     # piece of data collect from girls_p{x}
@@ -224,10 +221,7 @@ def create_excel_dataset():
     data_set = []
     for school_name,d_set in zip(school_vals.keys(),school_vals.values()):
         data_set.append([school_name]+d_set.values())
-<<<<<<< HEAD
-    write_xls("Girls attendance",headings,data_set)
-
-
+    write_xls("Latest attendance for Girls",headings,data_set)
 
     ### Boys enrollment
     # piece of data collect from girls_p{x}
@@ -244,7 +238,7 @@ def create_excel_dataset():
     data_set = []
     for school_name,d_set in zip(school_vals.keys(),school_vals.values()):
         data_set.append([school_name]+d_set.values())
-    write_xls("Boys enrolled",headings,data_set)
+    write_xls("Latest enrollment for Boys",headings,data_set)
 
     ### Girls enrolled
     # piece of data collect from girls_p{x}
@@ -261,10 +255,7 @@ def create_excel_dataset():
     data_set = []
     for school_name,d_set in zip(school_vals.keys(),school_vals.values()):
         data_set.append([school_name]+d_set.values())
-    write_xls("Girls Enrolled",headings,data_set)
-=======
-    write_xls("Latest Attendance for Girls",headings,data_set)
->>>>>>> 0b88e6ca2e69f4b6a27b69264735164a64094ac6
+    write_xls("Latest Enrollment for Girls",headings,data_set)
 
     response = HttpResponse(mimetype='application/vnd.ms-excel')
     response['Content-Disposition'] = 'attachment; filename=emis.xls'
