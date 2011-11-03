@@ -205,7 +205,7 @@ def create_excel_dataset():
         data_set.append([school_name]+d_set.values())
     write_xls("Boys attendance",headings,data_set)
 
-    ### Girls
+    ### Girls attendance
     # piece of data collect from girls_p{x}
     school_vals = {}
     for school in School.objects.all():
@@ -221,6 +221,42 @@ def create_excel_dataset():
     for school_name,d_set in zip(school_vals.keys(),school_vals.values()):
         data_set.append([school_name]+d_set.values())
     write_xls("Girls attendance",headings,data_set)
+
+
+
+    ### Boys enrollment
+    # piece of data collect from girls_p{x}
+    school_vals = {}
+    for school in School.objects.all():
+        grade_val = {}
+        for g in GRADES:
+            try:
+                grade_val[g] = XFormSubmissionValue.objects.exclude(submission__has_errors=True).filter(attribute__slug__in=["enrolledb_%s"%g],submission__connection__contact__emisreporter__schools=school).order_by('-created')[:1][0].value_int
+            except IndexError:
+                grade_val[g] = 0
+        school_vals[school.name]=grade_val
+    headings = ["School"] + GRADES
+    data_set = []
+    for school_name,d_set in zip(school_vals.keys(),school_vals.values()):
+        data_set.append([school_name]+d_set.values())
+    write_xls("Boys enrolled",headings,data_set)
+
+    ### Girls enrolled
+    # piece of data collect from girls_p{x}
+    school_vals = {}
+    for school in School.objects.all():
+        grade_val = {}
+        for g in GRADES:
+            try:
+                grade_val[g] = XFormSubmissionValue.objects.exclude(submission__has_errors=True).filter(attribute__slug__in=["enrolledg_%s"%g],submission__connection__contact__emisreporter__schools=school).order_by('-created')[:1][0].value_int
+            except IndexError:
+                grade_val[g] = 0
+        school_vals[school.name]=grade_val
+    headings = ["School"] + GRADES
+    data_set = []
+    for school_name,d_set in zip(school_vals.keys(),school_vals.values()):
+        data_set.append([school_name]+d_set.values())
+    write_xls("Girls Enrolled",headings,data_set)
 
     response = HttpResponse(mimetype='application/vnd.ms-excel')
     response['Content-Disposition'] = 'attachment; filename=emis.xls'
