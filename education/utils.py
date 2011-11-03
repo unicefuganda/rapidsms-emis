@@ -139,14 +139,8 @@ def create_excel_dataset():
     # for excelification
     for up to 6 districts
     a function to return some excel output from varying datasets
-
-    **Important**
-
-    full_stat_data => [ <enrollment>, <enrollment_and_deployment>, <students_enrolled_by_district>]
-
     """
-
-    #This can be expanded for other districts
+    #This can be expanded for other districts using the rapidSMS locations models
     CURRENT_DISTRICTS_UNDER_EMIS = ["Kaabong",
                                     "Kotido",
                                     "Kabarole",
