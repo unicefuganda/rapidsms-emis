@@ -215,9 +215,4 @@ def to_excel(req,district_id=None):
 
 @login_required
 def excel_reports(req):
-    #all dicts
-    head_teacher_res =headteacher_attendance_stats(req)
-    attendance_res = attendance_stats(req)
-    enrollment_res = enrollment_stats(req)
-    abuse_res = abuse_stats(req)
-    return render_to_response('education/excelreports/excel_dashboard.html',{"res":head_teacher_res,"en":enrollment_res},RequestContext(req))
+    return render_to_response('education/excelreports/excel_dashboard.html',{},RequestContext(req))
