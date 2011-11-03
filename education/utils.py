@@ -9,12 +9,17 @@ from .models import EmisReporter, _schedule_monthly_script
 from rapidsms.models import Connection
 from datetime import datetime,date
 
+import xlwt
 from contact.models import MessageFlag
 from rapidsms.models import Contact
+from rapidsms.contrib.locations.models import Location
 from poll.models import Poll
 from script.models import ScriptStep
 from django.db.models import Count
 from django.conf import settings
+from uganda_common.utils import *
+from education.reports import *
+
 
 
 def match_connections():
@@ -141,7 +146,10 @@ def create_excel_dataset():
     a function to return some excel output from varying datasets
     """
     #This can be expanded for other districts using the rapidSMS locations models
-    CURRENT_DISTRICTS_UNDER_EMIS = ["Kaabong",
+    #CURRENT_DISTRICTS = Location.objects.filter(name__in=XFormSubmissionValue.objects.values_list('submission__connection__contact__reporting_location__name', flat=True)).order_by('name')
+    
+    CURRENT_DISTRICTS_UNDER_EMIS =\
+    ["Kaabong",
                                     "Kotido",
                                     "Kabarole",
                                     "Kisoro",
@@ -182,7 +190,7 @@ def create_excel_dataset():
 
         girls = ["girls_%s" % g for g in GRADES]
         values = total_attribute_value(girls, start_date=start_date, end_date=end_date, location=location)
-        stats.append('girls', location_values(user_location, values))
+        stats.append(location_values(user_location, values))
 
         total_pupils = ["boys_%s" % g for g in GRADES] + ["girls_%s" % g for g in GRADES]
         values = total_attribute_value(total_pupils, start_date=start_date, end_date=end_date, location=location)
