@@ -15,7 +15,7 @@
     			</form>
     		</p>
     	{% endif %}
-    	<h2>District Sumarry for {{ location.name }}</h2>
+    	<h2>District Sumarry for {% ifequal location top_node %} All Districts {% else %}{{ location.name }}{% endifequal %}</h2>
     	<p>
     	    <table width="35%" cellspacing="0" cellpadding="0">
                 <tr>

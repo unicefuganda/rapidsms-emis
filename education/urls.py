@@ -1,11 +1,11 @@
 from .forms import SchoolFilterForm, LimitedDistictFilterForm, \
  RolesFilterForm, ReporterFreeSearchForm, SchoolDistictFilterForm, FreeSearchSchoolsForm
+
 from .models import EmisReporter, School
-from .reports import AttendanceReport, AbuseReport, KeyRatiosReport
+from .reports import AttendanceReport, AbuseReport, KeyRatiosReport, messages, othermessages, reporters, schools
 from .sorters import LatestSubmissionSorter
-from .views import whitelist, add_connection, delete_connection, deo_dashboard, dashboard, \
- edit_reporter, delete_reporter, add_schools, edit_school, delete_school, school_detail, to_excel, excel_reports
-from contact.forms import FreeSearchForm, DistictFilterForm, MassTextForm, \
+from .views import *
+from contact.forms import  MassTextForm, \
     FreeSearchTextForm, DistictFilterMessageForm, HandledByForm, ReplyTextForm
 from django.conf.urls.defaults import patterns, url
 from generic.sorters import SimpleSorter
@@ -14,11 +14,12 @@ from rapidsms_httprouter.models import Message
 from rapidsms_xforms.models import XFormSubmission
 from uganda_common.utils import get_xform_dates, get_messages
 from django.contrib.auth.views import login_required
-
+from django.contrib.auth.models import User
 
 urlpatterns = patterns('',
    url(r'^emis/messagelog/$', generic, {
       'model':Message,
+      'queryset':messages,
       'filter_forms':[FreeSearchTextForm, DistictFilterMessageForm, HandledByForm],
       'action_forms':[ReplyTextForm],
       'objects_per_page':25,
@@ -36,6 +37,7 @@ urlpatterns = patterns('',
    #reporters
     url(r'^emis/reporter/$', generic, {
       'model':EmisReporter,
+      'queryset':reporters,
       'filter_forms':[ReporterFreeSearchForm, RolesFilterForm, LimitedDistictFilterForm, SchoolFilterForm],
       'action_forms':[MassTextForm],
       'objects_per_page':25,
@@ -112,6 +114,7 @@ urlpatterns = patterns('',
     url(r'^emis/deo_dashboard/', login_required(deo_dashboard), {}, name='deo-dashboard'),
     url(r'^emis/school/$', generic, {
       'model':School,
+      'queryset':schools,
       'filter_forms':[FreeSearchSchoolsForm, SchoolDistictFilterForm],
       'objects_per_page':25,
       'partial_row':'education/partials/school_row.html',
@@ -134,7 +137,7 @@ urlpatterns = patterns('',
 
     url(r'^emis/othermessages/$', generic, {
       'model':Message,
-      'queryset':get_messages,
+      'queryset':othermessages,
       'filter_forms':[FreeSearchTextForm, DistictFilterMessageForm, HandledByForm],
       'action_forms':[ReplyTextForm],
       'objects_per_page':25,
@@ -167,5 +170,25 @@ urlpatterns = patterns('',
 
     # excel
     url(r'^emis/excelreports/$',excel_reports),
+    #users and permissions
     url(r'^emis/toexcel/$',to_excel),
+     url(r'^emis/users/(\d+)/edit/', edit_user, name='edit_user'),
+     url(r'^emis/users/add/', edit_user, name='add_user'),
+
+      url(r'^emis/user/$', super_user_required(generic), {
+      'model':User,
+      'objects_per_page':25,
+      'partial_row':'education/partials/user_row.html',
+      'partial_header':'education/partials/user_partial_header.html',
+      'base_template':'education/users_base.html',
+      'results_title':'Managed Users',
+      'user_form':UserForm(),
+      'columns':[('Username', True, 'username', SimpleSorter()),
+                 ('Email', True, 'email', None,),
+                 ('Name', False, 'first_name', None,),
+                 ('Location', False, 'profile__location', None,),
+                 ],
+      'sort_column':'date',
+      'sort_ascending':False,
+    }, name="emis_users"),
 )

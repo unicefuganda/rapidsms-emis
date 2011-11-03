@@ -1,25 +1,28 @@
 #from django.db import connection
+from django.http import HttpResponseRedirect
 from .forms import NewConnectionForm, EditReporterForm, DistrictFilterForm, SchoolForm
 from .models import *
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, render_to_response
 from django.template import RequestContext
-from poll.models import Poll, ResponseCategory, Response
-from rapidsms.models import Connection, Contact, Contact, Connection
-from rapidsms_httprouter.models import Message
-from rapidsms.contrib.locations.models import Location
 from uganda_common.utils import *
-
+from rapidsms.contrib.locations.models import Location
+from django.core.urlresolvers import reverse
 from .reports import *
 from .utils import *
 from urllib2 import urlopen
-from rapidsms_xforms.models import XFormSubmissionValue
-import datetime, re, time
-from datetime import datetime, date
+
+
+from django.contrib.auth.models import User
+from django.contrib.auth.decorators import user_passes_test
+from django import forms
+
+import  re
+
 
 Num_REG = re.compile('\d+')
 
+super_user_required=user_passes_test(lambda u: u.groups.filter(name__in=['Admins','DFO']).exists() or u.is_superuser)
 def index(request):
     return render_to_response("education/index.html", {}, RequestContext(request))
 
@@ -39,10 +42,10 @@ def deo_dashboard(request):
         if form.is_valid():
             district_id = form.cleaned_data['district']
     user_location = Location.objects.get(pk=district_id) if district_id else get_location_for_user(request.user)
-    if user_location == Location.tree.root_nodes()[0]:
-        user_location = Location.objects.get(name='Kaabong')
+    top_node = Location.tree.root_nodes()[0]
     return render_to_response("education/deo/deo_dashboard.html", {\
                                 'location':user_location,\
+                                'top_node':top_node,\
                                 'form':form, \
                                 'keyratios':keyratios_stats(request, district_id),\
                                 'attendance_stats':attendance_stats(request, district_id), \
@@ -216,3 +219,55 @@ def to_excel(req,district_id=None):
 @login_required
 def excel_reports(req):
     return render_to_response('education/excelreports/excel_dashboard.html',{},RequestContext(req))
+
+
+class UserForm(forms.ModelForm):
+   
+    location=forms.ModelChoiceField(queryset=Location.objects.filter(type__in=["district","country"]).order_by('name'),required=True)
+
+    class Meta:
+        model = User
+        fields = ("username","first_name","last_name", "groups","password")
+    def __init__(self, *args, **kwargs):
+        super(UserForm, self).__init__(*args, **kwargs)
+        self.fields['password'].help_text=""
+        self.fields['groups'].help_text=""
+        self.fields['groups'].required=True
+
+
+@super_user_required
+def edit_user(request, user_pk=None):
+    title=""
+    user=User()
+    if request.method == 'POST':
+        if user_pk:
+            user = get_object_or_404(User, pk=user_pk)
+        user_form = UserForm(request.POST,instance=user)
+        if user_form.is_valid():
+            user = user_form.save()
+            try:
+                profile=UserProfile.objects.get(user=user)
+                profile.location=user_form.cleaned_data['location']
+                profile.role=Role.objects.get(pk=user.groups.all()[0].pk)
+                profile.save()
+            except UserProfile.DoesNotExist:
+               
+                UserProfile.objects.create(name=user.first_name,user=user,role=Role.objects.get(pk=user.groups.all()[0].pk),location=user_form.cleaned_data['location'])
+
+            return HttpResponseRedirect(reverse("emis_users"))
+
+    elif user_pk:
+        user = get_object_or_404(User, pk=user_pk)
+        user_form = UserForm(instance=user)
+        title="Editing "+user.username
+
+    else:
+        user_form = UserForm(instance=user)
+    user_form.fields['password'].help_text=""
+    user_form.fields['groups'].help_text=""
+   
+
+
+    return render_to_response('education/partials/edit_user.html', {'user_form': user_form,'title':title},
+                              context_instance=RequestContext(request))
+
