@@ -147,6 +147,54 @@ def create_excel_dataset():
     """
     #This can be expanded for other districts using the rapidSMS locations models
     #CURRENT_DISTRICTS = Location.objects.filter(name__in=XFormSubmissionValue.objects.values_list('submission__connection__contact__reporting_location__name', flat=True)).order_by('name')
+    def write_xls(sheet_name, headings, data):
+        sheet = book.add_sheet(sheet_name)
+        rowx = 0
+        for colx, value in enumerate(headings):
+            sheet.write(rowx, colx, value)
+        sheet.set_panes_frozen(True) # frozen headings instead of split panes
+        sheet.set_horz_split_pos(rowx+1) # in general, freeze after last heading row
+        sheet.set_remove_splits(True) # if user does unfreeze, don't leave a split there
+        for row in data:
+            rowx += 1
+            for colx, value in enumerate(row):
+                sheet.write(rowx, colx, value)
+
+    def xform_data_picker(xform_name=None,*args):
+        school_vals = {}
+        if xform_name:
+            #TODO this part is incomplete and should handle other xform value
+            for school in School.objects.all():
+                pass
+        else:
+            for school in School.objects.all():
+                grade_val = {}
+                for g in GRADES:
+                    try:
+                        grade_val[g] = XFormSubmissionValue.objects.exclude(submission__has_errors=True).filter(attribute__slug__in=["boys_%s"%g],submission__connection__contact__emisreporter__schools=school).order_by('-created')[:1][0].value_int
+                    except IndexError:
+                        grade_val[g] = 0
+                school_vals[school.name]=grade_val
+
+            
+    GRADES = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7']
+    boy_slugs = ['boys_%s'% g for g in GRADES]
+    girl_slugs = ['girls_%s'%g for g in GRADES]
+    data = {}
+    headings = ["School"].extend(GRADES)
+    school_vals = {}
+    for school in School.objects.all():
+        grade_val = {}
+        for g in GRADES:
+            try:
+                grade_val[g] = XFormSubmissionValue.objects.exclude(submission__has_errors=True).filter(attribute__slug__in=["boys_%s"%g],submission__connection__contact__emisreporter__schools=school).order_by('-created')[:1][0].value_int
+            except IndexError:
+                grade_val[g] = 0
+    school_vals[school.name]=grade_val
+    data_set = []
+    for school_name,d_set in zip(school_vals.keys(),school_vals.values()):
+        data_set.append([school_name]+d_set.values())
+    write_xls("boys",headings,data_set)
     
     CURRENT_DISTRICTS_UNDER_EMIS =\
     ["Kaabong",
@@ -162,19 +210,6 @@ def create_excel_dataset():
     dates = {'start':start_date, 'end':end_date}
     # initialize Excel workbook and set encoding
     book = xlwt.Workbook(encoding='utf8')
-
-    def write_xls(sheet_name, headings, data):
-        sheet = book.add_sheet(sheet_name)
-        rowx = 0
-        for colx, value in enumerate(headings):
-            sheet.write(rowx, colx, value)
-        sheet.set_panes_frozen(True) # frozen headings instead of split panes
-        sheet.set_horz_split_pos(rowx+1) # in general, freeze after last heading row
-        sheet.set_remove_splits(True) # if user does unfreeze, don't leave a split there
-        for row in data:
-            rowx += 1
-            for colx, value in enumerate(row):
-                sheet.write(rowx, colx, value)
 
     # localised data by district
     loc_data = []
@@ -206,7 +241,46 @@ def create_excel_dataset():
         stats.append(location_values(user_location, values))
         loc_data.append(stats)
     write_xls("All Enrollment",headings,loc_data)
-        
+
+
+    # Boys attendance in schools
+    loc_data = []
+    # enrollment data
+    headings = GRADES
+    headings.insert(0,"School")
+    for loc in CURRENT_DISTRICTS_UNDER_EMIS:
+        user_location = Location.objects.get(name=loc)
+        stats = []
+        for g in GRADES:
+            boys_in = ["boys_%s"%g]
+            values = total_attribute_value(boys_in,start_date=start_date,end_date=end_date,location=location)
+            stats.append(location_values(user_location,values))
+#        boys = ["boys_%s" % g for g in GRADES]
+#        values = total_attribute_value(boys, start_date=start_date, end_date=end_date, location=location)
+#        stats.append(location_values(user_location, values))
+        loc_data.append(stats)
+    write_xls("Boysattendance",headings,loc_data)
+
+
+    # Girls attendance in schools
+    loc_data = []
+    # enrollment data
+    headings = GRADES
+    #headings.insert(0,"School")
+    for loc in CURRENT_DISTRICTS_UNDER_EMIS:
+        user_location = Location.objects.get(name=loc)
+        stats = []
+        for g in GRADES:
+            boys_in = ["girls_%s"%g]
+            values = total_attribute_value(boys_in,start_date=start_date,end_date=end_date,location=location)
+            stats.append(location_values(user_location,values))
+#        boys = ["boys_%s" % g for g in GRADES]
+#        values = total_attribute_value(boys, start_date=start_date, end_date=end_date, location=location)
+#        stats.append(location_values(user_location, values))
+        loc_data.append(stats)
+    write_xls("Girlsattendance",headings,loc_data)
+
+
     # data in loc_data is organized by district, every new list element is a district under EMIS
     # Enrollment and Deployment
     loc_data = []
@@ -306,5 +380,6 @@ def create_excel_dataset():
     response['Content-Disposition'] = 'attachment; filename=emis.xls'
     book.save(response)
     return response
+
 
 
