@@ -200,7 +200,6 @@ def create_excel_dataset():
                 grade_val[g] = 0
         school_vals[school.name]=grade_val
     headings = ["School"] + GRADES
-    print school_vals
     data_set = []
     for school_name,d_set in zip(school_vals.keys(),school_vals.values()):
         data_set.append([school_name]+d_set.values())
@@ -218,7 +217,6 @@ def create_excel_dataset():
                 grade_val[g] = 0
         school_vals[school.name]=grade_val
     headings = ["School"] + GRADES
-    print school_vals
     data_set = []
     for school_name,d_set in zip(school_vals.keys(),school_vals.values()):
         data_set.append([school_name]+d_set.values())
