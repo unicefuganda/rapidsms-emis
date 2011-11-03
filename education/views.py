@@ -216,7 +216,4 @@ def excel_reports(req):
     attendance_res = attendance_stats(req)
     enrollment_res = enrollment_stats(req)
     abuse_res = abuse_stats(req)
-    
-
-    
     return render_to_response('education/excelreports/excel_dashboard.html',{"res":head_teacher_res,"en":enrollment_res},RequestContext(req))
