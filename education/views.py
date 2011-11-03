@@ -22,6 +22,7 @@ import  re
 
 Num_REG = re.compile('\d+')
 
+super_user_required=user_passes_test(lambda u: u.groups.filter(name__in=['Admins','DFO']).exists() or u.is_superuser)
 def index(request):
     return render_to_response("education/index.html", {}, RequestContext(request))
 
@@ -222,7 +223,7 @@ def excel_reports(req):
 
 class UserForm(forms.ModelForm):
    
-    location=forms.ModelChoiceField(queryset=Location.objects.filter(type="district").order_by('name'),required=True)
+    location=forms.ModelChoiceField(queryset=Location.objects.filter(type__in=["district","country"]).order_by('name'),required=True)
 
     class Meta:
         model = User
@@ -234,7 +235,7 @@ class UserForm(forms.ModelForm):
         self.fields['groups'].required=True
 
 
-@user_passes_test(lambda u: u.groups.filter(name__in=['Admins','DFO']).exists())
+@super_user_required
 def edit_user(request, user_pk=None):
     title=""
     user=User()

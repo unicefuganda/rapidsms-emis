@@ -174,7 +174,8 @@ urlpatterns = patterns('',
     url(r'^emis/toexcel/$',to_excel),
      url(r'^emis/users/(\d+)/edit/', edit_user, name='edit_user'),
      url(r'^emis/users/add/', edit_user, name='add_user'),
-      url(r'^emis/user/$', generic, {
+
+      url(r'^emis/user/$', super_user_required(generic), {
       'model':User,
       'objects_per_page':25,
       'partial_row':'education/partials/user_row.html',
