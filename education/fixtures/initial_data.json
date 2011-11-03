@@ -3377,22 +3377,6 @@
         }
     }, 
     {
-        "pk": 45, 
-        "model": "script.scriptstep", 
-        "fields": {
-            "script": "supply_staff", 
-            "retry_offset": 300, 
-            "rule": "r", 
-            "email": 1, 
-            "num_tries": 100, 
-            "start_offset": 0, 
-            "message": "", 
-            "poll": null, 
-            "order": 0, 
-            "giveup_offset": 900
-        }
-    }, 
-    {
         "pk": 48, 
         "model": "script.scriptstep", 
         "fields": {

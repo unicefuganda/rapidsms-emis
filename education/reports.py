@@ -446,11 +446,12 @@ def school_last_xformsubmission(request, school_id):
                 .annotate(Sum('value_int'))[:1] #.values_list('submission__xform__name', 'value_int__sum', 'submission__connection__contact__name', 'submission__created')
         xforms.append((xform, xform_values))
         
-    for poll in Script.objects.exclude(slug='emis_autoreg').values_list('steps__poll', flat=True):
-        resp = Response.objects.filter(poll=poll)\
-            .filter(message__connection__contact__emisreporter__schools__pk=school_id)\
-            .order_by('-date')[:1]
-        scripted_polls.append((Poll.objects.get(pk=poll),resp))
+    for script in Script.objects.exclude(slug='emis_autoreg'):
+        for step in script.steps.all():
+            resp = Response.objects.filter(poll=step.poll)\
+                .filter(message__connection__contact__emisreporter__schools__pk=school_id)\
+                .order_by('-date')[:1]
+            scripted_polls.append((step.poll,resp))
         
     return {'xforms':xforms, 'scripted_polls':scripted_polls}
     
