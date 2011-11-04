@@ -318,7 +318,16 @@ def attendance_stats(request, district_id=None):
 
     total_pupils = ["boys_%s" % g for g in GRADES] + ["girls_%s" % g for g in GRADES]
     values = total_attribute_value(total_pupils, start_date=start_date, end_date=end_date, location=location)
+    attendance_ratio = location_values(user_location, values)
     stats.append(('total pupils', location_values(user_location, values)))
+
+    enrolled_total = ["enrolledb_%s" % g for g in GRADES] + ["enrolledg_%s" % g for g in GRADES]
+    values = total_attribute_value(enrolled_total, start_date=datetime.datetime(datetime.datetime.now().year, 1, 1), end_date=datetime.datetime.now(), location=location)
+    if type(location_values(user_location, values)) == int and location_values(user_location, values) > 0:
+        attendance_ratio /= float(location_values(user_location, values))
+    else:
+        attendance_ratio = 0
+    stats.append(('% absent', '%0.1f%%'%(100-(attendance_ratio * 100))))
 
     values = total_attribute_value("teachers_f", start_date=start_date, end_date=end_date, location=location)
     stats.append(('female teachers', location_values(user_location, values)))
@@ -327,7 +336,16 @@ def attendance_stats(request, district_id=None):
     stats.append(('male teachers', location_values(user_location, values)))
 
     values = total_attribute_value(["teachers_f", "teachers_m"], start_date=start_date, end_date=end_date, location=location)
+    attendance_ratio = location_values(user_location, values)
     stats.append(('total teachers', location_values(user_location, values)))
+    
+    enrolled_total = ["deploy_f", "deploy_m"]
+    values = total_attribute_value(enrolled_total, start_date=datetime.datetime(datetime.datetime.now().year, 1, 1), end_date=datetime.datetime.now(), location=location)
+    if type(location_values(user_location, values)) == int and location_values(user_location, values) > 0:
+        attendance_ratio /= float(location_values(user_location, values))
+    else:
+        attendance_ratio = 0
+    stats.append(('% absent', '%0.1f%%'%(100-(attendance_ratio * 100))))
     res = {}
     res['dates'] = dates
     res['stats'] = stats
@@ -371,15 +389,51 @@ def headteacher_attendance_stats(request, district_id=None):
     stats = []
     user_location = get_location(request, district_id)
     location = Location.tree.root_nodes()[0]
+    start_date, end_date = previous_calendar_week()
+    dates = {'start':start_date, 'end':end_date}
+    htpresent_yes = Poll.objects.get(name='emis_absence').responses.exclude(has_errors=True)\
+                            .filter(date__range=(start_date, end_date))\
+                            .filter(message__text__icontains='yes')\
+                            .filter(message__connection__contact__emisreporter__reporting_location__in=user_location.get_descendants(include_self=True).all()).count()
+    htpresent_no = Poll.objects.get(name='emis_absence').responses.exclude(has_errors=True)\
+                            .filter(date__range=(start_date, end_date))\
+                            .filter(message__text__icontains='no')\
+                            .filter(message__connection__contact__emisreporter__reporting_location__in=user_location.get_descendants(include_self=True).all()).count()
+    stats.append(('head teachers reported present', htpresent_yes))
+    stats.append(('head teachers reported absent', htpresent_no))
+    num_schools = Location.objects.get(pk=user_location.pk).get_descendants(include_self=True).aggregate(Count('schools'))['schools__count']
+    if num_schools > 0:        
+        htpresent_yes /= float(num_schools)
+        perc_present = '%0.1f%%'%(htpresent_yes * 100)
+        htpresent_no /= float(num_schools)
+        perc_absent = '%0.1f%%'%(htpresent_no * 100)
+    else:
+        perc_present = 0
+        perc_absent = 0
+    stats.append(('% present', perc_present))
+    stats.append(('% absent', perc_absent))
+    res = {}
+    res['dates'] = dates
+    res['stats'] = stats
+    return res
+
+def gem_htpresent_stats(request, district_id=None):
+    stats = []
+    user_location = get_location(request, district_id)
+    location = Location.tree.root_nodes()[0]
     start_date, end_date = previous_calendar_month()
     dates = {'start':start_date, 'end':end_date}
     values = total_submissions("gemteachers_htpresent", start_date=start_date, end_date=end_date, location=location, extra_filters={'eav__gemteachers_htpresent':1})
-    stats.append(('head teacher attendance', location_values(user_location, values)))
-    stats.append(('total head teacher deployment', Location.objects.get(pk=user_location.pk).get_descendants(include_self=True).aggregate(Count('schools'))['schools__count']))
-    if Location.objects.get(pk=user_location.pk).get_descendants(include_self=True).aggregate(Count('schools'))['schools__count'] > 0:
-        perc = values.count() / Location.objects.get(pk=user_location.pk).get_descendants(include_self=True).aggregate(Count('schools'))['schools__count'] * 100
+    gem_htpresent = location_values(user_location, values)
+    stats.append(('head teacher attendance', gem_htpresent))
+    num_schools = Location.objects.get(pk=user_location.pk).get_descendants(include_self=True).aggregate(Count('schools'))['schools__count']
+    stats.append(('total head teacher deployment', num_schools))
+    if num_schools > 0 and type(gem_htpresent) == int:
+        gem_htpresent /= num_schools
+        perc = '%0.1f%%'%(gem_htpresent * 100)
     else:
         perc = 0
+    stats.append(('% absent', perc))
     res = {}
     res['dates'] = dates
     res['stats'] = stats
@@ -433,7 +487,7 @@ def keyratios_stats(request, district_id=None):
     total_schools = School.objects.filter(location__in=user_location.get_descendants(include_self=True).all()).count()
     if total_schools:
         smc_meetings_ratio /= total_schools
-        stats['Level of Functionality of SMCs'] = smc_meetings_ratio*100 #'%.1f%%'% smc_meetings_ratio*100
+        stats['Level of Functionality of SMCs'] = '%.1f%%'%(smc_meetings_ratio*100)
     else:
         stats['Level of Functionality of SMCs'] = 'Not Available'
 

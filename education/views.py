@@ -51,6 +51,7 @@ def deo_dashboard(request):
                                 'attendance_stats':attendance_stats(request, district_id), \
                                 'enrollment_stats':enrollment_stats(request, district_id), \
                                 'headteacher_attendance_stats':headteacher_attendance_stats(request, district_id), \
+                                'gem_htpresent_stats':gem_htpresent_stats(request, district_id), \
                                 'abuse_stats':abuse_stats(request, district_id), \
                                 }, RequestContext(request))
 
