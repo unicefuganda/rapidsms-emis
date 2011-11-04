@@ -158,8 +158,8 @@ def produce_data(slug):
 
     for school_data in school_xform_data:
         new_list_buffer.append(school_data[:7]) #sliced to accomodate the first 7 values corresponding to dates and more recent
-    data = {}
-    data_2 = []
+    data = []
+
     def compute_value(list):
         #function to compute value quickly
         if not list:
@@ -170,12 +170,10 @@ def produce_data(slug):
             return x
 
     for school,lis in zip(school_names,new_list_buffer):
-        data[school] = compute_value(lis)
         cache = compute_value(lis)
         cache.insert(0,school)
-        data_2.append(cache)
-    # should ideally return 2 kinds of data structures: dicts and lists; disabled dict
-    return data_2
+        data.append(cache)
+    return data
 
 def create_excel_dataset():
     """
@@ -204,24 +202,6 @@ def create_excel_dataset():
             rowx += 1
             for colx, value in enumerate(row):
                 sheet.write(rowx, colx, value)
-
-
-    def xform_data_picker(xform_name=None,*args):
-        school_vals = {}
-        if xform_name:
-            #TODO this part is incomplete and should handle other xform value
-            for school in School.objects.all():
-                pass
-        else:
-            for school in School.objects.all():
-                grade_val = {}
-                for g in GRADES:
-                    try:
-                        grade_val[g] = XFormSubmissionValue.objects.exclude(submission__has_errors=True).filter(attribute__slug__in=["boys_%s"%g],submission__connection__contact__emisreporter__schools=school).order_by('-created')[:1][0].value_int
-                    except IndexError:
-                        grade_val[g] = 0
-                school_vals[school.name]=grade_val
-
             
     GRADES = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7']
     boy_attendance_slugs = ['boys_%s'% g for g in GRADES]
@@ -248,72 +228,6 @@ def create_excel_dataset():
     headings = ["School"] + GRADES
     data_set = produce_data(girl_enrolled_slugs)
     write_xls("Latest Enrollment for Girls",headings,data_set)
-
-
-    ### Boys
-#    school_vals = {}
-#    for school in School.objects.all():
-#        grade_val = {}
-#        try:
-#            grade_val[g] = XFormSubmissionValue.objects.exclude(submission__has_errors=True).filter(attribute__slug__in=boy_attendance_slugs,submission__connection__contact__emisreporter__schools=school).order_by('-created')[:1][0].value_int
-#        except IndexError:
-#            grade_val[g] = 0
-#        school_vals[school.name]=grade_val
-#    headings = ["School"] + GRADES
-#    data_set = []
-#    for school_name,d_set in zip(school_vals.keys(),school_vals.values()):
-#        data_set.append([school_name]+d_set.values())
-#    write_xls("Latest Attendance for Boys",headings,data_set)
-#
-#
-#    ### Girls attendance
-#    # piece of data collect from girls_p{x}
-#    school_vals = {}
-#    for school in School.objects.all():
-#        grade_val = {}
-#        try:
-#            grade_val[g] = XFormSubmissionValue.objects.exclude(submission__has_errors=True).filter(attribute__slug__in=girl_attendance_slugs,submission__connection__contact__emisreporter__schools=school).order_by('-created')[:1][0].value_int
-#        except IndexError:
-#            grade_val[g] = 0
-#        school_vals[school.name]=grade_val
-#    headings = ["School"] + GRADES
-#    data_set = []
-#    for school_name,d_set in zip(school_vals.keys(),school_vals.values()):
-#        data_set.append([school_name]+d_set.values())
-#    write_xls("Latest attendance for Girls",headings,data_set)
-#
-#    ### Boys enrollment
-#    # piece of data collect from girls_p{x}
-#    school_vals = {}
-#    for school in School.objects.all():
-#        grade_val = {}
-#        try:
-#            grade_val[g] = XFormSubmissionValue.objects.exclude(submission__has_errors=True).filter(attribute__slug__in=boy_enrolled_slugs,submission__connection__contact__emisreporter__schools=school).order_by('-created')[:1][0].value_int
-#        except IndexError:
-#            grade_val[g] = 0
-#        school_vals[school.name]=grade_val
-#    headings = ["School"] + GRADES
-#    data_set = []
-#    for school_name,d_set in zip(school_vals.keys(),school_vals.values()):
-#        data_set.append([school_name]+d_set.values())
-#    write_xls("Latest enrollment for Boys",headings,data_set)
-#
-#    ### Girls enrolled
-#    # piece of data collect from girls_p{x}
-#    school_vals = {}
-#    for school in School.objects.all():
-#        grade_val = {}
-#        try:
-#            grade_val[g] = XFormSubmissionValue.objects.exclude(submission__has_errors=True).filter(attribute__slug__in=girl_enrolled_slugs,submission__connection__contact__emisreporter__schools=school).order_by('-created')[:1][0].value_int
-#        except IndexError:
-#            grade_val[g] = 0
-#        school_vals[school.name]=grade_val
-#    headings = ["School"] + GRADES
-#    data_set = []
-#
-#    for school_name,d_set in zip(school_vals.keys(),school_vals.values()):
-#        data_set.append([school_name]+d_set.values())
-#    write_xls("Latest Enrollment for Girls",headings,data_set)
 
     response = HttpResponse(mimetype='application/vnd.ms-excel')
     response['Content-Disposition'] = 'attachment; filename=emis.xls'
