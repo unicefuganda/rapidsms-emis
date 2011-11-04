@@ -221,7 +221,6 @@ def to_excel(req,district_id=None):
 def excel_reports(req):
     return render_to_response('education/excelreports/excel_dashboard.html',{},RequestContext(req))
 
-
 class UserForm(forms.ModelForm):
    
     location=forms.ModelChoiceField(queryset=Location.objects.filter(type__in=["district","country"]).order_by('name'),required=True)
