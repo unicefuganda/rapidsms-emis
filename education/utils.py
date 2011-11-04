@@ -186,18 +186,18 @@ def create_excel_dataset():
 
             
     GRADES = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7']
-    boy_slugs = ['boys_%s'% g for g in GRADES]
-    girl_slugs = ['girls_%s'%g for g in GRADES]
-
+    boy_attendance_slugs = ['boys_%s'% g for g in GRADES]
+    girl_attendance_slugs = ['girls_%s'%g for g in GRADES]
+    boy_enrolled_slugs = ["enrolledb_%s"%g for g in GRADES]
+    girl_enrolled_slugs = ["enrolledg_%s"%g for g in GRADES]
     ### Boys
     school_vals = {}
     for school in School.objects.all():
         grade_val = {}
-        for g in GRADES:
-            try:
-                grade_val[g] = XFormSubmissionValue.objects.exclude(submission__has_errors=True).filter(attribute__slug__in=["boys_%s"%g],submission__connection__contact__emisreporter__schools=school).order_by('-created')[:1][0].value_int
-            except IndexError:
-                grade_val[g] = 0
+        try:
+            grade_val[g] = XFormSubmissionValue.objects.exclude(submission__has_errors=True).filter(attribute__slug__in=boy_attendance_slugs,submission__connection__contact__emisreporter__schools=school).order_by('-created')[:1][0].value_int
+        except IndexError:
+            grade_val[g] = 0
         school_vals[school.name]=grade_val
     headings = ["School"] + GRADES
     data_set = []
@@ -213,7 +213,7 @@ def create_excel_dataset():
         grade_val = {}
         for g in GRADES:
             try:
-                grade_val[g] = XFormSubmissionValue.objects.exclude(submission__has_errors=True).filter(attribute__slug__in=["girls_%s"%g],submission__connection__contact__emisreporter__schools=school).order_by('-created')[:1][0].value_int
+                grade_val[g] = XFormSubmissionValue.objects.exclude(submission__has_errors=True).filter(attribute__slug__in=girl_attendance_slugs,submission__connection__contact__emisreporter__schools=school).order_by('-created')[:1][0].value_int
             except IndexError:
                 grade_val[g] = 0
         school_vals[school.name]=grade_val
@@ -228,11 +228,11 @@ def create_excel_dataset():
     school_vals = {}
     for school in School.objects.all():
         grade_val = {}
-        for g in GRADES:
-            try:
-                grade_val[g] = XFormSubmissionValue.objects.exclude(submission__has_errors=True).filter(attribute__slug__in=["enrolledb_%s"%g],submission__connection__contact__emisreporter__schools=school).order_by('-created')[:1][0].value_int
-            except IndexError:
-                grade_val[g] = 0
+
+        try:
+            grade_val[g] = XFormSubmissionValue.objects.exclude(submission__has_errors=True).filter(attribute__slug__in=boy_enrolled_slugs,submission__connection__contact__emisreporter__schools=school).order_by('-created')[:1][0].value_int
+        except IndexError:
+            grade_val[g] = 0
         school_vals[school.name]=grade_val
     headings = ["School"] + GRADES
     data_set = []
@@ -247,7 +247,7 @@ def create_excel_dataset():
         grade_val = {}
         for g in GRADES:
             try:
-                grade_val[g] = XFormSubmissionValue.objects.exclude(submission__has_errors=True).filter(attribute__slug__in=["enrolledg_%s"%g],submission__connection__contact__emisreporter__schools=school).order_by('-created')[:1][0].value_int
+                grade_val[g] = XFormSubmissionValue.objects.exclude(submission__has_errors=True).filter(attribute__slug__in=girl_enrolled_slugs,submission__connection__contact__emisreporter__schools=school).order_by('-created')[:1][0].value_int
             except IndexError:
                 grade_val[g] = 0
         school_vals[school.name]=grade_val
