@@ -7,7 +7,25 @@
     <link type="text/css" rel="stylesheet" href="{{MEDIA_URL}}education/stylesheets/emis.css"/>
 {% endblock %}
 {% block content %}
-<h3>EMIS</h3>
-Welcome to EMIS, UNICEF's SMS-based Education monitoring and tracking system.
-Login or click a tab to explore.
+<div class="module">
+    <h2>Welcome to the Education Monitoring RapidSMS Application (EMIS)</h2>
+    <p>
+        Welcome to EMIS, UNICEF's SMS-based Education monitoring and tracking system.
+        Login or click a tab to explore.
+    </p>
+    {% if user.is_authenticated %}
+        {% if user.is_superuser or user.get_profile.role == "Admins" %}
+            <p>
+                <table width="100%" cellpadding="5" cellspacing="0">
+                    <tr>
+                        <th align="left">Administrative Tasks</th>  
+                    </tr>
+                    <tr>
+                        <td><a href="{% url emis-users %}">Manage Users</a></td>
+                    </tr>
+                </table>
+            </p>
+         {% endif %}
+     {% endif %}
+</div>
 {% endblock %}

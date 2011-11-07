@@ -190,5 +190,5 @@ urlpatterns = patterns('',
                  ],
       'sort_column':'date',
       'sort_ascending':False,
-    }, name="emis_users"),
+    }, name="emis-users"),
 )
