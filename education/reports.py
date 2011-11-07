@@ -379,6 +379,10 @@ def enrollment_stats(request, district_id=None):
 
     values = total_attribute_value(["deploy_f", "deploy_m"], start_date=start_date, end_date=end_date, location=location)
     stats.append(('total teachers', location_values(user_location, values)))
+    
+    headteachers = School.objects.filter(location__in=user_location.get_descendants(include_self=True)).count()
+    stats.append(('total head teachers', headteachers))
+    stats.append(('schools', headteachers))
 
     res = {}
     res['dates'] = dates
@@ -387,8 +391,7 @@ def enrollment_stats(request, district_id=None):
 
 def headteacher_attendance_stats(request, district_id=None):
     stats = []
-    user_location = get_location(request, district_id)
-    location = Location.tree.root_nodes()[0]
+    user_location = get_location(request, district_id)    
     start_date, end_date = previous_calendar_week()
     dates = {'start':start_date, 'end':end_date}
     htpresent_yes = Poll.objects.get(name='emis_absence').responses.exclude(has_errors=True)\
@@ -401,14 +404,18 @@ def headteacher_attendance_stats(request, district_id=None):
                             .filter(message__connection__contact__emisreporter__reporting_location__in=user_location.get_descendants(include_self=True).all()).count()
     stats.append(('head teachers reported present', htpresent_yes))
     stats.append(('head teachers reported absent', htpresent_no))
-    num_schools = Location.objects.get(pk=user_location.pk).get_descendants(include_self=True).aggregate(Count('schools'))['schools__count']
-    if num_schools > 0:        
+    stats.append(('total reports received', htpresent_yes + htpresent_no))
+    num_schools = School.objects.filter(location__in=user_location.get_descendants(include_self=True)).count()
+    if num_schools > 0 and type(htpresent_yes) == int:        
         htpresent_yes /= float(num_schools)
         perc_present = '%0.1f%%'%(htpresent_yes * 100)
+    else:
+        perc_present = 0
+        
+    if num_schools > 0 and type(htpresent_no) == int:        
         htpresent_no /= float(num_schools)
         perc_absent = '%0.1f%%'%(htpresent_no * 100)
     else:
-        perc_present = 0
         perc_absent = 0
     stats.append(('% present', perc_present))
     stats.append(('% absent', perc_absent))
@@ -425,15 +432,25 @@ def gem_htpresent_stats(request, district_id=None):
     dates = {'start':start_date, 'end':end_date}
     values = total_submissions("gemteachers_htpresent", start_date=start_date, end_date=end_date, location=location, extra_filters={'eav__gemteachers_htpresent':1})
     gem_htpresent = location_values(user_location, values)
-    stats.append(('head teacher attendance', gem_htpresent))
-    num_schools = Location.objects.get(pk=user_location.pk).get_descendants(include_self=True).aggregate(Count('schools'))['schools__count']
-    stats.append(('total head teacher deployment', num_schools))
-    if num_schools > 0 and type(gem_htpresent) == int:
-        gem_htpresent /= num_schools
-        perc = '%0.1f%%'%(gem_htpresent * 100)
+    stats.append(('head teachers reported present', gem_htpresent))
+    values = total_submissions("gemteachers_htpresent", start_date=start_date, end_date=end_date, location=location, extra_filters={'eav__gemteachers_htpresent':0})
+    gem_htabsent = location_values(user_location, values)
+    stats.append(('head teachers reported absent', gem_htabsent))
+    stats.append(('total reports received', gem_htpresent + gem_htabsent))
+    num_schools = School.objects.filter(location__in=user_location.get_descendants(include_self=True)).count()
+    if num_schools > 0 and type(gem_htpresent) == int:        
+        gem_htpresent /= float(num_schools)
+        perc_present = '%0.1f%%'%(gem_htpresent * 100)
     else:
-        perc = 0
-    stats.append(('% absent', perc))
+        perc_present = 0
+        
+    if num_schools > 0 and type(gem_htabsent) == int:        
+        gem_htabsent /= float(num_schools)
+        perc_absent = '%0.1f%%'%(gem_htabsent * 100)
+    else:
+        perc_absent = 0
+    stats.append(('% present', perc_present))
+    stats.append(('% absent', perc_absent))
     res = {}
     res['dates'] = dates
     res['stats'] = stats
@@ -483,7 +500,12 @@ def keyratios_stats(request, district_id=None):
     else:
         stats['Pupil to Classroom Ratio'] = 'Not Available'
     #Level of functionality of SMCs
-    smc_meetings_ratio = Response.objects.filter(poll__name='emis_meetings', message__connection__contact__emisreporter__schools__location__in=user_location.get_descendants(include_self=True).all()).count()
+    smc_meetings = Poll.objects.get(name='emis_meetings').responses.exclude(has_errors=True)\
+                                        .filter(date__range=(start_date, end_date))\
+                                        .filter(message__connection__contact__emisreporter__schools__location__in=user_location.get_descendants(include_self=True).all())\
+                                        .values_list('eav_values__value_float', flat=True)
+                                        
+    smc_meetings_ratio = sum(smc_meetings)                                    
     total_schools = School.objects.filter(location__in=user_location.get_descendants(include_self=True).all()).count()
     if total_schools:
         smc_meetings_ratio /= total_schools
