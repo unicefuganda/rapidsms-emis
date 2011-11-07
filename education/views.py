@@ -214,8 +214,8 @@ def school_detail(request, school_id):
 
 # analytics specific for emis {copy, but adjust to suit your needs}
 @login_required
-def to_excel(req,district_id=None):
-    return create_excel_dataset()
+def to_excel(request,district_id=None):
+    return create_excel_dataset(request, district_id)
 
 @login_required
 def excel_reports(req):
