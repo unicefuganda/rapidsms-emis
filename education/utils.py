@@ -19,7 +19,7 @@ from django.db.models import Count
 from django.conf import settings
 from uganda_common.utils import *
 from education.reports import *
-from django.db.models import Avg
+
 
 
 def previous_calendar_week():
@@ -147,44 +147,6 @@ def reschedule_weekly_smc_polls():
         sp, created = ScriptProgress.objects.get_or_create(connection=connection, script=Script.objects.get(slug='emis_head_teacher_presence'))
         sp.set_time(d)
         
-#def produce_data(slug):
-#    """
-#    function to produce data once an XForm slug is provided
-#    function is a WIP; tested for better optimization on DB
-#    currently to be used to get values based on grades; [p7, p6, p5,..., p1]
-#    """
-#    school_xform_data = []
-#    for school in School.objects.all():
-#        try:
-#            #xforms of all submitted data about schools
-#            school_xform_data.append(XFormSubmissionValue.objects.exclude(submission__has_errors=True).filter(attribute__slug__in=slug,submission__connection__contact__emisreporter__schools=school).order_by('-created'))
-#        except IndexError:
-#            school_xform_data.append(0)
-#
-#    #processing this data; for large memory, should still be fast
-#    school_names = [school.name for school in School.objects.all()]
-#
-#    new_list_buffer = []
-#
-#    for school_data in school_xform_data:
-#        new_list_buffer.append(school_data[:7]) #sliced to accomodate the first 7 values corresponding to dates and more recent
-#    data = []
-#
-#    def compute_value(list):
-#        #function to compute value quickly
-#        if not list:
-#            return [0,0,0,0,0,0,0]
-#        else: #for lists with items belonging to the XFormSubmissionValue class
-#            x = [i.value_int for i in list]
-#            x.reverse()
-#            return x
-#
-#    for school,lis in zip(school_names,new_list_buffer):
-#        cache = compute_value(lis)
-#        cache.insert(0,school)
-#        data.append(cache)
-#    return data
-
 def produce_data(request, district_id, dates,  slugs):
     """
     function to produce data once an XForm slug is provided
