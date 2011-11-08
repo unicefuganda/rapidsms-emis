@@ -689,3 +689,9 @@ class EMISAttributeColumn(XFormAttributeColumn):
     def get_title(self):
         return self.title or (COLUMN_TITLE_DICT[self.keyword] if self.keyword in COLUMN_TITLE_DICT else '')
 
+#class MainReport(XFormReport):
+#    def get_top_columns(self):
+#        return [
+#            ('Attendance','/emis'),
+#            ('Enrollment','/')
+#        ]
