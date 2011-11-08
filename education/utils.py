@@ -22,6 +22,15 @@ from education.reports import *
 from django.db.models import Avg
 
 
+def previous_calendar_week():
+    d = datetime.datetime.now()
+    if not d.weekday() == 3:
+        #last thursday is next thursday - 7 days
+        last_thursday = d + datetime.timedelta((3 - d.weekday()) % 7) - (datetime.timedelta(days=7))
+    else:
+        last_thursday = d
+    end_date = last_thursday + datetime.timedelta(days=7)    
+    return (last_thursday, end_date)
 
 def match_connections():
     script = Script.objects.get(slug='emis_autoreg')
