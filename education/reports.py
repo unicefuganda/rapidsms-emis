@@ -323,7 +323,7 @@ def attendance_stats(request, district_id=None):
 
     enrolled_total = ["enrolledb_%s" % g for g in GRADES] + ["enrolledg_%s" % g for g in GRADES]
     values = total_attribute_value(enrolled_total, start_date=datetime.datetime(datetime.datetime.now().year, 1, 1), end_date=datetime.datetime.now(), location=location)
-    if type(location_values(user_location, values)) == int and location_values(user_location, values) > 0:
+    if not type(location_values(user_location, values)) == str and not type(attendance_ratio) == str and location_values(user_location, values) > 0:
         attendance_ratio /= float(location_values(user_location, values))
     else:
         attendance_ratio = 0
@@ -341,7 +341,7 @@ def attendance_stats(request, district_id=None):
     
     enrolled_total = ["deploy_f", "deploy_m"]
     values = total_attribute_value(enrolled_total, start_date=datetime.datetime(datetime.datetime.now().year, 1, 1), end_date=datetime.datetime.now(), location=location)
-    if type(location_values(user_location, values)) == int and location_values(user_location, values) > 0:
+    if not type(location_values(user_location, values)) == str and not type(attendance_ratio) == str and location_values(user_location, values) > 0:
         attendance_ratio /= float(location_values(user_location, values))
     else:
         attendance_ratio = 0
