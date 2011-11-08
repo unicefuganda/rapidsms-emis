@@ -689,9 +689,41 @@ class EMISAttributeColumn(XFormAttributeColumn):
     def get_title(self):
         return self.title or (COLUMN_TITLE_DICT[self.keyword] if self.keyword in COLUMN_TITLE_DICT else '')
 
-#class MainReport(XFormReport):
-#    def get_top_columns(self):
-#        return [
-#            ('Attendance','/emis'),
-#            ('Enrollment','/')
-#        ]
+class MainReport(XFormReport):
+    def get_top_columns(self):
+        return [
+            ('Attendance','/emis/att'),1,
+            ('Enrollment','/emis/enrolment',3)
+            #TODO what else should we add here?
+        ]
+    # parent column with the parent title
+    #TODO <some_thing> = EMISSubmissionColumn("<name>",title=<"title">,order=<number>,chart_title="<title>")
+    # >>> here.
+
+    #TODO evaluate what we want to appear in the main report
+    attendance_boys_p1 = EMISSubmissionColumn('boys_p1',order=1)
+    attendance_boys_p2 = EMISSubmissionColumn('boys_p2',order=2)
+    attendance_boys_p3 = EMISSubmissionColumn('boys_p3',order=3)
+    attendance_boys_p4 = EMISSubmissionColumn('boys_p4',order=4)
+    attendance_boys_p5 = EMISSubmissionColumn('boys_p5',order=5)
+    attendance_boys_p6 = EMISSubmissionColumn('boys_p6',order=6)
+    attendance_boys_p7 = EMISSubmissionColumn('boys_p7',order=7)
+
+    attendance_girls_p1 = EMISSubmissionColumn("girls_p1", order=8)
+    attendance_girls_p2 = EMISSubmissionColumn("girls_p2", order=9)
+    attendance_girls_p3 = EMISSubmissionColumn("girls_p3", order=10)
+    attendance_girls_p4 = EMISSubmissionColumn("girls_p4", order=11)
+    attendance_girls_p5 = EMISSubmissionColumn("girls_p5", order=12)
+    attendance_girls_p6 = EMISSubmissionColumn("girls_p6", order=13)
+    attendance_girls_p7 = EMISSubmissionColumn("girls_p7", order=14)
+
+    classrooms_p1 = EMISSubmissionColumn("classrooms_p1",order=15)
+    classrooms_p2 = EMISSubmissionColumn("classrooms_p2",order=16)
+    classrooms_p3 = EMISSubmissionColumn("classrooms_p3",order=17)
+    classrooms_p4 = EMISSubmissionColumn("classrooms_p4",order=18)
+    classrooms_p5 = EMISSubmissionColumn("classrooms_p5",order=19)
+    classrooms_p6 = EMISSubmissionColumn("classrooms_p6",order=20)
+    classrooms_p7 = EMISSubmissionColumn("classrooms_p7",order=21)
+
+    deploy_f = EMISSubmissionColumn("deploy_f", order=22)
+    deploy_m = EMISSubmissionColumn("deploy_m", order=23)

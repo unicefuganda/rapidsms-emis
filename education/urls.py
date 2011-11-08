@@ -170,7 +170,8 @@ urlpatterns = patterns('',
 
     #statisctical views
     url(r'^emis/stats/$',include(FullReport().as_urlpatterns(name="full-report"))),
-    url(r'^emis/attendancer/$',include(AttendanceReportr().as_urlpatterns(name='attendance-report'))),
+    
+    url(r'^emis/attendance/$',include(AttendanceReportr().as_urlpatterns(name='attendance-report'))),
 
     # Excel Reports
     url(r'^emis/excelreports/$',excel_reports),
