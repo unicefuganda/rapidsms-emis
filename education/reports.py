@@ -565,5 +565,51 @@ def reporters(request, district_id=None):
 def schools(request, district_id=None):
     user_location = get_location(request, district_id)
     return School.objects.filter(location__in=user_location.get_descendants(include_self=True).all())
+
+def deo_alerts(request, district_id=None):
+    alerts = []
+    user_location = get_location(request, district_id)
     
+    #schools that have not sent in pupil attendance data this week
+    start_date, end_date = previous_calendar_week()
+    responsive_schools = XFormSubmissionValue.objects.all()\
+                        .filter(Q(submission__xform__keyword__icontains='boys')|Q(submission__xform__keyword__icontains='girls'))\
+                        .filter(created__range=(start_date, end_date))\
+                        .filter(submission__connection__contact__emisreporter__schools__location__in=user_location.get_descendants(include_self=True).all())\
+                        .values_list('submission__connection__contact__emisreporter__schools__name', flat=True)
+    schools = School.objects.filter(location__in=user_location.get_descendants(include_self=True).all())
+    if schools.count() > 0:
+        total_schools_ratio = schools.exclude(name__in=responsive_schools).count()
+        total_schools_ratio /= float(schools.count())
+        perc = '%0.1f%%'%(total_schools_ratio*100)
+    alerts.append((schools.exclude(name__in=responsive_schools).count(), perc, 'did not submit pupil attendance reports this week'))
+    
+    #schools that have not sent in pupil enrollment data this year
+    start_date = datetime.datetime(datetime.datetime.now().year, 1, 1)
+    end_date = datetime.datetime.now()
+    responsive_schools = XFormSubmissionValue.objects.all()\
+                        .filter(Q(submission__xform__keyword__icontains='enrolledb')|Q(submission__xform__keyword__icontains='enrolledg'))\
+                        .filter(created__range=(start_date, end_date))\
+                        .filter(submission__connection__contact__emisreporter__schools__location__in=user_location.get_descendants(include_self=True).all())\
+                        .values_list('submission__connection__contact__emisreporter__schools__name', flat=True)
+    schools = School.objects.filter(location__in=user_location.get_descendants(include_self=True).all())
+    if schools.count() > 0:
+        total_schools_ratio = schools.exclude(name__in=responsive_schools).count()
+        total_schools_ratio /= float(schools.count())
+        perc = '%0.1f%%'%(total_schools_ratio*100)
+    alerts.append((schools.exclude(name__in=responsive_schools).count(), perc, 'have not submitted pupil enrollment data this year'))
+    
+    #schools that have not sent in teacher deployment data
+    responsive_schools = XFormSubmissionValue.objects.all()\
+                        .filter(submission__xform__keyword__icontains='deploy')\
+                        .filter(created__range=(start_date, end_date))\
+                        .filter(submission__connection__contact__emisreporter__schools__location__in=user_location.get_descendants(include_self=True).all())\
+                        .values_list('submission__connection__contact__emisreporter__schools__name', flat=True)
+    schools = School.objects.filter(location__in=user_location.get_descendants(include_self=True).all())
+    if schools.count() > 0:
+        total_schools_ratio = schools.exclude(name__in=responsive_schools).count()
+        total_schools_ratio /= float(schools.count())
+        perc = '%0.1f%%'%(total_schools_ratio*100)
+    alerts.append((schools.exclude(name__in=responsive_schools).count(), perc, 'have not submitted teacher deployment data this year'))
+    return alerts
 

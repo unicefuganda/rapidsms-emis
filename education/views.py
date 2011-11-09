@@ -47,6 +47,7 @@ def deo_dashboard(request):
                                 'location':user_location,\
                                 'top_node':top_node,\
                                 'form':form, \
+                                'alerts':deo_alerts(request, district_id),\
                                 'keyratios':keyratios_stats(request, district_id),\
                                 'attendance_stats':attendance_stats(request, district_id), \
                                 'enrollment_stats':enrollment_stats(request, district_id), \

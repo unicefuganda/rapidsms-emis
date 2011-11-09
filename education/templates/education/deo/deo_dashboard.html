@@ -17,16 +17,25 @@
     	{% endif %}
     	<h2>District Sumarry for {% ifequal location top_node %} All Districts {% else %}{{ location.name }}{% endifequal %}</h2>
     	<p>
-    	    <table width="35%" cellspacing="0" cellpadding="0">
-                <tr>
-                    <td colspan={{ attendance_stats.stats|length }} class="stat"><span class="stats">Key Ratios</span></td>
-                </tr>
-                {% for stat, value in keyratios.items %}
-                    <tr>
-                        <td class="ratios-left">{{ stat }}</td>
-                        <td class="ratios-right">{{ value }}</td>
-                    </tr>
-                 {% endfor %}
+    	    <table width="100%" cellspacing="0" cellpadding="5">
+    	        <tr>
+    	            <td width="35%">
+    	                <table width="100%" cellspacing="0" cellpadding="0">
+                            <tr>
+                                <td colspan={{ attendance_stats.stats|length }} class="stat"><span class="stats">Key Ratios</span></td>
+                            </tr>
+                            {% for stat, value in keyratios.items %}
+                                <tr>
+                                    <td class="ratios-left">{{ stat }}</td>
+                                    <td class="ratios-right">{{ value }}</td>
+                                </tr>
+                             {% endfor %}
+                        </table>
+                     </td>
+                     <td width="65%" valign="top">
+                         {% include "education/partials/alerts_partial.html" %}
+                     </td>
+                 </tr>
             </table><br /><a href="{% url keyratios-stats %}">See Detailed School Ratios &raquo;</a> 
         </p>
     	</p>

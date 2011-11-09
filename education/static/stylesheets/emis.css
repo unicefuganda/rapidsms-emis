@@ -182,6 +182,21 @@ p {
     background-color: #FFFFBE;
 }
 
+.alerts-odd {
+    background-color: #FFEEBE;
+}
+
+.alerts-even {
+    background-color: #FFFFBE;
+}
+
+.alert{
+    text-align:left;
+    font-size:1.1em;
+    padding:0.5em;
+}
+
+
 .qt-head {
 	text-align: center;
 	font-weight:bold;
