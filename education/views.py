@@ -1,22 +1,19 @@
 #from django.db import connection
 from django.http import HttpResponseRedirect
-from .forms import NewConnectionForm, EditReporterForm, DistrictFilterForm, SchoolForm
-from .models import *
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, render_to_response
 from django.template import RequestContext
+from django.core.urlresolvers import reverse
+from django.views.generic import TemplateView
+from django.contrib.auth.decorators import user_passes_test
+from django import forms
+from .forms import NewConnectionForm, EditReporterForm, DistrictFilterForm, SchoolForm
+from .models import *
 from uganda_common.utils import *
 from rapidsms.contrib.locations.models import Location
-from django.core.urlresolvers import reverse
 from .reports import *
 from .utils import *
 from urllib2 import urlopen
-
-
-from django.contrib.auth.models import User
-from django.contrib.auth.decorators import user_passes_test
-from django import forms
-
 import  re
 
 
@@ -220,6 +217,12 @@ def to_excel(request,district_id=None):
 @login_required
 def excel_reports(req):
     return render_to_response('education/excelreports/excel_dashboard.html',{},RequestContext(req))
+
+#visualization
+#TODO add to dashboards or stats views
+class ChartView(TemplateView):
+    template_name = "education/emis_chart.html"
+
 
 class UserForm(forms.ModelForm):
    

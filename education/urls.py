@@ -5,6 +5,7 @@ from .models import EmisReporter, School
 from .reports import AttendanceReport, AbuseReport, KeyRatiosReport, messages, othermessages, reporters, schools
 from .sorters import LatestSubmissionSorter
 from .views import *
+from education.views import ChartView
 from contact.forms import  MassTextForm, \
     FreeSearchTextForm, DistictFilterMessageForm, HandledByForm, ReplyTextForm
 from django.conf.urls.defaults import *
@@ -175,6 +176,7 @@ urlpatterns = patterns('',
 
     # Excel Reports
     url(r'^emis/excelreports/$',excel_reports),
+    url(r'^emis/charts/$',ChartView.as_view()),#for demo purposes
 
     #users and permissions
     url(r'^emis/toexcel/$',to_excel, name="to-excel"),

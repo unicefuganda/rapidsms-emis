@@ -19,17 +19,16 @@ from django.db.models import Count
 from django.conf import settings
 from uganda_common.utils import *
 from education.reports import *
-
-
+from django.db.models import Avg
 
 def previous_calendar_week():
     d = datetime.datetime.now()
     if not d.weekday() == 3:
-        #last thursday is next thursday - 7 days
-        last_thursday = d + datetime.timedelta((3 - d.weekday()) % 7) - (datetime.timedelta(days=7))
+        # last thursday is next thursday minus 7 days.
+        last_thursday = d + (datetime.timedelta((3-d.weekday())%7) - (datetime.timedelta(days=7)))
     else:
         last_thursday = d
-    end_date = last_thursday + datetime.timedelta(days=7)    
+    end_date = last_thursday + datetime.timedelta(days=7)
     return (last_thursday, end_date)
 
 def match_connections():
@@ -147,15 +146,14 @@ def reschedule_weekly_smc_polls():
         sp, created = ScriptProgress.objects.get_or_create(connection=connection, script=Script.objects.get(slug='emis_head_teacher_presence'))
         sp.set_time(d)
         
-def produce_data(request, district_id, dates,  slugs, choice=list):
+
+def produce_data(request, district_id, dates, slugs,choice=list):
     """
     function to produce data once an XForm slug is provided
     function is a WIP; tested for better optimization on DB
     currently to be used to get values based on grades; [p7, p6, p5,..., p1]
-
-    #choice types available include list + dict (data for reporting and charting)
     """
-
+    from .reports import get_location
     user_location = get_location(request, district_id)
     schools = School.objects.filter(location__in=user_location.get_descendants(include_self=True).all())
     values = XFormSubmissionValue.objects.exclude(submission__has_errors=True)\
@@ -165,30 +163,26 @@ def produce_data(request, district_id, dates,  slugs, choice=list):
                 .values('submission__connection__contact__emisreporter__schools__name')\
                 .values_list('submission__connection__contact__emisreporter__schools__name','value_int')
                 #.annotate(Avg('value_int'))
-    if isinstance(choice,list):
-        data = []
-        i = 0
-        while i < len(values):
-            school_values = []
-            school_values.append(values[i][0])
-            school_values.append(values[i][1])
-            for x in range(i,(i+6)):
-                try:
-                    school_values.append(values[x][1])
-                except IndexError:
-                    school_values.append(0)
-            i += 6
-            data.append(school_values)
-        from pprint import pprint
-        pprint(data)
-        return data
-    elif isinstance(choice,dict):
-        data = {}
-        
-        pass
-    else:
-        # do nothing if no choice type selected
-        return
+
+    data = []
+    i = 0
+    while i < len(values):
+        school_values = []
+        school_values.append(values[i][0])
+        school_values.append(values[i][1])
+        for x in range(i,(i+6)):
+            try:
+                school_values.append(values[x][1])
+            except IndexError:
+                school_values.append(0)
+        i += 6
+        data.append(school_values)
+    return data
+
+def produce_curated_data():
+    #chart data
+    pass
+
 def create_excel_dataset(request, district_id):
     """
     # for excelification
