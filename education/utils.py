@@ -153,7 +153,7 @@ def produce_data(request, district_id, dates,  slugs, choice=list):
     function is a WIP; tested for better optimization on DB
     currently to be used to get values based on grades; [p7, p6, p5,..., p1]
 
-    #choice types available list + dict (data for reporting and charting)
+    #choice types available include list + dict (data for reporting and charting)
     """
 
     user_location = get_location(request, district_id)
@@ -181,6 +181,8 @@ def produce_data(request, district_id, dates,  slugs, choice=list):
             data.append(school_values)
         return data
     elif isinstance(choice,dict):
+        data = {}
+        
         pass
     else:
         # do nothing if no choice type selected
