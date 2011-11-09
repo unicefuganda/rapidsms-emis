@@ -220,10 +220,15 @@ def excel_reports(req):
 
 #visualization
 #TODO add to dashboards or stats views
+@login_required(function=None)
 class ChartView(TemplateView):
+    # boys and girls attendance
+    context_object_name = "girl_boy_list"
+    from .utils import produce_curated_data
+    queryset = produce_curated_data()
     template_name = "education/emis_chart.html"
 
-
+    
 class UserForm(forms.ModelForm):
    
     location=forms.ModelChoiceField(queryset=Location.objects.filter(type__in=["district","country"]).order_by('name'),required=True)
