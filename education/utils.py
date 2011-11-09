@@ -21,15 +21,14 @@ from uganda_common.utils import *
 from education.reports import *
 from django.db.models import Avg
 
-
 def previous_calendar_week():
     d = datetime.datetime.now()
     if not d.weekday() == 3:
-        #last thursday is next thursday - 7 days
-        last_thursday = d + datetime.timedelta((3 - d.weekday()) % 7) - (datetime.timedelta(days=7))
+        # last thursday is next thursday minus 7 days.
+        last_thursday = d + (datetime.timedelta((3-d.weekday())%7) - (datetime.timedelta(days=7)))
     else:
         last_thursday = d
-    end_date = last_thursday + datetime.timedelta(days=7)    
+    end_date = last_thursday + datetime.timedelta(days=7)
     return (last_thursday, end_date)
 
 def match_connections():
@@ -147,50 +146,14 @@ def reschedule_weekly_smc_polls():
         sp, created = ScriptProgress.objects.get_or_create(connection=connection, script=Script.objects.get(slug='emis_head_teacher_presence'))
         sp.set_time(d)
         
-#def produce_data(slug):
-#    """
-#    function to produce data once an XForm slug is provided
-#    function is a WIP; tested for better optimization on DB
-#    currently to be used to get values based on grades; [p7, p6, p5,..., p1]
-#    """
-#    school_xform_data = []
-#    for school in School.objects.all():
-#        try:
-#            #xforms of all submitted data about schools
-#            school_xform_data.append(XFormSubmissionValue.objects.exclude(submission__has_errors=True).filter(attribute__slug__in=slug,submission__connection__contact__emisreporter__schools=school).order_by('-created'))
-#        except IndexError:
-#            school_xform_data.append(0)
-#
-#    #processing this data; for large memory, should still be fast
-#    school_names = [school.name for school in School.objects.all()]
-#
-#    new_list_buffer = []
-#
-#    for school_data in school_xform_data:
-#        new_list_buffer.append(school_data[:7]) #sliced to accomodate the first 7 values corresponding to dates and more recent
-#    data = []
-#
-#    def compute_value(list):
-#        #function to compute value quickly
-#        if not list:
-#            return [0,0,0,0,0,0,0]
-#        else: #for lists with items belonging to the XFormSubmissionValue class
-#            x = [i.value_int for i in list]
-#            x.reverse()
-#            return x
-#
-#    for school,lis in zip(school_names,new_list_buffer):
-#        cache = compute_value(lis)
-#        cache.insert(0,school)
-#        data.append(cache)
-#    return data
 
-def produce_data(request, district_id, dates,  slugs):
+def produce_data(request, district_id, dates, slugs,choice=list):
     """
     function to produce data once an XForm slug is provided
     function is a WIP; tested for better optimization on DB
     currently to be used to get values based on grades; [p7, p6, p5,..., p1]
     """
+    from .reports import get_location
     user_location = get_location(request, district_id)
     schools = School.objects.filter(location__in=user_location.get_descendants(include_self=True).all())
     values = XFormSubmissionValue.objects.exclude(submission__has_errors=True)\
@@ -199,7 +162,7 @@ def produce_data(request, district_id, dates,  slugs):
                 .filter(submission__connection__contact__emisreporter__schools__in=schools)\
                 .values('submission__connection__contact__emisreporter__schools__name')\
                 .values_list('submission__connection__contact__emisreporter__schools__name','value_int')
-#                .annotate(Avg('value_int'))
+                #.annotate(Avg('value_int'))
 
     data = []
     i = 0
@@ -215,6 +178,10 @@ def produce_data(request, district_id, dates,  slugs):
         i += 6
         data.append(school_values)
     return data
+
+def produce_curated_data():
+    #chart data
+    pass
 
 def create_excel_dataset(request, district_id):
     """
@@ -277,63 +244,3 @@ def create_excel_dataset(request, district_id):
     response['Content-Disposition'] = 'attachment; filename=emis.xls'
     book.save(response)
     return response
-
-#def create_excel_dataset(request, district_id):
-#    """
-#    # for excelification
-#    for up to 6 districts
-#    a function to return some excel output from varying datasets
-#    """
-#    #This can be expanded for other districts using the rapidSMS locations models
-#    #CURRENT_DISTRICTS = Location.objects.filter(name__in=XFormSubmissionValue.objects.values_list('submission__connection__contact__reporting_location__name', flat=True)).order_by('name')
-#
-#    #location = Location.tree.root_nodes()[0]
-#    start_date, end_date = previous_calendar_week()
-#    dates = {'start':start_date, 'end':end_date}
-#    # initialize Excel workbook and set encoding
-#    book = xlwt.Workbook(encoding='utf8')
-#
-#    def write_xls(sheet_name, headings, data):
-#        sheet = book.add_sheet(sheet_name)
-#        rowx = 0
-#        for colx, value in enumerate(headings):
-#            sheet.write(rowx, colx, value)
-#        sheet.set_panes_frozen(True) # frozen headings instead of split panes
-#        sheet.set_horz_split_pos(rowx+1) # in general, freeze after last heading row
-#        sheet.set_remove_splits(True) # if user does unfreeze, don't leave a split there
-#        for row in data:
-#            rowx += 1
-#            for colx, value in enumerate(row):
-#                sheet.write(rowx, colx, value)
-#            
-#    GRADES = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7']
-#    boy_attendance_slugs = ['boys_%s'% g for g in GRADES]
-#    girl_attendance_slugs = ['girls_%s'%g for g in GRADES]
-#    boy_enrolled_slugs = ["enrolledb_%s"%g for g in GRADES]
-#    girl_enrolled_slugs = ["enrolledg_%s"%g for g in GRADES]
-#
-#    #Boys attendance
-#    headings = ["School"] + GRADES
-#    data_set = produce_data(request, district_id, boy_attendance_slugs)
-#    print data_set
-#    write_xls("Latest Attendance for Boys",headings,data_set)
-#
-#    #Girls attendance
-#    headings = ["School"] + GRADES
-#    data_set = produce_data(request, district_id, girl_attendance_slugs)
-#    write_xls("Latest Attendance for Girls",headings,data_set)
-#
-#    #Boys enrollment
-#    headings = ["School"] + GRADES
-#    data_set = produce_data(request, district_id, boy_enrolled_slugs)
-#    write_xls("Latest Enrollment for Boys",headings,data_set)
-#
-#    #Girls Enorllment
-#    headings = ["School"] + GRADES
-#    data_set = produce_data(request, district_id, girl_enrolled_slugs)
-#    write_xls("Latest Enrollment for Girls",headings,data_set)
-#
-#    response = HttpResponse(mimetype='application/vnd.ms-excel')
-#    response['Content-Disposition'] = 'attachment; filename=emis.xls'
-#    book.save(response)
-#    return response

@@ -859,14 +859,14 @@
             "modified": "2011-08-03 11:17:55", 
             "type": "int", 
             "slug": "latrinesused_f", 
-            "name": "Number of Latries for Female Teachers"
+            "name": "Number of Latrines in use for Female Teachers"
         }
     }, 
     {
         "pk": 135, 
         "model": "eav.attribute", 
         "fields": {
-            "description": "Number of Latries for Female Teachers", 
+            "description": "Number of Latrines for Male Teachers",
             "created": "2011-08-03 11:17:54", 
             "datatype": "int", 
             "enum_group": null, 
@@ -875,7 +875,7 @@
             "modified": "2011-08-03 11:17:54", 
             "type": "int", 
             "slug": "latrines_m", 
-            "name": "Number of Latries for Female Teachers"
+            "name": "Number of Latrines for Male Teachers"
         }
     }, 
     {
