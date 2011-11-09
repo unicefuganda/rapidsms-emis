@@ -8,6 +8,7 @@ from script.models import Script
 from rapidsms_xforms.models import XFormSubmissionValue, XForm, XFormSubmission
 #reports
 #from generic.reports import Column, Report
+import generic.reports as gr #now use Report and Column
 from generic.reporting.views import ReportView
 from generic.reporting.reports import Column
 from uganda_common.reports import XFormSubmissionColumn, XFormAttributeColumn, PollNumericResultsColumn, PollCategoryResultsColumn, LocationReport
@@ -90,7 +91,7 @@ class SchoolMixin(object):
         return td.days / 7 if td.days / 7 > 1 else 1
 
 
-class AverageSubmissionBySchoolColumn(Column, SchoolMixin):
+class AverageSubmissionBySchoolColumn(gr.Column, SchoolMixin):
     def __init__(self, keyword, extra_filters=None):
         self.keyword = keyword
         self.extra_filters = extra_filters
@@ -102,7 +103,7 @@ class AverageSubmissionBySchoolColumn(Column, SchoolMixin):
         reorganize_location(key, val, dictionary)
 
 
-class DateLessRatioColumn(Column, SchoolMixin):
+class DateLessRatioColumn(gr.Column, SchoolMixin):
     """
     This divides the total number of an indicator (for instance, boys yearly enrollment)  
     by the total of another indicator (for instance, total classrooms)].
@@ -133,7 +134,7 @@ class DateLessRatioColumn(Column, SchoolMixin):
         reorganize_dictionary(key, val, dictionary, self.SCHOOL_ID, self.SCHOOL_NAME, 'value_int__sum')
 
 
-class TotalAttributeBySchoolColumn(Column, SchoolMixin):
+class TotalAttributeBySchoolColumn(gr.Column, SchoolMixin):
 
     def __init__(self, keyword, extra_filters=None):
         if type(keyword) != list:
@@ -146,7 +147,7 @@ class TotalAttributeBySchoolColumn(Column, SchoolMixin):
         reorganize_dictionary(key, val, dictionary, self.SCHOOL_ID, self.SCHOOL_NAME, 'value_int__sum')
 
 
-class WeeklyAttributeBySchoolColumn(Column, SchoolMixin):
+class WeeklyAttributeBySchoolColumn(gr.Column, SchoolMixin):
 
     def __init__(self, keyword, extra_filters=None):
         if type(keyword) != list:
@@ -162,7 +163,7 @@ class WeeklyAttributeBySchoolColumn(Column, SchoolMixin):
         reorganize_dictionary(key, val, dictionary, self.SCHOOL_ID, self.SCHOOL_NAME, 'value_int__sum')
 
 
-class WeeklyPercentageColumn(Column, SchoolMixin):
+class WeeklyPercentageColumn(gr.Column, SchoolMixin):
     """
     This divides the total number of an indicator for one week (such as, boys weekly attendance) 
     by the total of another indicator (for instance, boys yearly enrollment)].
@@ -202,7 +203,7 @@ class WeeklyPercentageColumn(Column, SchoolMixin):
         reorganize_dictionary(key, val, dictionary, self.SCHOOL_ID, self.SCHOOL_NAME, 'value_int__sum')
 
 
-class AverageWeeklyTotalRatioColumn(Column, SchoolMixin):
+class AverageWeeklyTotalRatioColumn(gr.Column, SchoolMixin):
     """
     This divides the total number of an indicator (such as, boys weekly attendance) by:
     [the number of non-holiday weeks in the date range * the total of another indicator
@@ -235,8 +236,7 @@ class AverageWeeklyTotalRatioColumn(Column, SchoolMixin):
         reorganize_dictionary(key, val, dictionary, self.SCHOOL_ID, self.SCHOOL_NAME, 'value_int__sum')
 
 
-class SchoolReport(Report):
-
+class SchoolReport(gr.Report):
     def __init__(self, request, dates):
         try:
             self.location = get_location_for_user(request.user)
@@ -247,7 +247,7 @@ class SchoolReport(Report):
         Report.__init__(self, request, dates)
 
 
-class DatelessSchoolReport(Report):
+class DatelessSchoolReport(gr.Report):
     def __init__(self, request=None, dates=None):
         try:
             self.location = get_location_for_user(request.user)

@@ -179,6 +179,8 @@ def produce_data(request, district_id, dates,  slugs, choice=list):
                     school_values.append(0)
             i += 6
             data.append(school_values)
+        from pprint import pprint
+        pprint(data)
         return data
     elif isinstance(choice,dict):
         data = {}

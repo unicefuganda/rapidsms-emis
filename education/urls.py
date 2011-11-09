@@ -7,7 +7,7 @@ from .sorters import LatestSubmissionSorter
 from .views import *
 from contact.forms import  MassTextForm, \
     FreeSearchTextForm, DistictFilterMessageForm, HandledByForm, ReplyTextForm
-from django.conf.urls.defaults import patterns, url
+from django.conf.urls.defaults import *
 from generic.sorters import SimpleSorter
 from generic.views import generic, generic_row
 from rapidsms_httprouter.models import Message
@@ -168,10 +168,10 @@ urlpatterns = patterns('',
         'dates':get_xform_dates,
     }, name='abuse-stats'),
 
-    #statisctical views
-    url(r'^emis/stats/$',include(FullReport().as_urlpatterns(name="full-report"))),
-    
-    url(r'^emis/attendance/$',include(AttendanceReportr().as_urlpatterns(name='attendance-report'))),
+    #statisctical views #TODO WIP
+#    url(r'^emis/stats/$',include(FullReport().as_urlpatterns(name="full-report"))),
+#
+#    url(r'^emis/attendance/$',include(AttendanceReportr().as_urlpatterns(name='attendance-report'))),
 
     # Excel Reports
     url(r'^emis/excelreports/$',excel_reports),
