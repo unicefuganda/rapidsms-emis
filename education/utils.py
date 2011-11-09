@@ -147,12 +147,15 @@ def reschedule_weekly_smc_polls():
         sp, created = ScriptProgress.objects.get_or_create(connection=connection, script=Script.objects.get(slug='emis_head_teacher_presence'))
         sp.set_time(d)
         
-def produce_data(request, district_id, dates,  slugs):
+def produce_data(request, district_id, dates,  slugs, choice=list):
     """
     function to produce data once an XForm slug is provided
     function is a WIP; tested for better optimization on DB
     currently to be used to get values based on grades; [p7, p6, p5,..., p1]
+
+    #choice types available list + dict (data for reporting and charting)
     """
+
     user_location = get_location(request, district_id)
     schools = School.objects.filter(location__in=user_location.get_descendants(include_self=True).all())
     values = XFormSubmissionValue.objects.exclude(submission__has_errors=True)\
@@ -161,23 +164,27 @@ def produce_data(request, district_id, dates,  slugs):
                 .filter(submission__connection__contact__emisreporter__schools__in=schools)\
                 .values('submission__connection__contact__emisreporter__schools__name')\
                 .values_list('submission__connection__contact__emisreporter__schools__name','value_int')
-#                .annotate(Avg('value_int'))
-
-    data = []
-    i = 0
-    while i < len(values):
-        school_values = []
-        school_values.append(values[i][0])
-        school_values.append(values[i][1])
-        for x in range(i,(i+6)):
-            try:
-                school_values.append(values[x][1])
-            except IndexError:
-                school_values.append(0)
-        i += 6
-        data.append(school_values)
-    return data
-
+                #.annotate(Avg('value_int'))
+    if isinstance(choice,list):
+        data = []
+        i = 0
+        while i < len(values):
+            school_values = []
+            school_values.append(values[i][0])
+            school_values.append(values[i][1])
+            for x in range(i,(i+6)):
+                try:
+                    school_values.append(values[x][1])
+                except IndexError:
+                    school_values.append(0)
+            i += 6
+            data.append(school_values)
+        return data
+    elif isinstance(choice,dict):
+        pass
+    else:
+        # do nothing if no choice type selected
+        return
 def create_excel_dataset(request, district_id):
     """
     # for excelification
