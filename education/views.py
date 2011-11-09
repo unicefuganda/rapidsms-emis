@@ -220,7 +220,6 @@ def excel_reports(req):
 
 #visualization
 #TODO add to dashboards or stats views
-@login_required(function=None)
 class ChartView(TemplateView):
     # boys and girls attendance
     context_object_name = "girl_boy_list"

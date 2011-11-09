@@ -1,6 +1,44 @@
 {% extends "education/index.html" %}
 {% load humanize %}
+{% block javascripts %}
+    
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.1/jquery.min.js" type="text/javascript"></script>
+    <script src="{{MEDIA_URL}}education/javascripts/highcharts.js" type="text/javascript"></script>
+    <script src="{{MEDIA_URL}}education/javascripts/emis_attendance_chart.js" type="text/javascript"></script>
+{% endblock %}
 {% block content %}
-
-    Charts will be coming here...
+<script>
+var attendance_chart;
+$(document).ready(function(){
+    attendance_chart = new Highcharts.Chart(
+        {
+            chart:{
+                renderTo:'attendance_container',
+                type:'bar',
+                marginRight:130,
+                marginBottom:30
+            },
+            title:{text:'Attendance of Boys'},
+            xAxis : {
+                //categories:["P1", "P2", "P3", "P4", "P5", "P6", "P7"]
+                categories : ['Apples','Bananas','Oranges']
+            },
+            yAxis : {
+                title : {text : 'Volume of attendance'}
+            },
+            // json needs to be serialized here
+            series:[{
+                name:'Jane',
+                data: [1,0,4]
+            },{
+                name:'John',
+                data:[5,7,3]
+            }
+            ]
+        }
+    );
+});
+</script>
+   <div class="attendance_container">
+   </div>
 {% endblock %}
