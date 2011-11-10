@@ -1,20 +1,15 @@
 from django.conf import settings
 from django.db.models import Count, Sum
+from generic.reports import Column, Report
 from generic.utils import flatten_list
 from rapidsms.contrib.locations.models import Location
 from rapidsms_httprouter.models import Message
 from django.db.models import Q
 from script.models import Script
 from rapidsms_xforms.models import XFormSubmissionValue, XForm, XFormSubmission
-#reports
-#from generic.reports import Column, Report
-import generic.reports as gr #now use Report and Column
-from generic.reporting.views import ReportView
-from generic.reporting.reports import Column
 from uganda_common.reports import XFormSubmissionColumn, XFormAttributeColumn, PollNumericResultsColumn, PollCategoryResultsColumn, LocationReport
 from uganda_common.utils import total_submissions, reorganize_location, total_attribute_value, previous_calendar_month
 from uganda_common.utils import reorganize_dictionary
-from uganda_common.views import XFormReport
 from .models import EmisReporter
 from poll.models import Response, Poll
 from .models import School
@@ -91,7 +86,7 @@ class SchoolMixin(object):
         return td.days / 7 if td.days / 7 > 1 else 1
 
 
-class AverageSubmissionBySchoolColumn(gr.Column, SchoolMixin):
+class AverageSubmissionBySchoolColumn(Column, SchoolMixin):
     def __init__(self, keyword, extra_filters=None):
         self.keyword = keyword
         self.extra_filters = extra_filters
@@ -103,7 +98,7 @@ class AverageSubmissionBySchoolColumn(gr.Column, SchoolMixin):
         reorganize_location(key, val, dictionary)
 
 
-class DateLessRatioColumn(gr.Column, SchoolMixin):
+class DateLessRatioColumn(Column, SchoolMixin):
     """
     This divides the total number of an indicator (for instance, boys yearly enrollment)  
     by the total of another indicator (for instance, total classrooms)].
@@ -134,7 +129,7 @@ class DateLessRatioColumn(gr.Column, SchoolMixin):
         reorganize_dictionary(key, val, dictionary, self.SCHOOL_ID, self.SCHOOL_NAME, 'value_int__sum')
 
 
-class TotalAttributeBySchoolColumn(gr.Column, SchoolMixin):
+class TotalAttributeBySchoolColumn(Column, SchoolMixin):
 
     def __init__(self, keyword, extra_filters=None):
         if type(keyword) != list:
@@ -147,7 +142,7 @@ class TotalAttributeBySchoolColumn(gr.Column, SchoolMixin):
         reorganize_dictionary(key, val, dictionary, self.SCHOOL_ID, self.SCHOOL_NAME, 'value_int__sum')
 
 
-class WeeklyAttributeBySchoolColumn(gr.Column, SchoolMixin):
+class WeeklyAttributeBySchoolColumn(Column, SchoolMixin):
 
     def __init__(self, keyword, extra_filters=None):
         if type(keyword) != list:
@@ -163,7 +158,7 @@ class WeeklyAttributeBySchoolColumn(gr.Column, SchoolMixin):
         reorganize_dictionary(key, val, dictionary, self.SCHOOL_ID, self.SCHOOL_NAME, 'value_int__sum')
 
 
-class WeeklyPercentageColumn(gr.Column, SchoolMixin):
+class WeeklyPercentageColumn(Column, SchoolMixin):
     """
     This divides the total number of an indicator for one week (such as, boys weekly attendance) 
     by the total of another indicator (for instance, boys yearly enrollment)].
@@ -203,7 +198,7 @@ class WeeklyPercentageColumn(gr.Column, SchoolMixin):
         reorganize_dictionary(key, val, dictionary, self.SCHOOL_ID, self.SCHOOL_NAME, 'value_int__sum')
 
 
-class AverageWeeklyTotalRatioColumn(gr.Column, SchoolMixin):
+class AverageWeeklyTotalRatioColumn(Column, SchoolMixin):
     """
     This divides the total number of an indicator (such as, boys weekly attendance) by:
     [the number of non-holiday weeks in the date range * the total of another indicator
@@ -236,7 +231,8 @@ class AverageWeeklyTotalRatioColumn(gr.Column, SchoolMixin):
         reorganize_dictionary(key, val, dictionary, self.SCHOOL_ID, self.SCHOOL_NAME, 'value_int__sum')
 
 
-class SchoolReport(gr.Report):
+class SchoolReport(Report):
+
     def __init__(self, request, dates):
         try:
             self.location = get_location_for_user(request.user)
@@ -247,7 +243,7 @@ class SchoolReport(gr.Report):
         Report.__init__(self, request, dates)
 
 
-class DatelessSchoolReport(gr.Report):
+class DatelessSchoolReport(Report):
     def __init__(self, request=None, dates=None):
         try:
             self.location = get_location_for_user(request.user)
@@ -617,160 +613,3 @@ def deo_alerts(request, district_id=None):
     alerts.append((schools.exclude(name__in=responsive_schools).count(), perc, 'have not submitted teacher deployment data this year'))
     return alerts
 
-### following CVS convention :D
-
-COLUMN_TITLE_DICT = {
-    #####################################################
-    ## Abuse cases
-    #####################################################
-    'gemabuse_cases':"Number of Abuse Cases Reported",
-
-    #####################################################
-    ##enrollment
-    #####################################################
-    'enrolledb_p1' : "Number of boys enrolled in P1",
-    'enrolledg_p1' : "Number of girls enrolled in P1",
-
-    'enrolledb_p2' : "Number of boys enrolled in P2",
-    'enrolledg_p2' : "Number of girls enrolled in P2",
-
-    'enrolledb_p3' : "Number of boys enrolled in P3",
-    'enrolledg_p3' : "Number of girls enrolled in P3",
-
-    'enrolledb_p4' : "Number of boys enrolled in P4",
-    'enrolledg_p4' : "Number of girls enrolled in P4",
-
-    'enrolledb_p5' : "Number of boys enrolled in P5",
-    'enrolledg_p5' : "Number of girls enrolled in P5",
-
-    'enrolledb_p6' : "Number of boys enrolled in P6",
-    'enrolledg_p6' : "Number of girls enrolled in P6",
-
-    'enrolledb_p7' : "Number of boys enrolled in P7",
-    'enrolledg_p7' : "Number of girls enrolled in P7",
-
-    #####################################################
-    ##attendance
-    #####################################################
-    'boys_p1' : "Number of boys in P1",
-    'girls_p1' : "Number of boys in P1",
-
-    'boys_p2' : "Number of boys in P2",
-    'girls_p2' : "Number of boys in P2",
-
-    'boys_p3' : "Number of boys in P3",
-    'girls_p3' : "Number of boys in P3",
-
-    'boys_p4' : "Number of boys in P4",
-    'girls_p4' : "Number of boys in P4",
-
-    'boys_p5' : "Number of boys in P5",
-    'girls_p5' : "Number of boys in P5",
-
-    'boys_p6' : "Number of boys in P6",
-    'girls_p6' : "Number of boys in P6",
-
-    'boys_p7' : "Number of boys in P7",
-    'girls_p7' : "Number of boys in P7",
-
-    #####################################################
-    ##Classrooms
-    #####################################################
-    'classrooms_p1' : 'Number of classrooms for P1',
-    'classrooms_p2' : 'Number of classrooms for P2',
-    'classrooms_p3' : 'Number of classrooms for P3',
-    'classrooms_p4' : 'Number of classrooms for P4',
-    'classrooms_p5' : 'Number of classrooms for P5',
-    'classrooms_p6' : 'Number of classrooms for P6',
-    'classrooms_p7' : 'Number of classrooms for P7',
-
-    #####################################################
-    ## Classrooms in use.
-    #####################################################
-    'classroomsused_p1' : 'Number of classrooms in use for P1',
-    'classroomsused_p2' : 'Number of classrooms in use for P2',
-    'classroomsused_p3' : 'Number of classrooms in use for P3',
-    'classroomsused_p4' : 'Number of classrooms in use for P4',
-    'classroomsused_p5' : 'Number of classrooms in use for P5',
-    'classroomsused_p6' : 'Number of classrooms in use for P6',
-    'classroomsused_p7' : 'Number of classrooms in use for P7',
-
-    #####################################################
-    ## TEACHER DEPLOYMENT
-    #####################################################
-    'deploy_f' : 'Number of Female Teachers deployed',
-    'deploy_m' : 'Number of Male Teachers deployed',
-
-    #####################################################
-    ## Teacher Presence
-    #####################################################
-    'teachers_f' : 'Number of Female Teachers present',
-    'teachers_m' : 'Number of Male Teachers present',
-
-    #####################################################
-    ## Facilities/Resources
-    #####################################################
-    'latrines_f' : "Number of latrines for Female Teachers",
-    'latrinesused_f' : 'Number of latrines in use for Female Teachers',
-
-    'latrines_m' : "Number of latrines for Male Teachers",
-    'latrinesused_m' : "Number of latrines in use for Male Teachers",
-
-    'latrines_b' : "Number of latrines for Boys",
-    'latrines_f' : "Number of latrines for Girls",
-    'latrinesused_b' : "Number of latrines in use for Boys",
-    'latrinesused_f' : "Number of latrines in use for Girls",
-    'latrines_s' : "Number of shared latrines by Everybody",
-    'latrines_sp' : "Number of shared latrines by Pupils",
-    'latrines_st' : "Number of shared latrines by Teachers",
-    'latrinesused_s' : "Number of shared latrines used by Everybody",
-    'latrinesused_sp' : "Number of shared latrines used by Pupils",
-    'latrinesused_st' : "Number of shared latrines used by Teachers",
-
-}
-class EMISSubmissionColumn(XFormSubmissionColumn):
-    def get_title(self):
-        return self.title or (COLUMN_TITLE_DICT[self.keyword] if self.keyword in COLUMN_TITLE_DICT else '')
-
-class EMISAttributeColumn(XFormAttributeColumn):
-    def get_title(self):
-        return self.title or (COLUMN_TITLE_DICT[self.keyword] if self.keyword in COLUMN_TITLE_DICT else '')
-
-class MainReport(XFormReport):
-    def get_top_columns(self):
-        return [
-            ('Attendance','/emis/att'),1,
-            ('Enrollment','/emis/enrolment',3)
-            #TODO what else should we add here?
-        ]
-    # parent column with the parent title
-    #TODO <some_thing> = EMISSubmissionColumn("<name>",title=<"title">,order=<number>,chart_title="<title>")
-    # >>> here.
-
-    #TODO evaluate what we want to appear in the main report
-    attendance_boys_p1 = EMISSubmissionColumn('boys_p1',order=1)
-    attendance_boys_p2 = EMISSubmissionColumn('boys_p2',order=2)
-    attendance_boys_p3 = EMISSubmissionColumn('boys_p3',order=3)
-    attendance_boys_p4 = EMISSubmissionColumn('boys_p4',order=4)
-    attendance_boys_p5 = EMISSubmissionColumn('boys_p5',order=5)
-    attendance_boys_p6 = EMISSubmissionColumn('boys_p6',order=6)
-    attendance_boys_p7 = EMISSubmissionColumn('boys_p7',order=7)
-
-    attendance_girls_p1 = EMISSubmissionColumn("girls_p1", order=8)
-    attendance_girls_p2 = EMISSubmissionColumn("girls_p2", order=9)
-    attendance_girls_p3 = EMISSubmissionColumn("girls_p3", order=10)
-    attendance_girls_p4 = EMISSubmissionColumn("girls_p4", order=11)
-    attendance_girls_p5 = EMISSubmissionColumn("girls_p5", order=12)
-    attendance_girls_p6 = EMISSubmissionColumn("girls_p6", order=13)
-    attendance_girls_p7 = EMISSubmissionColumn("girls_p7", order=14)
-
-    classrooms_p1 = EMISSubmissionColumn("classrooms_p1",order=15)
-    classrooms_p2 = EMISSubmissionColumn("classrooms_p2",order=16)
-    classrooms_p3 = EMISSubmissionColumn("classrooms_p3",order=17)
-    classrooms_p4 = EMISSubmissionColumn("classrooms_p4",order=18)
-    classrooms_p5 = EMISSubmissionColumn("classrooms_p5",order=19)
-    classrooms_p6 = EMISSubmissionColumn("classrooms_p6",order=20)
-    classrooms_p7 = EMISSubmissionColumn("classrooms_p7",order=21)
-
-    deploy_f = EMISSubmissionColumn("deploy_f", order=22)
-    deploy_m = EMISSubmissionColumn("deploy_m", order=23)
