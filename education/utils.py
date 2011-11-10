@@ -22,10 +22,15 @@ from education.reports import *
 from django.db.models import Avg
 
 def previous_calendar_week():
+    """
+    To education monitoring, a week runs between Wednesdays, 
+    Thursday marks the beginning of a new week of data submission
+    New data for a new week is accepted until Wednesday evenning of the following week
+    """
     d = datetime.datetime.now()
-    if not d.weekday() == 3:
-        # last thursday is next thursday minus 7 days.
-        last_thursday = d + (datetime.timedelta((3-d.weekday())%7) - (datetime.timedelta(days=7)))
+    if not d.weekday() == 2:
+        # last wednesday == next wednesday minus 7 days.
+        last_thursday = d + (datetime.timedelta((2-d.weekday())%7) - (datetime.timedelta(days=7)))
     else:
         last_thursday = d
     end_date = last_thursday + datetime.timedelta(days=7)
