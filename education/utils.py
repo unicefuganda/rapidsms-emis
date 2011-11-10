@@ -30,11 +30,11 @@ def previous_calendar_week():
     d = datetime.datetime.now()
     if not d.weekday() == 2:
         # last wednesday == next wednesday minus 7 days.
-        last_thursday = d + (datetime.timedelta((2-d.weekday())%7) - (datetime.timedelta(days=7)))
+        last_wednesday = d + (datetime.timedelta((2-d.weekday())%7) - (datetime.timedelta(days=7)))
     else:
-        last_thursday = d
-    end_date = last_thursday + datetime.timedelta(days=7)
-    return (last_thursday, end_date)
+        last_wednesday = d
+    end_date = last_wednesday + datetime.timedelta(days=7)
+    return (last_wednesday, end_date)
 
 def match_connections():
     script = Script.objects.get(slug='emis_autoreg')
