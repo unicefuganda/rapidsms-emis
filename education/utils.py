@@ -36,21 +36,32 @@ def previous_calendar_week(t=None):
     end_date = last_wednesday + datetime.timedelta(days=7)
     return (last_wednesday, end_date)
 
+def compute_total(chunkit):
+    # function takes in a list of tuples (school_name,value) ---> all grades p1 to p7
+    new_dict = {}
+    for n, val in chunkit: new_dict[n] = 0 #placeholder
+    for i in chunkit:
+        if i[0] in new_dict.keys():
+            new_dict[i[0]] = new_dict[i[0]] + i[1]            
+    return new_dict
+
+def previous_calendar_week_v2(date_now):
+    if not date_now.weekday() == 2:
+        last_wednesday = date_now + (datetime.timedelta((2-date_now.weekday())%7) - (datetime.timedelta(days=7)))
+    else:
+        last_wednesday = date_now
+    end_date = last_wednesday + datetime.timedelta(days=7)
+    return (last_wednesday, end_date)
 
 def previous_calendar_month_week_chunks():
-    """
-	A school month is divided in weeks; these weeks are run between Wednesday where Thursday marks
-	beginning of data submission week
-	"""
     end_date = datetime.datetime.now()
     start_date = end_date - datetime.timedelta(29)
     month_in_fours = []
     for i in range(4):
         start_date = start_date + datetime.timedelta(7)
         if start_date < end_date:
-            month_in_fours.append(previous_calendar_week(t=start_date))
+            month_in_fours.append(list(previous_calendar_week_v2(start_date))) #might have to miss out on the thursdays???
     return month_in_fours
-
 
 def match_connections():
     script = Script.objects.get(slug='emis_autoreg')

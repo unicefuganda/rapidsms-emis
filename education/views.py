@@ -240,29 +240,26 @@ def attendance_chart(req): #consider passing date function nicely and use of slu
 
     ## Limited number of schools by 25
     schools = School.objects.filter(location__in=user_location.get_descendants(include_self=True).all())[:25]
-    date_tup = previous_calendar_week()
-    kw = ('start','end')
-    dates = dict(zip(kw,date_tup))
-
-	#monthly diagram
+#    date_tup = previous_calendar_week()
+#    kw = ('start','end')
+#    dates = dict(zip(kw,date_tup))
+    	
+    #monthly diagram
 
     #TODO include date filtering for more than 1week {need a use-case}
 
-    boy_values = XFormSubmissionValue.objects.exclude(submission__has_errors=True)\
-                .filter(attribute__slug__in=boyslugs)\
+    def value_gen(slug, dates, schools):
+        toret = XFormSubmissionValue.objects.exclude(submission__has_errors=True)\
+                .filter(attribute__slug__in=slug)\
 				.filter(created__range=(dates.get('start'),dates.get('end')))\
                 .filter(submission__connection__contact__emisreporter__schools__in=schools)\
                 .values('submission__connection__contact__emisreporter__schools__name')\
                 .values_list('submission__connection__contact__emisreporter__schools__name','value_int')
-                #.annotate(Avg('value_int'))
-    
-    girl_values = XFormSubmissionValue.objects.exclude(submission__has_errors=True)\
-                .filter(attribute__slug__in=girlslugs)\
-				.filter(created__range=(dates.get('start'),dates.get('end')))\
-                .filter(submission__connection__contact__emisreporter__schools__in=schools)\
-                .values('submission__connection__contact__emisreporter__schools__name')\
-                .values_list('submission__connection__contact__emisreporter__schools__name','value_int')
+        return toret
 
+    boy_values = value_gen(boyslugs,dates,schools)
+    girl_values = value_gen(girlslugs,dates,schools)
+    
     def cleanup(values):
         index = 0
         clean_val = []
@@ -288,9 +285,22 @@ def attendance_chart(req): #consider passing date function nicely and use of slu
     clean_boy_values = cleanup(boy_values)
     clean_girl_values = cleanup(girl_values)
 
-    for school_name,school_boy_value_list,school_girl_value_list in zip(schools,clean_boy_values,clean_girl_values):
+    for school_name, school_boy_value_list, school_girl_value_list in zip(schools, clean_boy_values, clean_girl_values):
         boy_attendance[school_name]  = school_boy_value_list
         girl_attendance[school_name] = school_girl_value_list
+
+    """
+    #uncomment; WIP for chunked
+    new_date = previous_calendar_month_week_chunks() #iterate for these 4 weeks
+    new_date_named = zip(['wk1', 'wk2', 'wk3', 'wk4'],new_date)
+    data_by_week = []
+    for week in new_date:
+        dates = dict(zip(['start', 'end'],[week[0],week[1]]))
+        #boys + girls
+        all_data = value_gen(slugs,dates,schools)
+        data_by_week.append(compute_total(all_data))
+
+    """
 
     # use attendance dicts to populate attendance of folks in school
     return render_to_response('education/emis_chart.html',{
