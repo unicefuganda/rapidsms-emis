@@ -38,19 +38,18 @@ def previous_calendar_week(t=None):
 
 
 def previous_calendar_month_week_chunks():
-	"""
+    """
 	A school month is divided in weeks; these weeks are run between Wednesday where Thursday marks
 	beginning of data submission week
 	"""
-	end_date = datetime.datetime.now()
-	start_date = end_date - datetime.timedelta(29)
-	
-	month_in_fours = []
-	for i in range(4):
-		start_date = start_date + datetime.timedelta(7)
-		if start_date < end_date:			
-			month_in_fours.append(previous_calendar_week(t=start_date))
-	return month_in_fours
+    end_date = datetime.datetime.now()
+    start_date = end_date - datetime.timedelta(29)
+    month_in_fours = []
+    for i in range(4):
+        start_date = start_date + datetime.timedelta(7)
+        if start_date < end_date:
+            month_in_fours.append(previous_calendar_week(t=start_date))
+    return month_in_fours
 
 
 def match_connections():
