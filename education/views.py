@@ -220,13 +220,80 @@ def excel_reports(req):
     return render_to_response('education/excelreports/excel_dashboard.html',{},RequestContext(req))
 
 #visualization
-#TODO add to dashboards or stats views
-class ChartView(TemplateView):
-    # boys and girls attendance
-    context_object_name = "girl_boy_list"
-    from .utils import produce_curated_data
-    queryset = produce_curated_data()
-    template_name = "education/emis_chart.html"
+#TODO add to dashboards or stats views {work on generic views}
+#class ChartView(TemplateView):
+#    # boys and girls attendance
+#    context_object_name = "girl_boy_list"
+#    from .utils import produce_curated_data
+#    queryset = produce_curated_data()
+#    template_name = "education/emis_chart.html"
+
+@login_required
+def attendance_chart(req): #consider passing date function nicely and use of slugs to pick specific data
+    categories = "P1 P2 P3 P4 P5 P6 P7".split()
+    boyslugs = ["boys_%s"%g for g in "p1 p2 p3 p4 p5 p6 p7".split()]
+    girlslugs = ["girls_%s"%g for g in "p1 p2 p3 p4 p5 p6 p7".split()]
+    from .reports import get_location, previous_calendar_week
+    #user_location = get_location(request, district_id)
+    user_location = Location.objects.get(pk=1)
+
+    ## Limited number of schools by 25
+    schools = School.objects.filter(location__in=user_location.get_descendants(include_self=True).all())[:25]
+    date_tup = previous_calendar_week()
+    kw = ('start','end')
+    dates = dict(zip(kw,date_tup))
+
+    #TODO include date filtering for more than 1week {need a use-case}
+
+    boy_values = XFormSubmissionValue.objects.exclude(submission__has_errors=True)\
+                .filter(attribute__slug__in=boyslugs)\
+                .filter(submission__connection__contact__emisreporter__schools__in=schools)\
+                .values('submission__connection__contact__emisreporter__schools__name')\
+                .values_list('submission__connection__contact__emisreporter__schools__name','value_int')
+                #.annotate(Avg('value_int'))
+    
+    girl_values = XFormSubmissionValue.objects.exclude(submission__has_errors=True)\
+                .filter(attribute__slug__in=girlslugs)\
+                .filter(submission__connection__contact__emisreporter__schools__in=schools)\
+                .values('submission__connection__contact__emisreporter__schools__name')\
+                .values_list('submission__connection__contact__emisreporter__schools__name','value_int')
+
+    def cleanup(values):
+        index = 0
+        clean_val = []
+        while index < len(values):
+            school_values = []
+            #school_values.append(values[index][0])
+            school_values.append(values[index][1])
+            for i in range(index,(index+6)):
+                try:
+                    school_values.append(values[i][1])
+                except IndexError:
+                    school_values.append(0)
+                # cleanup
+                school_values.reverse()
+            index += 6
+            clean_val.append(school_values)
+        return clean_val
+
+    schools = [school_name.name for school_name in schools]
+    boy_attendance = {}
+    girl_attendance = {}
+
+    clean_boy_values = cleanup(boy_values)
+    clean_girl_values = cleanup(girl_values)
+
+    for school_name,school_boy_value_list,school_girl_value_list in zip(schools,clean_boy_values,clean_girl_values):
+        boy_attendance[school_name]  = school_boy_value_list
+        girl_attendance[school_name] = school_girl_value_list
+
+    # use attendance dicts to populate attendance of folks in school
+    return render_to_response('education/emis_chart.html',{
+        'boy_attendance':boy_attendance.items(),
+        'girl_attendance':girl_attendance.items(),
+        'categories':categories,
+        },RequestContext(req))
+
 
     
 class UserForm(forms.ModelForm):
