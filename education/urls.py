@@ -5,7 +5,7 @@ from .models import EmisReporter, School
 from .reports import AttendanceReport, AbuseReport, KeyRatiosReport, messages, othermessages, reporters, schools
 from .sorters import LatestSubmissionSorter
 from .views import *
-from education.views import ChartView
+#from education.views import ChartView
 from contact.forms import  MassTextForm, \
     FreeSearchTextForm, DistictFilterMessageForm, HandledByForm, ReplyTextForm
 from django.conf.urls.defaults import *
