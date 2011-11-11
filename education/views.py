@@ -250,6 +250,7 @@ def attendance_chart(req): #consider passing date function nicely and use of slu
 
     boy_values = XFormSubmissionValue.objects.exclude(submission__has_errors=True)\
                 .filter(attribute__slug__in=boyslugs)\
+				.filter(created__range=(dates.get('start'),dates.get('end')))\
                 .filter(submission__connection__contact__emisreporter__schools__in=schools)\
                 .values('submission__connection__contact__emisreporter__schools__name')\
                 .values_list('submission__connection__contact__emisreporter__schools__name','value_int')
@@ -257,6 +258,7 @@ def attendance_chart(req): #consider passing date function nicely and use of slu
     
     girl_values = XFormSubmissionValue.objects.exclude(submission__has_errors=True)\
                 .filter(attribute__slug__in=girlslugs)\
+				.filter(created__range=(dates.get('start'),dates.get('end')))\
                 .filter(submission__connection__contact__emisreporter__schools__in=schools)\
                 .values('submission__connection__contact__emisreporter__schools__name')\
                 .values_list('submission__connection__contact__emisreporter__schools__name','value_int')
