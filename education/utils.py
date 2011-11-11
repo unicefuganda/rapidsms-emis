@@ -21,7 +21,7 @@ from uganda_common.utils import *
 from education.reports import *
 from django.db.models import Avg
 
-def previous_calendar_week():
+def previous_calendar_week(t=None):
     """
     To education monitoring, a week runs between Wednesdays, 
     Thursday marks the beginning of a new week of data submission
@@ -35,6 +35,23 @@ def previous_calendar_week():
         last_wednesday = d
     end_date = last_wednesday + datetime.timedelta(days=7)
     return (last_wednesday, end_date)
+
+
+def previous_calendar_month_week_chunks():
+	"""
+	A school month is divided in weeks; these weeks are run between Wednesday where Thursday marks
+	beginning of data submission week
+	"""
+	end_date = datetime.datetime.now()
+	start_date = end_date - datetime.timedelta(29)
+	
+	month_in_fours = []
+	for i in range(4):
+		start_date = start_date + datetime.timedelta(7)
+		if start_date < end_date:			
+			month_in_fours.append(previous_calendar_week(t=start_date))
+	return month_in_fours
+
 
 def match_connections():
     script = Script.objects.get(slug='emis_autoreg')

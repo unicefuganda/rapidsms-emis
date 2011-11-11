@@ -6,6 +6,7 @@ from django.template import RequestContext
 from django.core.urlresolvers import reverse
 from django.views.generic import TemplateView
 from django.contrib.auth.decorators import user_passes_test
+from django.db.models import Sum
 from django import forms
 from .forms import NewConnectionForm, EditReporterForm, DistrictFilterForm, SchoolForm
 from .models import *
@@ -242,6 +243,8 @@ def attendance_chart(req): #consider passing date function nicely and use of slu
     date_tup = previous_calendar_week()
     kw = ('start','end')
     dates = dict(zip(kw,date_tup))
+
+	#monthly diagram
 
     #TODO include date filtering for more than 1week {need a use-case}
 
