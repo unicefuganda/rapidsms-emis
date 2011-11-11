@@ -176,8 +176,8 @@ urlpatterns = patterns('',
 
     # Excel Reports
     url(r'^emis/excelreports/$',excel_reports),
-    url(r'^emis/charts/$',ChartView.as_view()),#for demo purposes
-
+    #url(r'^emis/charts/$',ChartView.as_view()),#for demo purposes
+	url(r'^emis/charts/$',attendance_chart),#for demo purposes
     #users and permissions
     url(r'^emis/toexcel/$',to_excel, name="to-excel"),
     url(r'^emis/users/(\d+)/edit/', edit_user, name='edit_user'),
