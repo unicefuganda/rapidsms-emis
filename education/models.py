@@ -397,7 +397,7 @@ def xform_received_handler(sender, **kwargs):
     other_keywords = ['gemabuse', 'gemteachers']
     if submission.has_errors:
         return
-
+    
     # If not in training mode, make sure the info comes in at the proper time
     if not getattr(settings, 'TRAINING_MODE', True):
         sp = ScriptProgress.objects.filter(connection=submission.connection, script__slug='emis_annual').order_by('-time')
@@ -411,6 +411,9 @@ def xform_received_handler(sender, **kwargs):
                         submission.response = "Thank you.  Your data on %s has been received" % xform.keyword
                         submission.save()
                         return
+            else:
+                submission.response = "Please wait to send your data on %s until the appropriate time." % xform.keyword
+                submission.save()
         elif xform.keyword in keywords:
             submission.response = "Please wait to send your data on %s until the appropriate time." % xform.keyword
             submission.has_errors = True
@@ -437,6 +440,7 @@ def xform_received_handler(sender, **kwargs):
     else:
         submission.response = "Thank you.  Your data on %s has been received" % xform.keyword
         submission.save()
+        
 
 
 
