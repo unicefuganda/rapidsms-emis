@@ -31,4 +31,3 @@ class App (AppBase):
         elif Blacklist.objects.filter(connection=message.connection).count():
             return True
         return False
-
