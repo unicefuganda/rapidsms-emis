@@ -18,7 +18,7 @@ from django.contrib.auth.views import login_required
 from django.contrib.auth.models import User
 
 urlpatterns = patterns('',
-   url(r'^emis/messagelog/$', generic, {
+   url(r'^emis/messagelog/$', login_required(generic), {
       'model':Message,
       'queryset':messages,
       'filter_forms':[FreeSearchTextForm, DistictFilterMessageForm, HandledByForm],
@@ -36,7 +36,7 @@ urlpatterns = patterns('',
       'sort_ascending':False,
     }, name="emis-messagelog"),
    #reporters
-    url(r'^emis/reporter/$', generic, {
+    url(r'^emis/reporter/$', login_required(generic), {
       'model':EmisReporter,
       'queryset':reporters,
       'filter_forms':[ReporterFreeSearchForm, RolesFilterForm, LimitedDistictFilterForm, SchoolFilterForm],
@@ -59,7 +59,7 @@ urlpatterns = patterns('',
     url(r'^emis/reporter/(\d+)/edit/', edit_reporter, name='edit-reporter'),
     url(r'^emis/reporter/(\d+)/delete/', delete_reporter, name='delete-reporter'),
     url(r'^emis/reporter/(?P<pk>\d+)/show', generic_row, {'model':EmisReporter, 'partial_row':'education/partials/reporter_row.html'}),
-    url(r'^emis/attendance/$', generic, {
+    url(r'^emis/attendance/$', login_required(generic), {
         'model':XFormSubmission,
         'queryset':AttendanceReport,
         'selectable':False,
@@ -89,7 +89,7 @@ urlpatterns = patterns('',
         'needs_date':True,
         'dates':get_xform_dates,
     }, name='attendance-stats'),
-    url(r'^emis/ratios/$', generic, {
+    url(r'^emis/ratios/$', login_required(generic), {
         'model':XFormSubmission,
         'queryset':KeyRatiosReport,
         'selectable':False,
@@ -113,7 +113,7 @@ urlpatterns = patterns('',
     url(r'^connections/(\d+)/delete/', delete_connection),
 
     url(r'^emis/deo_dashboard/', login_required(deo_dashboard), {}, name='deo-dashboard'),
-    url(r'^emis/school/$', generic, {
+    url(r'^emis/school/$', login_required(generic), {
       'model':School,
       'queryset':schools,
       'filter_forms':[FreeSearchSchoolsForm, SchoolDistictFilterForm],
@@ -136,7 +136,7 @@ urlpatterns = patterns('',
     url(r'^emis/school/(\d+)/delete/', delete_school, name='delete-school'),
     url(r'^emis/school/(?P<pk>\d+)/show', generic_row, {'model':School, 'partial_row':'education/partials/school_row.html'}, name='show-school'),
 
-    url(r'^emis/othermessages/$', generic, {
+    url(r'^emis/othermessages/$', login_required(generic), {
       'model':Message,
       'queryset':othermessages,
       'filter_forms':[FreeSearchTextForm, DistictFilterMessageForm, HandledByForm],
@@ -152,7 +152,7 @@ urlpatterns = patterns('',
       'sort_ascending':False,
     }, name="emis-othermessages"),
 
-    url(r'^emis/abuse/$', generic, {
+    url(r'^emis/abuse/$', login_required(generic), {
         'model':XFormSubmission,
         'queryset':AbuseReport,
         'selectable':False,

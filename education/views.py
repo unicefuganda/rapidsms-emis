@@ -21,6 +21,7 @@ import  re
 Num_REG = re.compile('\d+')
 
 super_user_required=user_passes_test(lambda u: u.groups.filter(name__in=['Admins','DFO']).exists() or u.is_superuser)
+@login_required
 def index(request):
     return render_to_response("education/index.html", {}, RequestContext(request))
 
@@ -32,6 +33,7 @@ def dashboard(request):
     else:
         return index(request)
 
+@login_required
 def deo_dashboard(request):
     form = DistrictFilterForm()
     district_id = None
@@ -54,6 +56,7 @@ def deo_dashboard(request):
                                 'abuse_stats':abuse_stats(request, district_id), \
                                 }, RequestContext(request))
 
+@login_required
 def whitelist(request):
     return render_to_response(
     "education/whitelist.txt",
