@@ -16,6 +16,7 @@ import time
 from django.db.models import Sum
 from django.forms import ValidationError
 from django.contrib.auth.models import Group, User
+from rapidsms_httprouter.models import mass_text_sent
 
 
 class School(models.Model):
@@ -462,7 +463,9 @@ def xform_received_handler(sender, **kwargs):
         submission.response = "Thank you.  Your data on %s has been received" % xform.keyword
         submission.save()
         
-
+def eliminate_duplicates(sender, **kwargs):
+    messages = kwargs['messages']
+    messages.exclude(connection__backend__name='yo6200').update(status='C')
 
 
 Poll.register_poll_type('date', 'Date Response', parse_date_value, db_type=Attribute.TYPE_OBJECT)
@@ -480,3 +483,4 @@ script_progress_was_completed.connect(emis_autoreg, weak=False)
 script_progress_was_completed.connect(emis_reschedule_script, weak=False)
 script_progress.connect(emis_autoreg_transition, weak=False)
 xform_received.connect(xform_received_handler, weak=False)
+mass_text_sent.connect(eliminate_duplicates, weak=False)
