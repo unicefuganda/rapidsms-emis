@@ -3005,7 +3005,7 @@
             "end_date": null, 
             "contacts": [], 
             "messages": [], 
-            "question": "How many children did you observe having a meal at lunch today, Reply with ONE of the following- very few, less than half, more than half, very many", 
+            "question": "How many children did you observe having a meal at lunch today, Reply with ONE of the following- none, very few, less than half, more than half, very many", 
             "sites": [
                 5
             ], 
@@ -3113,7 +3113,7 @@
             "end_date": null, 
             "contacts": [], 
             "messages": [], 
-            "question": "How many children had meals at lunch today? Reply with ONE of the following - very few, less than half, more than half, very many", 
+            "question": "How many children had meals at lunch today? Reply with ONE of the following - none, very few, less than half, more than half, very many", 
             "sites": [
                 5
             ], 
@@ -3325,7 +3325,7 @@
         "pk": "emis_abuse", 
         "model": "script.script", 
         "fields": {
-            "enabled": false, 
+            "enabled": true, 
             "name": "Education monitoring abuse script", 
             "sites": [
                 5
@@ -3336,7 +3336,7 @@
         "pk": "emis_meals", 
         "model": "script.script", 
         "fields": {
-            "enabled": false, 
+            "enabled": true, 
             "name": "Education monitoring meals script", 
             "sites": [
                 5
@@ -3347,7 +3347,7 @@
         "pk": "emis_school_administrative", 
         "model": "script.script", 
         "fields": {
-            "enabled": false, 
+            "enabled": true, 
             "name": "Education monitoring school administrative script", 
             "sites": [
                 5
@@ -3369,7 +3369,7 @@
         "pk": "emis_smc_monthly", 
         "model": "script.script", 
         "fields": {
-            "enabled": false, 
+            "enabled": true, 
             "name": "Education monitoring smc monthly script", 
             "sites": [
                 5

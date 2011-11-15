@@ -103,6 +103,27 @@ def parse_yesno(command, value):
         return 1
     else:
         return 0
+    
+def parse_fuzzy_number(command, value):
+    fuzzy_number = re.compile('([0-9oOI]+)|(None)', re.IGNORECASE)
+    m = fuzzy_number.match(value)
+    if m:
+        num = value[m.start():m.end()]
+        try:
+            index_l = num.lower().index('None'.lower())
+            num[:index_l] + '0' + num[index_l + len('None'):]
+        except ValueError:
+            num = num.replace('o', '0')
+            num = num.replace('O', '0')
+            num = num.replace('I', '1')
+
+        remaining = value[m.end():].strip()
+        if remaining:
+            if len(remaining) > 50:
+                remaining = "%s..." % remaining[:47]
+            raise ValidationError('You need to send a number for %s, you sent %s.Please resend' % (command, remaining))
+        else:
+            return int(num)
 
 
 def emis_autoreg(**kwargs):
@@ -450,6 +471,9 @@ XFormField.register_field_type('emisdate', 'Date', parse_date,
                                db_type=XFormField.TYPE_INT, xforms_type='integer')
 
 XFormField.register_field_type('emisbool', 'YesNo', parse_yesno,
+                               db_type=XFormField.TYPE_INT, xforms_type='integer')
+
+XFormField.register_field_type('fuzzynum', 'Fuzzy Numbers (o/0/none)', parse_fuzzy_number,
                                db_type=XFormField.TYPE_INT, xforms_type='integer')
 
 script_progress_was_completed.connect(emis_autoreg, weak=False)
