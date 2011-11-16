@@ -1,12 +1,12 @@
 from .forms import SchoolFilterForm, LimitedDistictFilterForm, \
- RolesFilterForm, ReporterFreeSearchForm, SchoolDistictFilterForm, FreeSearchSchoolsForm
+ RolesFilterForm, ReporterFreeSearchForm, SchoolDistictFilterForm, FreeSearchSchoolsForm, MassTextForm
 
 from .models import EmisReporter, School
 from .reports import AttendanceReport, AbuseReport, KeyRatiosReport, messages, othermessages, reporters, schools
 from .sorters import LatestSubmissionSorter
 from .views import *
 #from education.views import ChartView
-from contact.forms import  MassTextForm, \
+from contact.forms import \
     FreeSearchTextForm, DistictFilterMessageForm, HandledByForm, ReplyTextForm
 from django.conf.urls.defaults import *
 from generic.sorters import SimpleSorter

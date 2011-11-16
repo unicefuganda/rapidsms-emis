@@ -8,7 +8,7 @@ from django.views.generic import TemplateView
 from django.contrib.auth.decorators import user_passes_test
 from django.db.models import Sum
 from django import forms
-from .forms import NewConnectionForm, EditReporterForm, DistrictFilterForm, SchoolForm
+from .forms import NewConnectionForm, EditReporterForm, DistrictFilterForm, SchoolForm, UserForm
 from .models import *
 from uganda_common.utils import *
 from rapidsms.contrib.locations.models import Location
@@ -313,58 +313,6 @@ def attendance_chart(req): #consider passing date function nicely and use of slu
         },RequestContext(req))
 
 
-    
-class UserForm(forms.ModelForm):
-   
-    location=forms.ModelChoiceField(queryset=Location.objects.filter(type__in=["district","country"]).order_by('name'),required=True)
-    password1 = forms.CharField(label="Password", widget=forms.PasswordInput,required=False)
-    password2 = forms.CharField(label="Password confirmation", widget=forms.PasswordInput,
-        help_text = "Enter the same password as above, for verification.",required=False)
-
-    class Meta:
-        model = User
-        fields = ("username","first_name","last_name", "groups","password1","password2")
-    def __init__(self, *args, **kwargs):
-        self.edit= kwargs.pop('edit',None)
-        super(UserForm, self).__init__(*args, **kwargs)
-        self.fields['groups'].help_text=""
-        self.fields['groups'].required=True
-
-
-
-    def clean_username(self):
-        username = self.cleaned_data["username"]
-        print self.edit
-        try:
-            User.objects.get(username=username)
-        except User.DoesNotExist:
-            return username
-        if not self.edit:
-            raise forms.ValidationError("A user with that username already exists.")
-        else:
-            return username
-
-    def clean_password2(self):
-        password1 = self.cleaned_data.get("password1", "")
-        
-        password2 = self.cleaned_data.get("password2","")
-        if password1 == password2 and password2 =="" and self.edit:
-            return password2
-        elif password2 =="":
-            raise forms.ValidationError("This Field is Required")
-        if password1 != password2:
-            raise forms.ValidationError("The two password fields didn't match.")
-        return password2
-
-    def save(self, commit=True):
-        user = super(UserForm, self).save(commit=False)
-        if self.edit and self.cleaned_data["password1"] != "":
-            user.set_password(self.cleaned_data["password1"])
-        if commit:
-            user.save()
-        return user
-
-
 @super_user_required
 def edit_user(request, user_pk=None):
     title=""
@@ -375,6 +323,9 @@ def edit_user(request, user_pk=None):
         user_form = UserForm(request.POST,instance=user,edit=True)
         if user_form.is_valid():
             user = user_form.save()
+            if user.groups.count() == 0:
+                group = Group.objects.get(pk=user_form.cleaned_data['groups'][0].pk)
+                user.groups.add(group)
             try:
                 profile=UserProfile.objects.get(user=user)
                 profile.location=user_form.cleaned_data['location']
@@ -385,7 +336,7 @@ def edit_user(request, user_pk=None):
                
                 UserProfile.objects.create(name=user.first_name,user=user,role=Role.objects.get(pk=user_form.cleaned_data['groups'][0].pk),location=user_form.cleaned_data['location'])
 
-            return HttpResponseRedirect(reverse("emis_users"))
+            return HttpResponseRedirect(reverse("emis-users"))
 
     elif user_pk:
         user = get_object_or_404(User, pk=user_pk)
