@@ -197,6 +197,13 @@ def do_date_range(parser, token):
 
 	return DateRangeNode(chunks[1], chunks[2], chunks[3], chunks[4])
 
+def distinct_connections(obj):
+    connections = []
+    for c in obj.connection_set.all():
+        if c.backend.name =='yo6200':
+            connections.append(c)
+    return connections        
+
 
 register = template.Library()
 register.filter('section', get_section)
@@ -205,6 +212,7 @@ register.filter('parentId', get_parentId)
 register.filter('ancestors', get_ancestors)
 register.filter('name', name)
 register.filter('latest', latest)
+register.filter('distinct_connections', distinct_connections)
 register.filter('submissions', submissions)
 register.filter('headteacher',headteacher)
 register.filter('headteacher_connection',headteacher_connection)
