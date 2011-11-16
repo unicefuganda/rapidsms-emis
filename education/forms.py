@@ -42,18 +42,18 @@ class ReporterFreeSearchForm(FilterForm):
 
     search = forms.CharField(max_length=100, required=False, label="Free-form search",
                              help_text="Use 'or' to search for multiple names")
-
+    
     def filter(self, request, queryset):
         search = self.cleaned_data['search']
         if search == "":
-            return queryset
+            pass
         else:
             if search[:3] == '256':
                 search = search[3:]
             elif search[:1] == '0':
                 search = search[1:]
-            queryset = queryset.filter(Q(name__icontains=search) | Q(reporting_location__name__icontains=search) | Q(connection__identity__icontains=search) | Q(schools__name__icontains=search))
-            return queryset
+            queryset = queryset.filter(Q(name__icontains=search) | Q(reporting_location__name__icontains=search) | Q(connection__identity__icontains=search) | Q(schools__name__icontains=search)).distinct()    
+        return queryset
 
 class SchoolFilterForm(FilterForm):
     """ filter form for emis schools """
