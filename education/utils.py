@@ -23,18 +23,18 @@ from django.db.models import Avg
 
 def previous_calendar_week(t=None):
     """
-    To education monitoring, a week runs between Wednesdays, 
+    To education monitoring, a week runs between Thursdays, 
     Thursday marks the beginning of a new week of data submission
-    New data for a new week is accepted until Wednesday evenning of the following week
+    Data for a new week is accepted until Wednesday evenning of the following week
     """
     d = datetime.datetime.now()
-    if not d.weekday() == 2:
-        # last wednesday == next wednesday minus 7 days.
-        last_wednesday = d + (datetime.timedelta((2-d.weekday())%7) - (datetime.timedelta(days=7)))
+    if not d.weekday() == 3:
+        # last Thursday == next Thursday minus 7 days.
+        last_thursday = d + (datetime.timedelta((3-d.weekday())%7) - (datetime.timedelta(days=7)))
     else:
-        last_wednesday = d
-    end_date = last_wednesday + datetime.timedelta(days=7)
-    return (last_wednesday, end_date)
+        last_thursday = d
+    end_date = last_thursday + datetime.timedelta(days=7)
+    return (last_thursday.date(), end_date)
 
 def compute_total(chunkit):
     # function takes in a list of tuples (school_name,value) ---> all grades p1 to p7
