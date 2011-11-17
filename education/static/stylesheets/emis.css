@@ -196,7 +196,9 @@ p {
     padding:0.5em;
 }
 
-
+.red-alert{
+    color:red;
+}
 .qt-head {
 	text-align: center;
 	font-weight:bold;

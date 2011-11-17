@@ -292,4 +292,59 @@ class MassTextForm(ActionForm):
             return ('Message successfully sent to %d numbers' % len(connections), 'success',)
         else:
             return ("You don't have permission to send messages!", 'error',)
+        
+class SchoolMassTextForm(ActionForm):
+
+    text = forms.CharField(max_length=160, required=True, widget=SMSInput())
+    action_label = 'Send Message'
+
+    def clean_text(self):
+        text = self.cleaned_data['text']
+
+        #replace common MS-word characters with SMS-friendly characters
+        for find, replace in [(u'\u201c', '"'),
+                              (u'\u201d', '"'),
+                              (u'\u201f', '"'),
+                              (u'\u2018', "'"),
+                              (u'\u2019', "'"),
+                              (u'\u201B', "'"),
+                              (u'\u2013', "-"),
+                              (u'\u2014', "-"),
+                              (u'\u2015', "-"),
+                              (u'\xa7', "$"),
+                              (u'\xa1', "i"),
+                              (u'\xa4', ''),
+                              (u'\xc4', 'A')]:
+            text = text.replace(find, replace)
+        return text
+
+    def perform(self, request, results):
+        if results is None or len(results) == 0:
+            return ('A message must have one or more recipients!', 'error')
+
+        if request.user and request.user.has_perm('auth.add_message'):
+            reporters = []
+            for school in results:
+                for rep in school.emisreporter_set.all():
+                    reporters.append(rep) 
+            connections = \
+                list(Connection.objects.filter(contact__in=reporters).distinct())
+
+            text = self.cleaned_data.get('text', "")
+            text = text.replace('%', u'\u0025')
+
+            messages = Message.mass_text(text, connections)
+
+            MassText.bulk.bulk_insert(send_pre_save=False,
+                    user=request.user,
+                    text=text,
+                    contacts=list(reporters))
+            masstexts = MassText.bulk.bulk_insert_commit(send_post_save=False, autoclobber=True)
+            masstext = masstexts[0]
+            if settings.SITE_ID:
+                masstext.sites.add(Site.objects.get_current())
+
+            return ('Message successfully sent to %d numbers' % len(connections), 'success',)
+        else:
+            return ("You don't have permission to send messages!", 'error',)
 

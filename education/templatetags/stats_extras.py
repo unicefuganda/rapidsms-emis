@@ -1,5 +1,6 @@
 from django import template
 from django.shortcuts import get_object_or_404
+from django.db.models import Q
 from rapidsms.contrib.locations.models import Location
 from rapidsms_xforms.models import XFormSubmission
 from poll.models import Response
@@ -202,7 +203,30 @@ def distinct_connections(obj):
     for c in obj.connection_set.all():
         if c.backend.name =='yo6200':
             connections.append(c)
-    return connections        
+    return connections
+
+def last_report(obj, alert):
+    if alert == "1":
+        keywords = ["boys", "girls"]
+    elif alert == "2":
+        keywords = ["enrolledb", "enrolledg"]
+    else:
+        keywords = ["deploy"]
+    try:
+        reporter_connections = []
+        q = Q(xform__keyword__icontains=keywords[0])
+        for w in keywords[1:]:  
+            q = q | Q(xform__keyword__icontains=w)
+        for reporter in obj.emisreporter_set.all():
+            for c in reporter.connection_set.all():
+                reporter_connections.append(c)
+        xform_date = XFormSubmission.objects.filter(connection__in=reporter_connections)\
+                    .filter(q)\
+                    .latest('created').created
+    except:
+        xform_date = None
+
+    return xform_date       
 
 
 register = template.Library()
@@ -213,6 +237,7 @@ register.filter('ancestors', get_ancestors)
 register.filter('name', name)
 register.filter('latest', latest)
 register.filter('distinct_connections', distinct_connections)
+register.filter('last_report', last_report)
 register.filter('submissions', submissions)
 register.filter('headteacher',headteacher)
 register.filter('headteacher_connection',headteacher_connection)
