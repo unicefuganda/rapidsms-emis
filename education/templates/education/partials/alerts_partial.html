@@ -4,7 +4,7 @@
     </tr>
     {% for num, perc, text in alerts %}
         <tr class="{% cycle 'alerts-odd' 'alerts-even' %}">
-            <td width=100% class="alert"><a href="#">{{ num }} - ({{ perc }}) of Schools</a> {{ text }}</td>
+            <td width=100% class="alert"><a href="{% url emis-alerts forloop.counter %}">{{ num }} - ({{ perc }}) of Schools</a> {{ text }}</td>
         </tr>
     {% endfor %}
 </table>

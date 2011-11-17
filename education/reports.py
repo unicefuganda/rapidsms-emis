@@ -613,3 +613,7 @@ def deo_alerts(request, district_id=None):
     alerts.append((schools.exclude(name__in=responsive_schools).count(), perc, 'have not submitted teacher deployment data this year'))
     return alerts
 
+def alerts_detail(request, district_id=None, **kwargs):
+    print request.REQUEST
+    user_location = get_location(request, district_id)
+    return School.objects.filter(location__in=user_location.get_descendants(include_self=True).all())

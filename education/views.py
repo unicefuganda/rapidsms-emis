@@ -348,4 +348,5 @@ def edit_user(request, user_pk=None):
     
     return render_to_response('education/partials/edit_user.html', {'user_form': user_form,'title':title},
                               context_instance=RequestContext(request))
+    
 
