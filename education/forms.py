@@ -325,7 +325,7 @@ class SchoolMassTextForm(ActionForm):
         if request.user and request.user.has_perm('auth.add_message'):
             reporters = []
             for school in results:
-                for rep in school.emisreporter_set.all():
+                for rep in school.emisreporter_set.filter(groups__name__in=['Teachers', 'Head Teachers']):
                     reporters.append(rep) 
             connections = \
                 list(Connection.objects.filter(contact__in=reporters).distinct())
