@@ -326,9 +326,10 @@ def attendance_stats(request, district_id=None):
     values = total_attribute_value(enrolled_total, start_date=datetime.datetime(datetime.datetime.now().year, 1, 1), end_date=datetime.datetime.now(), location=location)
     if not type(location_values(user_location, values)) == str and not type(attendance_ratio) == str and location_values(user_location, values) > 0:
         attendance_ratio /= float(location_values(user_location, values))
+    if type(attendance_ratio) == str:
+        stats.append(('% absent', '-'))
     else:
-        attendance_ratio = 0
-    stats.append(('% absent', '%0.1f%%'%(100-(attendance_ratio * 100))))
+        stats.append(('% absent', '%0.1f%%'%(100-(attendance_ratio * 100))))
 
     values = total_attribute_value("teachers_f", start_date=start_date, end_date=end_date, location=location)
     stats.append(('female teachers', location_values(user_location, values)))
@@ -344,9 +345,10 @@ def attendance_stats(request, district_id=None):
     values = total_attribute_value(enrolled_total, start_date=datetime.datetime(datetime.datetime.now().year, 1, 1), end_date=datetime.datetime.now(), location=location)
     if not type(location_values(user_location, values)) == str and not type(attendance_ratio) == str and location_values(user_location, values) > 0:
         attendance_ratio /= float(location_values(user_location, values))
+    if type(attendance_ratio) == str:
+        stats.append(('% absent', '-'))
     else:
-        attendance_ratio = 0
-    stats.append(('% absent', '%0.1f%%'%(100-(attendance_ratio * 100))))
+        stats.append(('% absent', '%0.1f%%'%(100-(attendance_ratio * 100))))
     res = {}
     res['dates'] = dates
     res['stats'] = stats
@@ -403,21 +405,21 @@ def headteacher_attendance_stats(request, district_id=None):
                             .filter(date__range=(start_date, end_date))\
                             .filter(message__text__icontains='no')\
                             .filter(message__connection__contact__emisreporter__reporting_location__in=user_location.get_descendants(include_self=True).all()).count()
-    stats.append(('head teachers reported present', htpresent_yes))
-    stats.append(('head teachers reported absent', htpresent_no))
-    stats.append(('total reports received', htpresent_yes + htpresent_no))
+    stats.append(('head teachers reported present', htpresent_yes if htpresent_yes else '-'))
+    stats.append(('head teachers reported absent', htpresent_no if htpresent_no else '-'))
+    tot = htpresent_yes + htpresent_no if (htpresent_yes + htpresent_no) else '-'
+    stats.append(('total reports received', tot))
     num_schools = School.objects.filter(location__in=user_location.get_descendants(include_self=True)).count()
     if num_schools > 0 and type(htpresent_yes) == int:        
         htpresent_yes /= float(num_schools)
         perc_present = '%0.1f%%'%(htpresent_yes * 100)
-    else:
-        perc_present = 0
+    perc_present = perc_present if htpresent_yes else '-'
         
     if num_schools > 0 and type(htpresent_no) == int:        
         htpresent_no /= float(num_schools)
         perc_absent = '%0.1f%%'%(htpresent_no * 100)
-    else:
-        perc_absent = 0
+    perc_absent = perc_present if htpresent_no else '-'
+    
     stats.append(('% present', perc_present))
     stats.append(('% absent', perc_absent))
     res = {}
@@ -442,14 +444,13 @@ def gem_htpresent_stats(request, district_id=None):
     if num_schools > 0 and type(gem_htpresent) == int:        
         gem_htpresent /= float(num_schools)
         perc_present = '%0.1f%%'%(gem_htpresent * 100)
-    else:
-        perc_present = 0
+    perc_present = '-' if type(gem_htpresent) == str else perc_present
         
     if num_schools > 0 and type(gem_htabsent) == int:        
         gem_htabsent /= float(num_schools)
         perc_absent = '%0.1f%%'%(gem_htabsent * 100)
-    else:
-        perc_absent = 0
+    perc_absent = '-' if type(gem_htabsent) == str else perc_absent
+    
     stats.append(('% present', perc_present))
     stats.append(('% absent', perc_absent))
     res = {}
