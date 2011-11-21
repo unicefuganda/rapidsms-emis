@@ -200,9 +200,12 @@ def do_date_range(parser, token):
 
 def distinct_connections(obj):
     connections = []
-    for c in obj.connection_set.all():
-        if c.backend.name =='yo6200':
-            connections.append(c)
+    if obj.connection_set.count() > 1:
+        for c in obj.connection_set.all():
+            if c.backend.name =='yo6200':
+                connections.append(c)
+    else:
+        connections.append(obj.connection_set.all()[0])
     return connections
 
 def last_report(obj, alert):
