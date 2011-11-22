@@ -58,7 +58,6 @@ def deo_dashboard(request):
                                 'abuse_stats':abuse_stats(request, district_id), \
                                 }, RequestContext(request))
 
-@login_required
 def whitelist(request):
     return render_to_response(
     "education/whitelist.txt",
