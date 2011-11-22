@@ -62,7 +62,7 @@ def deo_dashboard(request):
 def whitelist(request):
     return render_to_response(
     "education/whitelist.txt",
-    {'connections': Connection.objects.all()},
+    {'connections': Connection.objects.exclude(backend__name='yo6200')},
     mimetype="text/plain",
     context_instance=RequestContext(request))
 
