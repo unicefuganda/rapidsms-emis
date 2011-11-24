@@ -423,7 +423,7 @@ def xform_received_handler(sender, **kwargs):
     # If not in training mode, make sure the info comes in at the proper time
     if not getattr(settings, 'TRAINING_MODE', True):
         sp = ScriptProgress.objects.filter(connection=submission.connection, script__slug='emis_annual').order_by('-time')
-        if sp.count():
+        if sp.count() and xform.keyword in keywords:
             sp = sp[0]
             if sp.step:
                 for i in range(0, len(keywords)):
@@ -436,6 +436,7 @@ def xform_received_handler(sender, **kwargs):
             else:
                 submission.response = "Please wait to send your data on %s until the appropriate time." % xform.keyword
                 submission.save()
+                return
         elif xform.keyword in keywords:
             submission.response = "Please wait to send your data on %s until the appropriate time." % xform.keyword
             submission.has_errors = True
