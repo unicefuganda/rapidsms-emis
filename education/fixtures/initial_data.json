@@ -1106,7 +1106,7 @@
         "pk": 156, 
         "model": "eav.attribute", 
         "fields": {
-            "description": "School Code", 
+            "description": "School Name", 
             "created": "2011-08-03 11:17:59", 
             "datatype": "text", 
             "enum_group": null, 
@@ -1114,8 +1114,8 @@
             "site": 5, 
             "modified": "2011-08-03 11:17:59", 
             "type": "text", 
-            "slug": "gemabuse_schoolcode", 
-            "name": "School Code"
+            "slug": "gemabuse_school", 
+            "name": "School Name"
         }
     }, 
     {
@@ -1535,8 +1535,8 @@
         "model": "rapidsms_xforms.xformfield", 
         "fields": {
             "field_type": "text", 
-            "command": "schoolcode", 
-            "order": 0, 
+            "command": "school", 
+            "order": 1, 
             "xform": 22
         }
     }, 
@@ -1656,7 +1656,7 @@
         "fields": {
             "field_type": "int", 
             "command": "cases", 
-            "order": 1, 
+            "order": 0, 
             "xform": 22
         }
     }, 
@@ -2825,7 +2825,7 @@
             "end_date": null, 
             "contacts": [], 
             "messages": [], 
-            "question": "How much of your annual capitation grant have you received this term? Reply with ONE of the following 25%, 50%, 75%% or 100%", 
+            "question": "How much of your annual capitation grant have you received this term? Reply with ONE of the following 0%, 25%, 50%, 75%% or 100%", 
             "sites": [
                 5
             ], 
