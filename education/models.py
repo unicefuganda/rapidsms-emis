@@ -170,6 +170,8 @@ def emis_autoreg(**kwargs):
                                       reporting_location=rep_location, \
                                       groups=grp, \
                                       )
+        if connection.contact:
+            contact = EmisReporter.objects.get(pk=connection.contact.pk)
     except EmisReporter.DoesNotExist, EmisReporter.MultipleObectsReturned:
             contact = EmisReporter.objects.create()
 

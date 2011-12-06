@@ -59,9 +59,13 @@ def deo_dashboard(request):
                                 }, RequestContext(request))
 
 def whitelist(request):
+    numbers = []
+    for c in Connection.objects.exclude(backend__name='yo6200'):
+        if not c.identity.strip() in numbers:
+            numbers.append(c.identity.strip())
     return render_to_response(
     "education/whitelist.txt",
-    {'connections': Connection.objects.exclude(backend__name='yo6200')},
+    {'connections': Connection.objects.exclude(backend__name='yo6200').filter(identity__in=numbers)},
     mimetype="text/plain",
     context_instance=RequestContext(request))
 

@@ -18,11 +18,12 @@ class App (AppBase):
             message.respond(getattr(settings, 'OPT_OUT_CONFIRMATION', 'Thank you for your contribution as a education monitoring reporter, to rejoin the system send JOIN to 6200'))
             return True
         elif message.text.strip().lower() in [i.lower() for i in getattr(settings, 'OPT_IN_WORDS', ['join'])]:
-            if Blacklist.objects.filter(connection=message.connection).count() or not message.connection.contact:
-                for b in Blacklist.objects.filter(connection=message.connection):
-                    b.delete()
-                if not message.connection.contact and \
-                not ScriptProgress.objects.filter(script__slug='emis_autoreg', connection=message.connection).count():
+            if not message.connection.contact:
+                ScriptProgress.objects.create(script=Script.objects.get(slug="emis_autoreg"), \
+                                          connection=message.connection)
+            elif Blacklist.objects.filter(connection=message.connection).count():
+                Blacklist.objects.filter(connection=message.connection).delete()
+                if not ScriptProgress.objects.filter(script__slug='emis_autoreg', connection=message.connection).count():
                     ScriptProgress.objects.create(script=Script.objects.get(slug="emis_autoreg"), \
                                           connection=message.connection)
             else:
