@@ -3314,7 +3314,7 @@
         "pk": "emis_head_teacher_presence", 
         "model": "script.script", 
         "fields": {
-            "enabled": true, 
+            "enabled": false, 
             "name": "Education monitoring head teacher presence script", 
             "sites": [
                 5
@@ -3325,7 +3325,7 @@
         "pk": "emis_abuse", 
         "model": "script.script", 
         "fields": {
-            "enabled": true, 
+            "enabled": false, 
             "name": "Education monitoring abuse script", 
             "sites": [
                 5
@@ -3336,7 +3336,7 @@
         "pk": "emis_meals", 
         "model": "script.script", 
         "fields": {
-            "enabled": true, 
+            "enabled": false, 
             "name": "Education monitoring meals script", 
             "sites": [
                 5
@@ -3347,7 +3347,7 @@
         "pk": "emis_school_administrative", 
         "model": "script.script", 
         "fields": {
-            "enabled": true, 
+            "enabled": false, 
             "name": "Education monitoring school administrative script", 
             "sites": [
                 5
@@ -3369,7 +3369,7 @@
         "pk": "emis_smc_monthly", 
         "model": "script.script", 
         "fields": {
-            "enabled": true, 
+            "enabled": false, 
             "name": "Education monitoring smc monthly script", 
             "sites": [
                 5

@@ -1,13 +1,13 @@
 from django.conf import settings
 from django.db.models import Count, Sum
-from generic.reports import Column, Report
+from generic.reports import Column as Col, Report
 from generic.utils import flatten_list
 from rapidsms.contrib.locations.models import Location
 from rapidsms_httprouter.models import Message
 from django.db.models import Q
 from script.models import Script
 from rapidsms_xforms.models import XFormSubmissionValue, XForm, XFormSubmission
-from uganda_common.reports import XFormSubmissionColumn, XFormAttributeColumn, PollNumericResultsColumn, PollCategoryResultsColumn, LocationReport
+from uganda_common.reports import XFormSubmissionColumn, XFormAttributeColumn, PollNumericResultsColumn, PollCategoryResultsColumn, LocationReport, QuotientColumn, InverseQuotientColumn
 from uganda_common.utils import total_submissions, reorganize_location, total_attribute_value, previous_calendar_month
 from uganda_common.utils import reorganize_dictionary
 from .models import EmisReporter
@@ -15,6 +15,10 @@ from poll.models import Response, Poll
 from .models import School
 from .utils import previous_calendar_week
 import datetime
+
+from generic.reporting.views import ReportView
+from generic.reporting.reports import Column
+from uganda_common.views import XFormReport
 
 GRADES = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7']
 
@@ -86,7 +90,7 @@ class SchoolMixin(object):
         return td.days / 7 if td.days / 7 > 1 else 1
 
 
-class AverageSubmissionBySchoolColumn(Column, SchoolMixin):
+class AverageSubmissionBySchoolColumn(Col, SchoolMixin):
     def __init__(self, keyword, extra_filters=None):
         self.keyword = keyword
         self.extra_filters = extra_filters
@@ -98,7 +102,7 @@ class AverageSubmissionBySchoolColumn(Column, SchoolMixin):
         reorganize_location(key, val, dictionary)
 
 
-class DateLessRatioColumn(Column, SchoolMixin):
+class DateLessRatioColumn(Col, SchoolMixin):
     """
     This divides the total number of an indicator (for instance, boys yearly enrollment)  
     by the total of another indicator (for instance, total classrooms)].
@@ -129,7 +133,7 @@ class DateLessRatioColumn(Column, SchoolMixin):
         reorganize_dictionary(key, val, dictionary, self.SCHOOL_ID, self.SCHOOL_NAME, 'value_int__sum')
 
 
-class TotalAttributeBySchoolColumn(Column, SchoolMixin):
+class TotalAttributeBySchoolColumn(Col, SchoolMixin):
 
     def __init__(self, keyword, extra_filters=None):
         if type(keyword) != list:
@@ -142,7 +146,7 @@ class TotalAttributeBySchoolColumn(Column, SchoolMixin):
         reorganize_dictionary(key, val, dictionary, self.SCHOOL_ID, self.SCHOOL_NAME, 'value_int__sum')
 
 
-class WeeklyAttributeBySchoolColumn(Column, SchoolMixin):
+class WeeklyAttributeBySchoolColumn(Col, SchoolMixin):
 
     def __init__(self, keyword, extra_filters=None):
         if type(keyword) != list:
@@ -158,7 +162,7 @@ class WeeklyAttributeBySchoolColumn(Column, SchoolMixin):
         reorganize_dictionary(key, val, dictionary, self.SCHOOL_ID, self.SCHOOL_NAME, 'value_int__sum')
 
 
-class WeeklyPercentageColumn(Column, SchoolMixin):
+class WeeklyPercentageColumn(Col, SchoolMixin):
     """
     This divides the total number of an indicator for one week (such as, boys weekly attendance) 
     by the total of another indicator (for instance, boys yearly enrollment)].
@@ -198,7 +202,7 @@ class WeeklyPercentageColumn(Column, SchoolMixin):
         reorganize_dictionary(key, val, dictionary, self.SCHOOL_ID, self.SCHOOL_NAME, 'value_int__sum')
 
 
-class AverageWeeklyTotalRatioColumn(Column, SchoolMixin):
+class AverageWeeklyTotalRatioColumn(Col, SchoolMixin):
     """
     This divides the total number of an indicator (such as, boys weekly attendance) by:
     [the number of non-holiday weeks in the date range * the total of another indicator
@@ -254,7 +258,7 @@ class DatelessSchoolReport(Report):
 
         self.report = {} #SortedDict()
         self.columns = []
-        column_classes = Column.__subclasses__()
+        column_classes = Col.__subclasses__()
         for attrname in dir(self):
             val = getattr(self, attrname)
             if type(val) in column_classes:
@@ -262,32 +266,6 @@ class DatelessSchoolReport(Report):
                 val.add_to_report(self, attrname, self.report)
 
         self.report = flatten_list(self.report)
-
-
-class AttendanceReport(SchoolReport):
-    boys = WeeklyAttributeBySchoolColumn(["boys_%s" % g for g in GRADES])
-    girls = WeeklyAttributeBySchoolColumn(["girls_%s" % g for g in GRADES])
-    total_students = WeeklyAttributeBySchoolColumn((["girls_%s" % g for g in GRADES] + ["boys_%s" % g for g in GRADES]))
-    percentage_students = AverageWeeklyTotalRatioColumn((["girls_%s" % g for g in GRADES] + ["boys_%s" % g for g in GRADES]), (["enrolledg_%s" % g for g in GRADES] + ["enrolledb_%s" % g for g in GRADES]))
-    week_attrib = ["girls_%s" % g for g in GRADES] + ["boys_%s" % g for g in GRADES]
-    total_attrib = ["enrolledb_%s" % g for g in GRADES] + ["enrolledg_%s" % g for g in GRADES]
-    percentange_student_absentism = WeeklyPercentageColumn(week_attrib, total_attrib, True)
-    male_teachers = WeeklyAttributeBySchoolColumn("teachers_m")
-    female_teachers = WeeklyAttributeBySchoolColumn("teachers_f")
-    total_teachers = WeeklyAttributeBySchoolColumn(["teachers_f", "teachers_m"])
-    percentage_teacher = AverageWeeklyTotalRatioColumn(["teachers_f", "teachers_m"], ["deploy_f", "deploy_m"])
-    week_attrib = ["teachers_f", "teachers_m"]
-    total_attrib = ["deploy_f", "deploy_m"]
-    percentange_teachers_absentism = WeeklyPercentageColumn(week_attrib, total_attrib, True)
-
-
-class AbuseReport(SchoolReport):
-    cases = TotalAttributeBySchoolColumn("gemabuse_cases")
-    
-class KeyRatiosReport(SchoolReport):
-    pupils_to_teacher = DateLessRatioColumn(["girls_%s" % g for g in GRADES] + ["boys_%s" % g for g in GRADES] , ["enrolledb_%s" % g for g in GRADES] + ["enrolledg_%s" % g for g in GRADES])
-    pupils_to_latrine = DateLessRatioColumn(["girls_%s" % g for g in GRADES] + ["boys_%s" % g for g in GRADES] , ["latrinesused_b", "latrinesused_g"])
-    pupils_to_classroom = DateLessRatioColumn(["girls_%s" % g for g in GRADES] + ["boys_%s" % g for g in GRADES] , ["classroomsused_%s" % g for g in GRADES])
 
 def location_values(location, data_dicts):
     value = 0
@@ -418,7 +396,7 @@ def headteacher_attendance_stats(request, district_id=None):
     if num_schools > 0 and type(htpresent_no) == int:        
         htpresent_no /= float(num_schools)
         perc_absent = '%0.1f%%'%(htpresent_no * 100)
-    perc_absent = perc_present if htpresent_no else '-'
+    perc_absent = perc_absent if htpresent_no else '-'
     
     stats.append(('% present', perc_present))
     stats.append(('% absent', perc_absent))
@@ -613,3 +591,88 @@ def deo_alerts(request, district_id=None):
         perc = '%0.1f%%'%(total_schools_ratio*100)
     alerts.append((schools.exclude(name__in=responsive_schools).count(), perc, 'have not submitted teacher deployment data this year'))
     return alerts
+
+class AttendanceReport(SchoolReport):
+    boys = WeeklyAttributeBySchoolColumn(["boys_%s" % g for g in GRADES])
+    girls = WeeklyAttributeBySchoolColumn(["girls_%s" % g for g in GRADES])
+    total_students = WeeklyAttributeBySchoolColumn((["girls_%s" % g for g in GRADES] + ["boys_%s" % g for g in GRADES]))
+    percentage_students = AverageWeeklyTotalRatioColumn((["girls_%s" % g for g in GRADES] + ["boys_%s" % g for g in GRADES]), (["enrolledg_%s" % g for g in GRADES] + ["enrolledb_%s" % g for g in GRADES]))
+    week_attrib = ["girls_%s" % g for g in GRADES] + ["boys_%s" % g for g in GRADES]
+    total_attrib = ["enrolledb_%s" % g for g in GRADES] + ["enrolledg_%s" % g for g in GRADES]
+    percentange_student_absentism = WeeklyPercentageColumn(week_attrib, total_attrib, True)
+    male_teachers = WeeklyAttributeBySchoolColumn("teachers_m")
+    female_teachers = WeeklyAttributeBySchoolColumn("teachers_f")
+    total_teachers = WeeklyAttributeBySchoolColumn(["teachers_f", "teachers_m"])
+    percentage_teacher = AverageWeeklyTotalRatioColumn(["teachers_f", "teachers_m"], ["deploy_f", "deploy_m"])
+    week_attrib = ["teachers_f", "teachers_m"]
+    total_attrib = ["deploy_f", "deploy_m"]
+    percentange_teachers_absentism = WeeklyPercentageColumn(week_attrib, total_attrib, True)
+
+
+class AbuseReport(SchoolReport):
+    cases = TotalAttributeBySchoolColumn("gemabuse_cases")
+    
+class EnrollmentReport(SchoolReport):
+    start_date = datetime.datetime(datetime.datetime.now().year, 1, 1)
+    end_date = datetime.datetime.now()
+    dates = {'start_date':start_date, 'end_date':end_date}
+    girls = TotalAttributeBySchoolColumn(["girls_%s" % g for g in GRADES])
+    boys = TotalAttributeBySchoolColumn(["boys_%s" % g for g in GRADES])
+    total_pupils = TotalAttributeBySchoolColumn(["girls_%s" % g for g in GRADES] + ["boys_%s" % g for g in GRADES])
+    female_teachers = TotalAttributeBySchoolColumn(["teachers_f"])
+    male_teachers = TotalAttributeBySchoolColumn(["teachers_m"])
+    total_teachers = TotalAttributeBySchoolColumn(["teachers_f", "teachers_m"])
+    
+class KeyRatiosReport(SchoolReport):
+    pupils_to_teacher = DateLessRatioColumn(["girls_%s" % g for g in GRADES] + ["boys_%s" % g for g in GRADES] , ["enrolledb_%s" % g for g in GRADES] + ["enrolledg_%s" % g for g in GRADES])
+    pupils_to_latrine = DateLessRatioColumn(["girls_%s" % g for g in GRADES] + ["boys_%s" % g for g in GRADES] , ["latrinesused_b", "latrinesused_g"])
+    pupils_to_classroom = DateLessRatioColumn(["girls_%s" % g for g in GRADES] + ["boys_%s" % g for g in GRADES] , ["classroomsused_%s" % g for g in GRADES])
+    
+COLUMN_TITLE_DICT = {
+    
+}
+
+class EmisSubmissionColumn(XFormSubmissionColumn):
+    def get_title(self):
+        return self.title or (COLUMN_TITLE_DICT[self.keyword] if self.keyword in COLUMN_TITLE_DICT else '')
+
+
+class EmisAttributeColumn(XFormAttributeColumn):
+    def get_title(self):
+        tolookup = self.keyword
+        if type(self.keyword) == list:
+            tolookup = self.keyword[0]
+        return self.title or (COLUMN_TITLE_DICT[tolookup] if tolookup in COLUMN_TITLE_DICT else '')
+    
+class TotalEnrollmentColumn(EmisAttributeColumn):
+    start_date = datetime.datetime(datetime.datetime.now().year, 1, 1)
+    end_date = datetime.datetime.now()  
+    def add_to_report(self, report, key, dictionary):
+        val = total_attribute_value(self.keyword, self.start_date, self.end_date, report.location, self.extra_filters)
+        reorganize_location(key, val, dictionary)
+    
+class NewAttendanceReport(XFormReport):
+    template_name = "education/partials/stats_base.html"
+
+    def get_top_columns(self):
+        return [
+            ('Pupils Attendance', '/emis/pupils/', 5),
+            ('Teachers Attendance', '/emis/teachers/', 5),
+        ]
+
+    boys = EmisAttributeColumn(["boys_%s" % g for g in GRADES], order=1, title='Boys', chart_title="Variation of Boys Attendance")
+    girls = EmisAttributeColumn(["girls_%s" % g for g in GRADES], order=2, title='Girls', chart_title="Variation of Girls Attendance")
+    total_pupils = EmisAttributeColumn(["boys_%s" % g for g in GRADES] + ["girls_%s" % g for g in GRADES], order=3, title='Total Pupils', chart_title="Variation of Total Pupil Attendance")
+    total_enrollment = TotalEnrollmentColumn(["enrolledb_%s" % g for g in GRADES] + ["enrolledg_%s" % g for g in GRADES], order=4, title='Enrollment', chart_title="Variation of Total Pupil Enrollment")
+    perc_pupils_absent = InverseQuotientColumn(total_pupils, total_enrollment, order=5, title='% Absent', chart_title="Variation of Pupil Absenteeism")
+    males = EmisAttributeColumn("teachers_m", order=6, title='Males', chart_title="Variation of Male Teacher Attendance")
+    females = EmisAttributeColumn("teachers_f", order=7, title='Females', chart_title="Variation of Female Teacher Attendance")
+    total_teachers = EmisAttributeColumn(["teachers_f", "teachers_m"], order=8, title='Total Teachers', chart_title="Variation of Total Teacher Attendance")
+    total_deployment = TotalEnrollmentColumn(["deploy_f", "deploy_m"], order=9, title='Deployment', chart_title="Variation of total Teacher Deployment")
+    perc_teachers_absent = InverseQuotientColumn(total_teachers, total_deployment, order=10, title='% Absent', chart_title="Variation of Teacher Absenteeism")
+
+    def get_default_column(self):
+        return ('girls', self.girls)
+    
+    def get_total_enrolled(self):
+        return EmisSubmissionColumn(["enrolledb_%s" % g for g in GRADES] + ["enrolledg_%s" % g for g in GRADES])

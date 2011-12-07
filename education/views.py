@@ -34,6 +34,7 @@ def dashboard(request):
         return deo_dashboard(request)
     else:
         return index(request)
+#        return HttpResponseRedirect('/emis/stats/')
 
 @login_required
 def deo_dashboard(request):

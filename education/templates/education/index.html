@@ -8,10 +8,10 @@
 {% endblock %}
 {% block content %}
 <div class="module">
-    <h2>Welcome to the Education Monitoring RapidSMS Application (EMIS)</h2>
+    <h2>Welcome to the School Monitoring System</h2>
     <p>
-        Welcome to EMIS, UNICEF's SMS-based Education monitoring and tracking system.
-        Login or click a tab to explore.
+        Welcome to the School Monitoring System, UNICEF's SMS-based Education monitoring and tracking system.
+        Click a tab to explore.
     </p>
     {% if user.is_authenticated %}
         {% if user.is_superuser or user.get_profile.role == "Admins" %}

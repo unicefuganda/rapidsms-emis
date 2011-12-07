@@ -192,21 +192,24 @@ def produce_data(request, district_id, dates, slugs,choice=list):
                 .filter(created__range=(dates.get('start'), dates.get('end')))\
                 .filter(attribute__slug__in=slugs)\
                 .filter(submission__connection__contact__emisreporter__schools__in=schools)\
-                .values('submission__connection__contact__emisreporter__schools__name')\
-                .values_list('submission__connection__contact__emisreporter__schools__name','value_int')
+                .values('submission__connection__contact__emisreporter__schools__name','value_int', 'created')
                 #.annotate(Avg('value_int'))
-
     data = []
     i = 0
     while i < len(values):
         school_values = []
-        school_values.append(values[i][0])
-        school_values.append(values[i][1])
+        school_values.append(values[i]['submission__connection__contact__emisreporter__schools__name'])
+        school_values.append(values[i]['value_int'])
         for x in range(i,(i+6)):
             try:
-                school_values.append(values[x][1])
+                school_values.append(values[x]['value_int'])
             except IndexError:
                 school_values.append(0)
+            try:
+                if x == (i+5):
+                    school_values.append(values[x]['created'])
+            except:
+                pass
         i += 6
         data.append(school_values)
     return data
@@ -241,9 +244,13 @@ def create_excel_dataset(request, district_id):
         for row in data:
             rowx += 1
             for colx, value in enumerate(row):
+                try:
+                    value = value.strftime("%d/%m/%Y")
+                except:
+                    pass
                 sheet.write(rowx, colx, value)
             
-    GRADES = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7']
+    GRADES = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'Date']
     boy_attendance_slugs = ['boys_%s'% g for g in GRADES]
     girl_attendance_slugs = ['girls_%s'%g for g in GRADES]
     boy_enrolled_slugs = ["enrolledb_%s"%g for g in GRADES]
@@ -273,6 +280,6 @@ def create_excel_dataset(request, district_id):
     write_xls("Latest Enrollment for Girls",headings,data_set)
 
     response = HttpResponse(mimetype='application/vnd.ms-excel')
-    response['Content-Disposition'] = 'attachment; filename=emis.xls'
+    response['Content-Disposition'] = 'attachment; filename=attendance_data.xls'
     book.save(response)
     return response
