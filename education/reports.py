@@ -460,25 +460,25 @@ def keyratios_stats(request, district_id=None):
     bottom_attrib = ["deploy_f", "deploy_m"]
     pupil_to_teacher_ratio = attrib_ratios(top_attrib, bottom_attrib, dates, user_location)
     if pupil_to_teacher_ratio:
-        stats['Pupil to Teacher Ratio'] = pupil_to_teacher_ratio
+        stats['Teacher to Pupil Ratio'] = '1:%s'%pupil_to_teacher_ratio
     else:
-        stats['Pupil to Teacher Ratio'] = 'Not Available'
+        stats['Teacher to Pupil Ratio'] = 'Not Available'
     #pupil to latrine ratio    
     top_attrib = ["enrolledb_%s" % g for g in GRADES] + ["enrolledg_%s" % g for g in GRADES]
     bottom_attrib = ["latrinesused_b", "latrinesused_g"]
     latrinesused_ratio = attrib_ratios(top_attrib, bottom_attrib, dates, user_location)
     if latrinesused_ratio:
-        stats['Pupil to Latrine Ratio'] = latrinesused_ratio
+        stats['Latrine to Pupil Ratio'] = '1:%s'%latrinesused_ratio
     else:
-        stats['Pupil to Latrine Ratio'] = 'Not Available'
+        stats['Latrine to Pupil Ratio'] = 'Not Available'
     #pupil to classroom ratio    
     top_attrib = ["enrolledb_%s" % g for g in GRADES] + ["enrolledg_%s" % g for g in GRADES]
     bottom_attrib = ["classroomsused_%s" % g for g in GRADES]
     pupil_to_classroom_ratio = attrib_ratios(top_attrib, bottom_attrib, dates, user_location)
     if pupil_to_classroom_ratio:
-        stats['Pupil to Classroom Ratio'] = pupil_to_classroom_ratio
+        stats['Classroom to Pupil Ratio'] = '1:%s'%pupil_to_classroom_ratio
     else:
-        stats['Pupil to Classroom Ratio'] = 'Not Available'
+        stats['Classroom to Pupil Ratio'] = 'Not Available'
     #Level of functionality of SMCs
     smc_meetings = Poll.objects.get(name='emis_meetings').responses.exclude(has_errors=True)\
                                         .filter(date__range=(start_date, end_date))\
