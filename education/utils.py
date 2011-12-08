@@ -179,7 +179,7 @@ def reschedule_weekly_smc_polls():
         sp.set_time(d)
         
 
-def produce_data(request, district_id, dates, slugs,choice=list):
+def raw_data(request, district_id, dates, slugs, teachers=False):
     """
     function to produce data once an XForm slug is provided
     function is a WIP; tested for better optimization on DB
@@ -201,18 +201,32 @@ def produce_data(request, district_id, dates, slugs,choice=list):
         school_values.append(values[i]['submission__connection__contact__emisreporter__schools__name'])
         school_values.append(values[i]['value_int'])
         total = values[i]['value_int']
-        for x in range(i,(i+6)):
-            try:
-                school_values.append(values[x]['value_int'])
-                total += values[x]['value_int']
-            except IndexError:
-                school_values.append(0)
-            try:
-                if x == (i+5):
-                    school_values.append(total)
-                    school_values.append(values[x]['created'])
-            except:
-                pass
+        if teachers:
+            for x in range(i,(i+1)):
+                try:
+                    school_values.append(values[x]['value_int'])
+                    total += values[x]['value_int']
+                except IndexError:
+                    school_values.append(0)
+                try:
+                    if x == (i):
+                        school_values.append(total)
+                        school_values.append(values[x]['created'])
+                except:
+                    pass
+        else:
+            for x in range(i,(i+6)):
+                try:
+                    school_values.append(values[x]['value_int'])
+                    total += values[x]['value_int']
+                except IndexError:
+                    school_values.append(0)
+                try:
+                    if x == (i+5):
+                        school_values.append(total)
+                        school_values.append(values[x]['created'])
+                except:
+                    pass
         i += 6
         data.append(school_values)
     return data
@@ -265,27 +279,34 @@ def create_excel_dataset(request, start_date, end_date, district_id):
     girl_attendance_slugs = ['girls_%s'%g for g in GRADES]
     boy_enrolled_slugs = ["enrolledb_%s"%g for g in GRADES]
     girl_enrolled_slugs = ["enrolledg_%s"%g for g in GRADES]
+    TEACHER_HEADERS = ['School', 'Female', 'Male', 'Total', 'Date']
+    teacher_attendance_slugs = ['teachers_f', 'teachers_m']
 
     #Boys attendance
     headings = ["School"] + GRADES
-    data_set = produce_data(request, district_id, dates, boy_attendance_slugs)
-    write_xls("Latest Attendance for Boys",headings,data_set)
+    data_set = raw_data(request, district_id, dates, boy_attendance_slugs)
+    write_xls("Attendance data for Boys",headings,data_set)
 
     #Girls attendance
     headings = ["School"] + GRADES
-    data_set = produce_data(request, district_id, dates,  girl_attendance_slugs)
-    write_xls("Latest Attendance for Girls",headings,data_set)
+    data_set = raw_data(request, district_id, dates,  girl_attendance_slugs)
+    write_xls("Attendance data for Girls",headings,data_set)
+    
+    #Teacher attendance
+    headings = TEACHER_HEADERS
+    data_set = raw_data(request, district_id, dates,  teacher_attendance_slugs, teachers=True)
+    write_xls("Attendance data for Teachers",headings,data_set)
 
     #Boys enrollment
     headings = ["School"] + GRADES
     dates = {'start':datetime.datetime(datetime.datetime.now().year, 1, 1), 'end':datetime.datetime.now()}
-    data_set = produce_data(request, district_id, dates, boy_enrolled_slugs)
-    write_xls("Latest Enrollment for Boys",headings,data_set)
+    data_set = raw_data(request, district_id, dates, boy_enrolled_slugs)
+    write_xls("Enrollment data for Boys",headings,data_set)
 
     #Girls Enorllment
     headings = ["School"] + GRADES
-    data_set = produce_data(request, district_id, dates,  girl_enrolled_slugs)
-    write_xls("Latest Enrollment for Girls",headings,data_set)
+    data_set = raw_data(request, district_id, dates,  girl_enrolled_slugs)
+    write_xls("Enrollment data for Girls",headings,data_set)
 
     response = HttpResponse(mimetype='application/vnd.ms-excel')
     response['Content-Disposition'] = 'attachment; filename=attendance_data.xls'
