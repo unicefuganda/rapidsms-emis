@@ -85,7 +85,7 @@ urlpatterns = patterns('',
         ],
         'partial_row':'education/partials/school_report_row.html',
         'partial_header':'education/partials/attendance_partial_header.html',
-        'base_template':'generic/timeslider_base.html',
+        'base_template':'education/timeslider_base.html',
         'needs_date':True,
         'dates':get_xform_dates,
     }, name='attendance-stats'),
@@ -205,6 +205,7 @@ urlpatterns = patterns('',
 	url(r'^emis/charts/$',attendance_chart),#for demo purposes
     #users and permissions
     url(r'^emis/toexcel/$',to_excel, name="to-excel"),
+    url(r'^emis/toexcel/(?P<start_date>[0-9\-]+)/(?P<end_date>[0-9\-]+)$',to_excel, name="to-excel"),
     url(r'^emis/users/(\d+)/edit/', edit_user, name='edit_user'),
     url(r'^emis/users/add/', edit_user, name='add_user'),
 

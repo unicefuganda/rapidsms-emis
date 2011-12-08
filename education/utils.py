@@ -218,7 +218,7 @@ def produce_curated_data():
     #chart data
     pass
 
-def create_excel_dataset(request, district_id):
+def create_excel_dataset(request, start_date, end_date, district_id):
     """
     # for excelification
     for up to 6 districts
@@ -228,7 +228,14 @@ def create_excel_dataset(request, district_id):
     #CURRENT_DISTRICTS = Location.objects.filter(name__in=XFormSubmissionValue.objects.values_list('submission__connection__contact__reporting_location__name', flat=True)).order_by('name')
 
     #location = Location.tree.root_nodes()[0]
-    start_date, end_date = previous_calendar_week()
+    if start_date == None:
+        start_date, end_date = previous_calendar_week()
+    else:
+        start_split = start_date.split('-')
+        end_split = end_date.split('-')
+        start_date = datetime.datetime(int(start_split[0]), int(start_split[1]), int(start_split[2]))
+        end_date = datetime.datetime(int(end_split[0]), int(end_split[1]), int(end_split[2]))
+
     dates = {'start':start_date, 'end':end_date}
     # initialize Excel workbook and set encoding
     book = xlwt.Workbook(encoding='utf8')
@@ -258,8 +265,6 @@ def create_excel_dataset(request, district_id):
 
     #Boys attendance
     headings = ["School"] + GRADES
-    start_date, end_date = previous_calendar_week()
-    dates = {'start':start_date, 'end':end_date}
     data_set = produce_data(request, district_id, dates, boy_attendance_slugs)
     write_xls("Latest Attendance for Boys",headings,data_set)
 

@@ -45,3 +45,12 @@ function addSchoolElm(elem){
     id_form = $('#id_elms').html()
     rowelem.next().html('<td>Name: </td><td>'+name_form+'</td><td>Location: </td><td>'+location_form+'</td><td>School ID: </td><td>'+id_form+'</td>');
 }
+
+function getStats(url){
+    start_date = new Date(parseInt($('select#start').val())*1000);
+    end_date = new Date(parseInt($('select#end').val())*1000);
+    start_str = start_date.getFullYear() + "-" + (start_date.getMonth() + 1) + "-" + start_date.getDate();
+    end_str =  end_date.getFullYear() + "-" + (end_date.getMonth() + 1) + "-" + end_date.getDate();
+    url = url+start_str+'/'+end_str;
+    window.location.href=url;
+}
