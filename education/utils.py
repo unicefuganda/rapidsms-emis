@@ -200,13 +200,16 @@ def produce_data(request, district_id, dates, slugs,choice=list):
         school_values = []
         school_values.append(values[i]['submission__connection__contact__emisreporter__schools__name'])
         school_values.append(values[i]['value_int'])
+        total = values[i]['value_int']
         for x in range(i,(i+6)):
             try:
                 school_values.append(values[x]['value_int'])
+                total += values[x]['value_int']
             except IndexError:
                 school_values.append(0)
             try:
                 if x == (i+5):
+                    school_values.append(total)
                     school_values.append(values[x]['created'])
             except:
                 pass
@@ -257,7 +260,7 @@ def create_excel_dataset(request, start_date, end_date, district_id):
                     pass
                 sheet.write(rowx, colx, value)
             
-    GRADES = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'Date']
+    GRADES = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'Total', 'Date']
     boy_attendance_slugs = ['boys_%s'% g for g in GRADES]
     girl_attendance_slugs = ['girls_%s'%g for g in GRADES]
     boy_enrolled_slugs = ["enrolledb_%s"%g for g in GRADES]
