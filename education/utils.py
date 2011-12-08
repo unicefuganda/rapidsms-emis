@@ -281,6 +281,7 @@ def create_excel_dataset(request, start_date, end_date, district_id):
     girl_enrolled_slugs = ["enrolledg_%s"%g for g in GRADES]
     TEACHER_HEADERS = ['School', 'Female', 'Male', 'Total', 'Date']
     teacher_attendance_slugs = ['teachers_f', 'teachers_m']
+    teacher_deploy_slugs = ['deploy_f', 'deploy_m']
 
     #Boys attendance
     headings = ["School"] + GRADES
@@ -307,6 +308,11 @@ def create_excel_dataset(request, start_date, end_date, district_id):
     headings = ["School"] + GRADES
     data_set = raw_data(request, district_id, dates,  girl_enrolled_slugs)
     write_xls("Enrollment data for Girls",headings,data_set)
+    
+    #Teacher deployment
+    headings = TEACHER_HEADERS
+    data_set = raw_data(request, district_id, dates,  teacher_deploy_slugs, teachers=True)
+    write_xls("Teachers Deployment",headings,data_set)
 
     response = HttpResponse(mimetype='application/vnd.ms-excel')
     response['Content-Disposition'] = 'attachment; filename=attendance_data.xls'
