@@ -12,7 +12,7 @@
     </td>
     <td>
         <ul>
-            {% with connections=object|distinct_connections %}
+            {% with connections="object|distinct_connections" %}
                 {% for c in connections %}
                     <li>
                         {{ c.identity }}
