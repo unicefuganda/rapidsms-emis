@@ -192,8 +192,10 @@ def raw_data(request, district_id, dates, slugs, teachers=False):
                 .filter(created__range=(dates.get('start'), dates.get('end')))\
                 .filter(attribute__slug__in=slugs)\
                 .filter(submission__connection__contact__emisreporter__schools__in=schools)\
+                .order_by('submission__connection__contact__emisreporter__schools__name','-created')\
                 .values('submission__connection__contact__emisreporter__schools__name','value_int', 'created')
                 #.annotate(Avg('value_int'))
+
     data = []
     i = 0
     while i < len(values):
