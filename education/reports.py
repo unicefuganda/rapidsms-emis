@@ -411,13 +411,17 @@ def gem_htpresent_stats(request, district_id=None):
     location = Location.tree.root_nodes()[0]
     start_date, end_date = previous_calendar_month()
     dates = {'start':start_date, 'end':end_date}
-    values = total_submissions("gemteachers_htpresent", start_date=start_date, end_date=end_date, location=location, extra_filters={'eav__gemteachers_htpresent':1})
+    values = total_submissions("gemteachers", start_date=start_date, end_date=end_date, location=location, extra_filters={'eav__gemteachers_htpresent':1})
     gem_htpresent = location_values(user_location, values)
     stats.append(('head teachers reported present', gem_htpresent))
-    values = total_submissions("gemteachers_htpresent", start_date=start_date, end_date=end_date, location=location, extra_filters={'eav__gemteachers_htpresent':0})
+    values = total_submissions("gemteachers", start_date=start_date, end_date=end_date, location=location, extra_filters={'eav__gemteachers_htpresent':0})
     gem_htabsent = location_values(user_location, values)
     stats.append(('head teachers reported absent', gem_htabsent))
-    stats.append(('total reports received', gem_htpresent + gem_htabsent))
+    if type(gem_htpresent) == int and type(gem_htabsent) == int:
+        tot = gem_htpresent + gem_htabsent
+    else:
+        tot = gem_htpresent if type(gem_htpresent) == int else gem_htabsent  
+    stats.append(('total reports received', tot))
     num_schools = School.objects.filter(location__in=user_location.get_descendants(include_self=True)).count()
     if num_schools > 0 and type(gem_htpresent) == int:        
         gem_htpresent /= float(num_schools)

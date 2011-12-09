@@ -229,7 +229,7 @@ def last_report(obj, alert):
     except:
         xform_date = None
 
-    return xform_date       
+    return xform_date      
 
 
 register = template.Library()

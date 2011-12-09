@@ -89,6 +89,8 @@ urlpatterns = patterns('',
         'needs_date':True,
         'dates':get_xform_dates,
     }, name='attendance-stats'),
+    url(r'^emis/ht_attendance/$', htattendance, {}, name='ht-attendance-stats'),
+    url(r'^emis/ht_attendance/(?P<start_date>[0-9\-]+)/(?P<end_date>[0-9\-]+)$', htattendance, {}, name='ht-attendance-stats'),                
     url(r'^emis/ratios/$', login_required(generic), {
         'model':XFormSubmission,
         'queryset':KeyRatiosReport,
