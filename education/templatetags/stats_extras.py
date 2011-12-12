@@ -232,6 +232,14 @@ def last_report(obj, alert):
     return xform_date      
 
 
+def parse_gemvalues(obj):
+    if obj.value_text:
+        return obj.value_text
+    elif obj.value_int == 0:
+        return 'No'
+    else:
+        return 'Yes'
+
 register = template.Library()
 register.filter('section', get_section)
 register.filter('parent', get_parent)
@@ -243,6 +251,7 @@ register.filter('distinct_connections', distinct_connections)
 register.filter('last_report', last_report)
 register.filter('submissions', submissions)
 register.filter('headteacher',headteacher)
+register.filter('parse_gemvalues', parse_gemvalues)
 register.filter('headteacher_connection',headteacher_connection)
 register.filter('hash', hash)
 register.filter('get_district', get_district)

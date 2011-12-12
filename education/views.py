@@ -419,36 +419,57 @@ def htattendance(request, start_date=None, end_date=None, district_id=None):
                             .filter(date__range=(dates.get('start'), dates.get('end')))\
                             .filter(message__connection__contact__emisreporter__reporting_location__in=user_location.get_descendants(include_self=True).all())\
                             .order_by('message__date')
-                            
-    gem_htpresent = XFormSubmission.objects.filter(xform__keyword='gemteachers').exclude(has_errors=True)\
-                    .filter(created__range=(dates.get('start'), dates.get('end')))\
-                    .filter(connection__contact__emisreporter__reporting_location__in=user_location.get_descendants(include_self=True).all())\
-                    .order_by('created')
    
     return generic(request,
       model = XFormSubmission,
       queryset = smc_htpresent,
       objects_per_page = 50,
-      results_title = 'Head Teacher Presence as Reported by SMCs and GEM',
-      top_columns = [
-            ('', 1, None),
-            ('head teacher attendance (reported by SMCs)', 2, None),
-            ('head teacher attendance (reported by GEM)', 2, None),
-        ],
+      results_title = 'Head Teacher Presence as Reported by SMCs',
+#      top_columns = [
+#            ('', 1, None),
+#            ('head teacher attendance (reported by SMCs)', 2, None),
+#            ('head teacher attendance (reported by GEM)', 2, None),
+#        ],
       columns = [
-            ('', False, '', None),
+            ('school', False, 'school', None),
             ('present', False, 'present', None),
             ('reporting date', False, 'date', None),
-            ('present', False, 'present', None),
-            ('reporting date', False, 'date', None),
+#            ('present', False, 'present', None),
+#            ('reporting date', False, 'date', None),
         ],
     partial_row = 'education/partials/ht_attendance_row.html',
-    partial_header = 'education/partials/attendance_partial_header.html',
+    partial_header = 'education/partials/partial_header.html',
     base_template = 'education/timeslider_base.html',
     needs_date = True,
     selectable = False,
     dates = get_xform_dates,
-    gem_responses = gem_htpresent,
+    )
+    
+def gem_htattendance(request, start_date=None, end_date=None, district_id=None):
+    user_location = get_location(request, district_id)
+    dates = get_xform_dates(request)
+        
+    gem_htpresent = XFormSubmission.objects.filter(xform__keyword='gemteachers').exclude(has_errors=True)\
+                    .filter(created__range=(dates.get('start'), dates.get('end')))\
+                    .filter(connection__contact__emisreporter__reporting_location__in=user_location.get_descendants(include_self=True).all())\
+                    .order_by('created')
+
+    return generic(request,
+      model = XFormSubmission,
+      queryset = gem_htpresent,
+      objects_per_page = 50,
+      results_title = 'Head Teacher Presence as Reported by GEM',
+      columns = [
+            ('school', False, 'school', None),
+            ('present', False, 'present', None),
+            ('reporting date', False, 'date', None),
+        ],
+    partial_row = 'education/partials/gemht_attendance_row.html',
+    partial_header = 'education/partials/partial_header.html',
+    base_template = 'education/timeslider_base.html',
+    needs_date = True,
+    selectable = False,
+    dates = get_xform_dates,
     )
     
     
