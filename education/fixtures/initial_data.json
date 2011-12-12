@@ -2825,7 +2825,7 @@
             "end_date": null, 
             "contacts": [], 
             "messages": [], 
-            "question": "How much of your annual capitation grant have you received this term? Reply with ONE of the following 0%, 25%, 50%, 75%% or 100%", 
+            "question": "How much of your annual capitation grant have you received this term? Reply with ONE of the following 0%, 25%, 50%, 75% or 100%", 
             "sites": [
                 5
             ], 
@@ -3303,7 +3303,7 @@
         "pk": "emis_autoreg", 
         "model": "script.script", 
         "fields": {
-            "enabled": true, 
+            "enabled": false, 
             "name": "Education monitoring autoregistration script", 
             "sites": [
                 5
