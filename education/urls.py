@@ -93,6 +93,7 @@ urlpatterns = patterns('',
     url(r'^emis/ht_attendance/(?P<start_date>[0-9\-]+)/(?P<end_date>[0-9\-]+)$', htattendance, {}, name='ht-attendance-stats'),
     url(r'^emis/gemht_attendance/$', gem_htattendance, {}, name='gemht-attendance-stats'),
     url(r'^emis/gemht_attendance/(?P<start_date>[0-9\-]+)/(?P<end_date>[0-9\-]+)$', gem_htattendance, {}, name='gemht-attendance-stats'),                 
+    url(r'^emis/meals/$', meals, {}, name='meals-stats'),
     url(r'^emis/ratios/$', login_required(generic), {
         'model':XFormSubmission,
         'queryset':KeyRatiosReport,

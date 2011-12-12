@@ -363,7 +363,7 @@ def enrollment_stats(request, district_id=None):
     
     headteachers = School.objects.filter(location__in=user_location.get_descendants(include_self=True)).count()
     stats.append(('total head teachers', headteachers))
-    stats.append(('schools', headteachers))
+    stats.append(('total schools', headteachers))
 
     res = {}
     res['dates'] = dates
@@ -447,7 +447,38 @@ def abuse_stats(request, district_id=None):
     start_date, end_date = previous_calendar_month()
     dates = {'start':start_date, 'end':end_date}
     values = total_attribute_value("gemabuse_cases", start_date=start_date, end_date=end_date, location=location)
-    stats.append(('GEM abuse cases', location_values(user_location, values)))
+    stats.append(('GEM reported abuse cases', location_values(user_location, values)))
+    
+    htabuse = Poll.objects.get(name='emis_abuse').responses.exclude(has_errors=True)\
+                            .filter(date__range=(start_date, end_date))\
+                            .filter(message__connection__contact__emisreporter__reporting_location__in=user_location.get_descendants(include_self=True).all())\
+                            .values('eav_values__value_int')\
+                            .annotate(Sum('eav_values__value_int')).values_list('eav_values__value_int__sum', flat=True)
+    stats.append(('headteacher reported abuse cases', htabuse[0] if htabuse[0] else '-'))
+    res = {}
+    res['dates'] = dates
+    res['stats'] = stats
+    return res
+
+def meals_stats(request, district_id=None):
+    stats = []
+    user_location = get_location(request, district_id)
+    start_date, end_date = previous_calendar_month()
+    dates = {'start':start_date, 'end':end_date}
+    expected_strs = ['none', 'very few', 'few', 'less than half', 'more than half', 'very many']
+    
+    meals = Poll.objects.get(name='emis_meals').responses.exclude(has_errors=True)\
+                            .filter(date__range=(start_date, end_date))\
+                            .filter(message__connection__contact__emisreporter__reporting_location__in=user_location.get_descendants(include_self=True).all())\
+                            .values('eav_values__value_text')\
+                            .annotate(Count('eav_values__value_text'))
+    for cat in expected_strs:
+        num = 0
+        for ct in meals:
+            if ct['eav_values__value_text']:
+                if ct['eav_values__value_text'].lower() == cat:
+                    num += ct['eav_values__value_text__count']
+        stats.append((cat, num if num else '-'))
     res = {}
     res['dates'] = dates
     res['stats'] = stats

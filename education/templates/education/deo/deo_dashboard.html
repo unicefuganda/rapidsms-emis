@@ -124,5 +124,22 @@
             	</tr>
             </table><br /><a href="{% url abuse-stats %}">See Abuse Cases Details &raquo;</a>
         </p>
+        <p>
+            <table width="100%" cellspacing="0" cellpadding="0">
+                <tr>
+                    <td colspan={{ meals_stats.stats|length }} class="stat"><span class="stats">Number of Children that had Meals at School</span><span class="dates">Month: {{ meals_stats.dates.start|date:"F" }}</span></td>
+                </tr>
+                <tr>
+                    {% for cat, num in meals_stats.stats %}
+                        <td class="qt-head">{{ cat|title }}</td>
+                    {% endfor %}
+                </tr>
+                <tr>
+                    {% for cat, num in meals_stats.stats %}
+                        <td class="qt-body">{{ num|default_if_none:'-'|intcomma }}</td>
+                    {% endfor %}
+                </tr>
+            </table><br /><a href="{% url meals-stats %}">See Meals at School Details &raquo;</a>
+        </p>
     </div>
 {% endblock %}

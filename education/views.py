@@ -57,6 +57,7 @@ def deo_dashboard(request):
                                 'headteacher_attendance_stats':headteacher_attendance_stats(request, district_id), \
                                 'gem_htpresent_stats':gem_htpresent_stats(request, district_id), \
                                 'abuse_stats':abuse_stats(request, district_id), \
+                                'meals_stats':meals_stats(request, district_id), \
                                 }, RequestContext(request))
 
 def whitelist(request):
@@ -421,7 +422,7 @@ def htattendance(request, start_date=None, end_date=None, district_id=None):
                             .order_by('message__date')
    
     return generic(request,
-      model = XFormSubmission,
+      model = Poll,
       queryset = smc_htpresent,
       objects_per_page = 50,
       results_title = 'Head Teacher Presence as Reported by SMCs',
@@ -472,5 +473,30 @@ def gem_htattendance(request, start_date=None, end_date=None, district_id=None):
     dates = get_xform_dates,
     )
     
+def meals(request, district_id=None):
+    user_location = get_location(request, district_id)
+    dates = get_xform_dates(request)
+        
+    meals = Poll.objects.get(name='emis_meals').responses.exclude(has_errors=True)\
+                            .filter(date__range=(dates.get('start'), dates.get('end')))\
+                            .filter(message__connection__contact__emisreporter__reporting_location__in=user_location.get_descendants(include_self=True).all())
+
+    return generic(request,
+      model = Poll,
+      queryset = meals,
+      objects_per_page = 50,
+      results_title = 'Pupils who had Meals at School',
+      columns = [
+            ('school', False, 'school', None),
+            ('estimated number', False, 'number', None),
+            ('reporting date', False, 'date', None),
+        ],
+    partial_row = 'education/partials/meals_row.html',
+    partial_header = 'education/partials/partial_header.html',
+    base_template = 'education/timeslider_base.html',
+    needs_date = True,
+    selectable = False,
+    dates = get_xform_dates,
+    )
     
 
