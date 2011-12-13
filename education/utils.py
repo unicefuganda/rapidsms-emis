@@ -132,7 +132,7 @@ def get_flagged_messages(**kwargs):
 
 # a manual reschedule of all monthly polls
 def reschedule_monthly_polls():
-    slugs = ['emis_abuse', 'emis_meals', 'emis_school_administrative', 'emis_smc_monthly']
+    slugs = ['emis_abuse', 'emis_meals', 'emis_smc_monthly']
     #enable scripts in case they are disabled
     Script.objects.filter(slug__in=slugs).update(enabled=True)
     #first remove all existing script progress for the monthly scripts
@@ -147,8 +147,6 @@ def reschedule_monthly_polls():
                     _schedule_monthly_script(group, connection, 'emis_abuse', 'last', ['Teachers', 'Head Teachers'])
                 elif slug == 'emis_meals':
                     _schedule_monthly_script(group, connection, 'emis_meals', 20, ['Teachers', 'Head Teachers'])
-                elif slug == 'emis_school_administrative':
-                    _schedule_monthly_script(group, connection, 'emis_school_administrative', 15, ['Teachers', 'Head Teachers'])
                 else:
                     _schedule_monthly_script(group, connection, 'emis_smc_monthly', 28, ['SMC'])
 
@@ -177,6 +175,50 @@ def reschedule_weekly_smc_polls():
                 d = d + datetime.timedelta(7)
         sp, created = ScriptProgress.objects.get_or_create(connection=connection, script=Script.objects.get(slug='emis_head_teacher_presence'))
         sp.set_time(d)
+        
+def reschedule_annual_polls():
+    #enable script in case its disabled
+    Script.objects.filter(slug='emis_annual').update(enabled=True)
+    #first destroy all existing script progress for head teachers in annual script
+    ScriptProgress.objects.filter(connection__contact__groups__name__iexact='head teachers', script__slug='emis_annual').delete()
+    headteachers = EmisReporter.objects.filter(groups__name__iexact='head teachers')
+    # Schedule annual messages
+    d = datetime.datetime.now()
+    start_of_year = datetime.datetime(d.year, 1, 1, d.hour, d.minute, d.second, d.microsecond)\
+        if d.month < 3 else datetime.datetime(d.year + 1, 1, 1, d.hour, d.minute, d.second, d.microsecond)
+    for headteacher in headteachers:
+        connection = headteacher.default_connection
+        sp = ScriptProgress.objects.create(connection=connection, script=Script.objects.get(slug='emis_annual'))
+        sp.set_time(start_of_year + datetime.timedelta(weeks=getattr(settings, 'SCHOOL_ANNUAL_MESSAGES_START', 12)))
+    
+    
+def reschedule_termly_polls(date):
+    #enable script in case its disabled
+    Script.objects.filter(slug='emis_school_administrative').update(enabled=True)
+    #first destroy all existing script progress for head teachers in annual script
+    ScriptProgress.objects.filter(connection__contact__groups__name__iexact='head teachers',\
+                                script__slug='emis_school_administrative').delete()
+    reporters = EmisReporter.objects.filter(groups__name__iexact='head teachers')
+    # Schedule annual messages
+    d = datetime.datetime.now()
+    dl = date.split('-')
+    new_time = datetime.datetime(int(dl[0]), int(dl[1]), int(dl[2]), d.hour, d.minute, d.second, d.microsecond)
+    for reporter in reporters:
+        connection = reporter.default_connection
+        sp = ScriptProgress.objects.create(connection=connection, script=Script.objects.get(slug='emis_school_administrative'))
+        sp.set_time(new_time)
+    
+    #now the smcs termly scripts
+    Script.objects.filter(slug='emis_smc_termly').update(enabled=True)
+    #first destroy all existing script progress for smcs in their termly script
+    ScriptProgress.objects.filter(connection__contact__groups__name__iexact='smc',\
+                                script__slug='emis_smc_termly').delete()
+    reporters = EmisReporter.objects.filter(groups__name__iexact='smc')
+    for reporter in reporters:
+        connection = reporter.default_connection
+        sp = ScriptProgress.objects.create(connection=connection, script=Script.objects.get(slug='emis_smc_termly'))
+        sp.set_time(new_time)
+    
         
 
 def raw_data(request, district_id, dates, slugs, teachers=False):

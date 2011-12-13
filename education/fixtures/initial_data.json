@@ -3377,6 +3377,17 @@
         }
     }, 
     {
+        "pk": "emis_smc_termly", 
+        "model": "script.script", 
+        "fields": {
+            "enabled": false, 
+            "name": "Education monitoring smc termly script", 
+            "sites": [
+                5
+            ]
+        }
+    }, 
+    {
         "pk": 48, 
         "model": "script.scriptstep", 
         "fields": {
@@ -3681,54 +3692,6 @@
         }
     }, 
     {
-        "pk": 67, 
-        "model": "script.scriptstep", 
-        "fields": {
-            "script": "emis_smc_monthly", 
-            "retry_offset": 86400, 
-            "rule": "R", 
-            "email": null, 
-            "num_tries": 1, 
-            "start_offset": 60, 
-            "message": "", 
-            "poll": 105, 
-            "order": 1, 
-            "giveup_offset": 86400
-        }
-    }, 
-    {
-        "pk": 68, 
-        "model": "script.scriptstep", 
-        "fields": {
-            "script": "emis_smc_monthly", 
-            "retry_offset": 86400, 
-            "rule": "R", 
-            "email": null, 
-            "num_tries": 1, 
-            "start_offset": 60, 
-            "message": "", 
-            "poll": 106, 
-            "order": 2, 
-            "giveup_offset": 86400
-        }
-    }, 
-    {
-        "pk": 69, 
-        "model": "script.scriptstep", 
-        "fields": {
-            "script": "emis_smc_monthly", 
-            "retry_offset": 86400, 
-            "rule": "R", 
-            "email": null, 
-            "num_tries": 1, 
-            "start_offset": 60, 
-            "message": "", 
-            "poll": 107, 
-            "order": 3, 
-            "giveup_offset": 86400
-        }
-    }, 
-    {
         "pk": 70, 
         "model": "script.scriptstep", 
         "fields": {
@@ -3773,6 +3736,54 @@
             "message": "", 
             "poll": 110, 
             "order": 0, 
+            "giveup_offset": 86400
+        }
+    }, 
+    {
+        "pk": 73, 
+        "model": "script.scriptstep", 
+        "fields": {
+            "script": "emis_smc_termly", 
+            "retry_offset": 86400, 
+            "rule": "R", 
+            "email": null, 
+            "num_tries": 1, 
+            "start_offset": 60, 
+            "message": "", 
+            "poll": 105, 
+            "order": 0, 
+            "giveup_offset": 86400
+        }
+    }, 
+    {
+        "pk": 74, 
+        "model": "script.scriptstep", 
+        "fields": {
+            "script": "emis_smc_termly", 
+            "retry_offset": 86400, 
+            "rule": "R", 
+            "email": null, 
+            "num_tries": 1, 
+            "start_offset": 60, 
+            "message": "", 
+            "poll": 106, 
+            "order": 1, 
+            "giveup_offset": 86400
+        }
+    }, 
+    {
+        "pk": 75, 
+        "model": "script.scriptstep", 
+        "fields": {
+            "script": "emis_smc_termly", 
+            "retry_offset": 86400, 
+            "rule": "R", 
+            "email": null, 
+            "num_tries": 1, 
+            "start_offset": 60, 
+            "message": "", 
+            "poll": 107, 
+            "order": 2, 
             "giveup_offset": 86400
         }
     }

@@ -239,18 +239,19 @@ def emis_autoreg(**kwargs):
         # Now that you have their roll, they should be signed up for the periodic polling
         _schedule_monthly_script(group, connection, 'emis_abuse', 'last', ['Teachers', 'Head Teachers'])
         _schedule_monthly_script(group, connection, 'emis_meals', 20, ['Teachers', 'Head Teachers'])
-        _schedule_monthly_script(group, connection, 'emis_school_administrative', 15, ['Teachers', 'Head Teachers'])
+        #termly messages go out mid April, July or November by default
+        _schedule_termly_script(group, connection, 'emis_school_administrative', ['Head Teachers'])
         # Schedule annual messages
         d = datetime.datetime.now()
         start_of_year = datetime.datetime(d.year, 1, 1, d.hour, d.minute, d.second, d.microsecond)\
             if d.month < 3 else datetime.datetime(d.year + 1, 1, 1, d.hour, d.minute, d.second, d.microsecond)
-        if group.name in ['Teachers', 'Head Teachers']:
+        if group.name in ['Head Teachers']:
             sp = ScriptProgress.objects.create(connection=connection, script=Script.objects.get(slug='emis_annual'))
             sp.set_time(start_of_year + datetime.timedelta(weeks=getattr(settings, 'SCHOOL_ANNUAL_MESSAGES_START', 12)))
 
         _schedule_monthly_script(group, connection, 'emis_smc_monthly', 28, ['SMC'])
-        #this feature is currently disabled, its difficult to schedule termly polls without being sure of the length of each term holiday
-#        _schedule_termly_script(group, connection, 'emis_termly', ['SMC'])
+        #termly messages go out mid April, July or November
+        _schedule_termly_script(group, connection, 'emis_smc_termly', ['SMC'])
 
         holidays = getattr(settings, 'SCHOOL_HOLIDAYS', [])
         if group.name in ['SMC']:
@@ -301,10 +302,18 @@ def _schedule_monthly_script(group, connection, script_slug, day_offset, role_na
 
 def _schedule_termly_script(group, connection, script_slug, role_names):
     holidays = getattr(settings, 'SCHOOL_HOLIDAYS', [])
-    start_of_term = getattr(settings, 'SCHOOL_TERM_START', datetime.datetime.now())
     if group.name in role_names:
-        #termly messages are sent (SCHOOL_TERM_LENGTH - 2weeks) from the end of term, term assumed to be approximately 10 weeks
-        d = start_of_term + datetime.timedelta(weeks=(getattr(settings, 'SCHOOL_TERM_LENGTH', 12) - 2))
+        #termly messages are automatically scheduled for mid April, July and Nov
+        d = datetime.datetime.now()
+        start_of_year = datetime.datetime(d.year + 1, 1, 1, d.hour, d.minute, d.second, d.microsecond)
+        if d <= start_of_year + datetime.timedelta(days=((3*30)+15)):
+            d = datetime.datetime(d.year, 4, 15, d.hour, d.minute, d.second, d.microsecond)
+        elif d > start_of_year + datetime.timedelta(days=((3*30)+15)) and d <= start_of_year + datetime.timedelta(days=((6*30)+15)):
+            d = datetime.datetime(d.year, 7, 15, d.hour, d.minute, d.second, d.microsecond)
+        elif d > start_of_year + datetime.timedelta(days=((6*30)+15)) and d <= start_of_year + datetime.timedelta(days=((10*30)+15)):
+            d = datetime.datetime(d.year, 11, 15, d.hour, d.minute, d.second, d.microsecond)
+        else:
+            d = datetime.datetime(d.year, 4, 15, d.hour, d.minute, d.second, d.microsecond)
         #if d is weekend, set time to next monday
         if d.weekday() == 5:
             d = d + datetime.timedelta((0 - d.weekday()) % 7)
@@ -318,8 +327,6 @@ def _schedule_termly_script(group, connection, script_slug, role_names):
                     in_holiday = True
                     break
             if in_holiday:
-                #termly messages are sent (SCHOOL_TERM_LENGTH - 2weeks) from the end of term, term assumed to be approximately 10 weeks
-                d = start_of_term + datetime.timedelta(weeks=(getattr(settings, 'SCHOOL_TERM_LENGTH', 12) - 2))
                 #if d is weekend, set time to next monday
                 if d.weekday() == 5:
                     d = d + datetime.timedelta((0 - d.weekday()) % 7)
@@ -345,10 +352,12 @@ def emis_reschedule_script(**kwargs):
     elif slug == 'emis_meals':
         _schedule_monthly_script(group, connection, 'emis_meals', 20, ['Teachers', 'Head Teachers'])
     elif slug == 'emis_school_administrative':
-        _schedule_monthly_script(group, connection, 'emis_school_administrative', 15, ['Teachers', 'Head Teachers'])
+        #termly messages go out mid April, July or November by default
+        _schedule_termly_script(group, connection, 'emis_school_administrative', ['Head Teachers'])
     #schedule termly polls
-#    elif slug == 'emis_termly':
-#        _schedule_termly_script(group, connection, 'emis_termly', ['SMC'])
+    elif slug == 'emis_smc_termly':
+        #termly messages go out mid April, July or November
+        _schedule_termly_script(group, connection, 'emis_smc_termly', ['SMC'])
     elif slug == 'emis_annual':
         #Schedule annual polls
         d = ScriptSession.objects.filter(script__slug='emis_annual', \
@@ -356,7 +365,7 @@ def emis_reschedule_script(**kwargs):
                             ).order_by('-end_time')[0].end_time
 
         start_of_year = datetime.datetime(d.year + 1, 1, 1, d.hour, d.minute, d.second, d.microsecond)
-        if group.name in ['Teachers', 'Head Teachers']:
+        if group.name in ['Head Teachers']:
             sp = ScriptProgress.objects.create(connection=connection, script=Script.objects.get(slug='emis_annual'))
             sp.set_time(start_of_year + datetime.timedelta(weeks=getattr(settings, 'SCHOOL_ANNUAL_MESSAGES_START', 12)))
 
